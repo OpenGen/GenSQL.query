@@ -1,0 +1,97 @@
+(* Queries *)
+
+query               ::= <'SELECT'> <ws> selections
+                        (<ws> <'FROM'> <ws> source)?
+                        (<ws> <'WHERE'> <ws> conditions)?
+                        (<ws> <'ORDER BY'> <ws> ordering)?
+                        (<ws> <'LIMIT'> <ws> limit)?
+                        <';'>?
+
+(* Selections *)
+
+selections          ::= star | p-column-or-prob (<','> <ws>? p-column-or-prob)*
+<p-column-or-prob>  ::= column-or-prob | <'('> column-or-prob <')'>
+<column-or-prob>    ::= column-selection | probability-of
+
+column-selection    ::= column-name (<ws> <'AS'> <ws> selection-name)?
+
+(* Sources *)
+
+source              ::= table-lookup | <'('> query <')'> | generated-table
+generated-table     ::= <'('> generate-model <')'>
+table-lookup        ::= table-name
+
+(* Conditions *)
+
+(* 'OR' has higher operator precedence than 'AND'. *)
+
+conditions          ::= condition (<ws> <'AND'> <ws> condition)*
+<condition>         ::= or-condition
+                      | presence-condition
+                      | absence-condition
+                      | equality-condition
+                      | predicate-condition
+<subcondition>      ::= and-condition | condition
+or-condition        ::= subcondition <ws> <'OR'> <ws> subcondition
+and-condition       ::= condition (<ws> <'AND'> <ws> condition)+
+presence-condition  ::= column-name <ws> <'IS NOT NULL'>
+absence-condition   ::= column-name <ws> <'IS NULL'>
+equality-condition  ::= column-name <ws>? <'='> <ws>? value
+predicate-condition ::= column-name <ws>? predicate <ws>? value
+predicate           ::= (#"<" | #">" | #"<=" | #">=")
+
+(* Generate *)
+
+generate-model      ::= <'GENERATE'> <ws> variable-names
+                        (<ws> <'GIVEN'> <ws> bindings)?
+                        (<ws> <'UNDER'> <ws> model)?
+variable-names      ::= variable-name (<','> <ws> variable-name)*
+bindings            ::= binding (<','> <ws> binding)*
+
+(* Probability *)
+
+probability-of      ::= <'PROBABILITY OF'> <ws> target
+                        (<ws> <'GIVEN'> <ws> constraints)?
+                        (<ws> <'UNDER'> <ws> model)?
+                        (<ws> <'AS'> <ws> selection-name)?
+target              ::= events
+constraints         ::= events
+binding             ::= column-name <ws>? <'='> <ws>? value
+<events>            ::= star | event (<','> <ws>? event)*
+<event>             ::= binding | column-name
+
+(* Literals *)
+
+<value>             ::= float | int | string
+float               ::= #'-?\d+\.\d+(E-?\d+)?'
+int                 ::= #'-?\d+'
+nat                 ::= #'\d+'
+string              ::= #'\"([^\"]+)\"'
+symbol              ::= #'[a-zA-Z]\w*'
+
+(* Order by *)
+
+ordering            ::= column-name (<ws> direction)?
+direction           ::= (ascending | descending)
+ascending           ::= <'ASC'>
+descending          ::= <'DESC'>
+
+(* Limit *)
+
+limit               ::= nat
+
+(* Shared *)
+
+model               ::= model-lookup | <'('> generate-model <')'>
+model-lookup        ::= model-name
+
+selection-name      ::= name
+<column-name>       ::= name
+table-name          ::= "data"
+<model-name>        ::= name
+<variable-name>     ::= name
+name                ::= symbol | <'"'> symbol <'"'>
+
+star                ::= <'*'>
+
+ws                  ::= #'\s+'

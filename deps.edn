@@ -1,0 +1,14 @@
+{:deps {org.clojure/spec.alpha {:mvn/version "0.2.187"}
+        datascript {:mvn/version "0.18.8"}
+        instaparse {:mvn/version "1.4.10"}
+        probcomp/inferenceql.inference {:git/url "git@github.com:probcomp/inferenceql.inference.git"
+                                        :sha "0d5ea7db85eca5dbcb7c2fc2d29ddd7340fbbf23"}
+        probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git"
+                           :sha "8dc9d09f747c1e29886bb9628a0110c6f6bc6f5a"}}
+ :paths ["src" "resources"]
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps {org.clojure/test.check {:mvn/version "0.10.0"}
+                               lambdaisland/kaocha {:mvn/version "0.0-529"}
+                               lambdaisland/kaocha-cljs {:mvn/version "0.0-40"}
+                               lambdaisland/kaocha-junit-xml {:mvn/version "0.0-70"}
+                               com.gfredericks/test.chuck {:mvn/version "0.2.10"}}}}}

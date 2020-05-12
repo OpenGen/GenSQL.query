@@ -1,0 +1,26 @@
+name: Build
+on: push
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Setup Clojure tools
+        uses: DeLaGuardo/setup-clojure@2.0
+        with:
+          tools-deps: 1.10.1.536
+      - name: Setup node
+        uses: actions/setup-node@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install ws
+        run: npm install ws
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.2.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Run tests
+        run: bin/kaocha --reporter documentation --plugin kaocha.plugin/profiling
