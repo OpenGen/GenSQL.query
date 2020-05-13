@@ -46,7 +46,12 @@
   (gen/fmap string/join (gen/vector gen/char-alpha)))
 
 (def gen-symbol
-  (gen/fmap symbol (gen/such-that (comp pos? count) string-alpha)))
+  (->> (gen/tuple gen/char-alpha
+                  (gen/fmap string/join
+                            (gen/vector (gen/frequency [[20 gen/char-alpha-numeric]
+                                                        [1 (gen/return \-)]]))))
+       (gen/fmap #(apply str %))
+       (gen/fmap symbol)))
 
 (def gen-column
   (gen/fmap keyword gen-symbol))
