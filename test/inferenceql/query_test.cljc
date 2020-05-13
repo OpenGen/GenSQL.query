@@ -8,7 +8,6 @@
             [instaparse.core :as insta]
             [inferenceql.query :as query]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.inference.multimixture :as mmix]
             [inferenceql.inference.multimixture.specification :as mmix.spec]))
 
 (def simple-mmix

@@ -1,0 +1,17 @@
+name: Lint
+on: push
+jobs:
+  lint-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup clj-kondo
+        uses: DeLaGuardo/setup-clj-kondo@v1
+        with:
+          version: '2020.04.05'
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Lint files
+        uses: DeLaGuardo/clojure-lint-action@master
+        with:
+          clj-kondo-args: --lint src test
+          github_token: ${{ secrets.GITHUB_TOKEN }}

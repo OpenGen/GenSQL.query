@@ -1,0 +1,3 @@
+{:lint-as {clojure.test.check.clojure-test/defspec clojure.core/def
+           clojure.test.check.properties/for-all clojure.core/let
+           metaprob.generative-functions/gen clojure.core/fn}}
