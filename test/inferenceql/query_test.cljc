@@ -45,8 +45,11 @@
 (def string-alpha
   (gen/fmap string/join (gen/vector gen/char-alpha)))
 
+(def gen-symbol
+  (gen/fmap symbol (gen/such-that (comp pos? count) string-alpha)))
+
 (def gen-column
-  (gen/fmap keyword (gen/such-that (comp pos? count) string-alpha)))
+  (gen/fmap keyword gen-symbol))
 
 (def gen-table
   "Generator for full \"tables\" (vectors of maps). Each row will have keys drawn
@@ -87,6 +90,26 @@
     (let [s (pr-str n)]
       (is (= n (parse-and-transform-literals s :start :int))))))
 
+(defspec symbol-parsing
+  (prop/for-all [sym gen-symbol]
+    (let [s (pr-str sym)]
+      (is (= sym (parse-and-transform-literals s :start :symbol))))))
+
+;;; Column parsing
+
+(deftest column-name-parsing
+  (testing "valid"
+    (are [s] (not (insta/failure? (query/parse s :start :column-name)))
+      "a"
+      "A"
+      "a0"
+      "a0a"
+      "a-"
+      "a-a"))
+  (testing "invalid"
+    (are [s] (insta/failure? (query/parse s :start :column-name))
+      "0a"
+      "-a")))
 
 ;; Float parsing is a bit different in CLJS. Among other things, whole-numbered
 ;; floats are printed without a decimal point. Someone should come back and try
