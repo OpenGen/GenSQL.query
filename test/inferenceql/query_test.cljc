@@ -225,35 +225,35 @@
 
 ;; Probabilities
 
-(deftest probability-of-bindings
+(deftest density-of-bindings
   (let [rows [{}]
         models {:model (gpm/Multimixture simple-mmix)}
         q1 (comp first vals first #(query/q % rows models))]
-    (is (= (Math/log 0.25) (q1 "SELECT (PROBABILITY OF x=\"no\"                  UNDER model) FROM data LIMIT 1")))
-    (is (= (Math/log 0.75) (q1 "SELECT (PROBABILITY OF x=\"yes\"                 UNDER model) FROM data LIMIT 1")))
-    (is (= (Math/log 1.0)  (q1 "SELECT (PROBABILITY OF x=\"yes\" GIVEN y=\"yes\" UNDER model) FROM data LIMIT 1")))
-    (is (= (Math/log 1.0)  (q1 "SELECT (PROBABILITY OF x=\"no\"  GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))
-    (is (= (Math/log 0.0)  (q1 "SELECT (PROBABILITY OF x=\"yes\" GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))))
+    (is (= (Math/log 0.25) (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"                  UNDER model) FROM data LIMIT 1")))
+    (is (= (Math/log 0.75) (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\"                 UNDER model) FROM data LIMIT 1")))
+    (is (= (Math/log 1.0)  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" GIVEN y=\"yes\" UNDER model) FROM data LIMIT 1")))
+    (is (= (Math/log 1.0)  (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"  GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))
+    (is (= (Math/log 0.0)  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))))
 
-(deftest probability-of-rows
+(deftest density-of-rows
   (let [models {:model (gpm/Multimixture simple-mmix)}
         q1 (comp first vals first #(query/q %1 %2 models))]
     (are [expected x] (is (= (Math/log expected)
-                             (q1 "SELECT (PROBABILITY OF x UNDER model) FROM data"
+                             (q1 "SELECT (PROBABILITY DENSITY OF x UNDER model) FROM data"
                                  [{:x x}])))
       0.25 "no"
       0.75 "yes")
 
     (are [expected x y] (= (Math/log expected)
-                           (q1 "SELECT (PROBABILITY OF x GIVEN y UNDER model) FROM data"
+                           (q1 "SELECT (PROBABILITY DENSITY OF x GIVEN y UNDER model) FROM data"
                                [{:x x :y y}]))
       1.0 "yes" "yes"
       1.0 "no"  "no"
       0.0 "yes" "no"
       0.0 "no"  "yes")))
 
-(deftest probability-of-generate
-  (is (= 1.0 (Math/exp (->> (query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER (GENERATE x GIVEN y=\"yes\" UNDER model)) FROM data"
+(deftest density-of-generate
+  (is (= 1.0 (Math/exp (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x GIVEN y=\"yes\" UNDER model)) FROM data"
                                      [{}]
                                      {:model (gpm/Multimixture simple-mmix)})
                             first

@@ -153,7 +153,7 @@
   (let [all-transformations (meta-preserving-transform-map
                              (merge literal-transformations
                                     {:query            (map-transformer)
-                                     :probability-of   (map-transformer)
+                                     :density-of       (map-transformer)
                                      :column-selection (map-transformer :column)
                                      :generate-model   (map-transformer :target)
                                      :ordering         (map-transformer :column)
@@ -198,13 +198,13 @@
         merge-clause `[(merge ~row-var ~binding-sym) ~variable]]
     [row-clause event-clause merge-clause]))
 
-(defn probability-selection-clauses
-  "Returns the Datalog clauses for a probability selection."
+(defn density-selection-clauses
+  "Returns the Datalog clauses for a density selection."
   [{:keys [target constraints model selection-name]}]
   (let [model (or model {:model-name :model})
 
-        selection-name (or selection-name (keyword (gensym "prob")))
-        prob-var (variable selection-name)
+        selection-name (or selection-name (keyword (gensym "density")))
+        density-var (variable selection-name)
 
         model-var       (genvar "model-")
         target-var      (genvar "target-")
@@ -213,9 +213,9 @@
         target-clauses      (events-clauses target-var      target)
         constraints-clauses (events-clauses constraints-var constraints)
 
-        logpdf-clauses `[[(gpm/logpdf ~model-var ~target-var ~constraints-var) ~prob-var]]]
+        logpdf-clauses `[[(gpm/logpdf ~model-var ~target-var ~constraints-var) ~density-var]]]
     {:name   [selection-name]
-     :find   [prob-var]
+     :find   [density-var]
      :in     [model-var]
      :inputs [model]
      :where  (reduce into [target-clauses constraints-clauses logpdf-clauses])}))
@@ -234,7 +234,7 @@
   [selection]
   (case (safe-get (meta selection) ::node-type)
     :column-selection (column-selection-clauses selection)
-    :probability-of   (probability-selection-clauses selection)))
+    :density-of   (density-selection-clauses selection)))
 
 (defn selections-clauses
   [selections]

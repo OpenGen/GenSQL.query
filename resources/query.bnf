@@ -9,9 +9,9 @@ query               ::= <'SELECT'> <ws> selections
 
 (* Selections *)
 
-selections          ::= star | p-column-or-prob (<','> <ws>? p-column-or-prob)*
-<p-column-or-prob>  ::= column-or-prob | <'('> column-or-prob <')'>
-<column-or-prob>    ::= column-selection | probability-of
+selections            ::= star | p-column-or-density (<','> <ws>? p-column-or-density)*
+<p-column-or-density> ::= column-or-density | <'('> column-or-density <')'>
+<column-or-density>   ::= column-selection | density-of
 
 column-selection    ::= column-name (<ws> <'AS'> <ws> selection-name)?
 
@@ -50,7 +50,7 @@ bindings            ::= binding (<','> <ws> binding)*
 
 (* Probability *)
 
-probability-of      ::= <'PROBABILITY OF'> <ws> target
+density-of          ::= <'PROBABILITY DENSITY OF'> <ws> target
                         (<ws> <'GIVEN'> <ws> constraints)?
                         (<ws> <'UNDER'> <ws> model)?
                         (<ws> <'AS'> <ws> selection-name)?
