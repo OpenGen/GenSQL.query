@@ -11,7 +11,8 @@
             [datascript.core :as d]
             [instaparse.core :as insta]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.inference.gpm.proto :as gpm.proto]))
+            [inferenceql.inference.gpm.proto :as gpm.proto]
+            [inferenceql.query.math :as math]))
 
 (def entity-var '?entity)
 (def default-model-key :model)
@@ -67,7 +68,8 @@
   (merge
    #?(:clj {'clojure.core/merge merge}
       :cljs {'cljs.core/merge merge})
-   {'clojure.core/merge merge
+   {'math/exp math/exp
+    'clojure.core/merge merge
     'datascript.core/pull datascript.core/pull
     'inferenceql.inference.gpm/logpdf inferenceql.inference.gpm/logpdf
 
@@ -204,6 +206,7 @@
   (let [model (or model {:model-name :model})
 
         selection-name (or selection-name (keyword (gensym "density")))
+        log-density-var (variable (str "log-" (name selection-name)))
         density-var (variable selection-name)
 
         model-var       (genvar "model-")
@@ -213,7 +216,8 @@
         target-clauses      (events-clauses target-var      target)
         constraints-clauses (events-clauses constraints-var constraints)
 
-        logpdf-clauses `[[(gpm/logpdf ~model-var ~target-var ~constraints-var) ~density-var]]]
+        logpdf-clauses `[[(gpm/logpdf ~model-var ~target-var ~constraints-var) ~log-density-var]
+                         [(math/exp ~log-density-var) ~density-var]]]
     {:name   [selection-name]
      :find   [density-var]
      :in     [model-var]
