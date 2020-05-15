@@ -155,6 +155,7 @@
   (let [all-transformations (meta-preserving-transform-map
                              (merge literal-transformations
                                     {:query            (map-transformer)
+                                     :probability-of   (map-transformer)
                                      :density-of       (map-transformer)
                                      :column-selection (map-transformer :column)
                                      :generate-model   (map-transformer :target)
@@ -238,7 +239,8 @@
   [selection]
   (case (safe-get (meta selection) ::node-type)
     :column-selection (column-selection-clauses selection)
-    :density-of   (density-selection-clauses selection)))
+    :probability-of   (density-selection-clauses selection)
+    :density-of       (density-selection-clauses selection)))
 
 (defn selections-clauses
   [selections]
