@@ -279,7 +279,7 @@
   "An instaparse parser for IQL SQL queries. The grammar is inlined at macro
   expansion time so that it can be used in the ClojureScript context where we
   don't have access to file resources."
-  (insta/parser (io/inline-file "resources/query.bnf")
+  (insta/parser (io/inline-file "inferenceql/query/grammar.bnf")
                 :string-ci true))
 
 ;;; Query execution
