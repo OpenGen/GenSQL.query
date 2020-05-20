@@ -1,4 +1,5 @@
 (ns inferenceql.query-test
+  (:import [clojure.lang ExceptionInfo])
   (:require [clojure.string :as string]
             [clojure.test :as test :refer [are deftest is testing]]
             [clojure.test.check.clojure-test :refer [defspec]]
@@ -316,3 +317,11 @@
       (testing "can be nested"
         (doseq [result (q "SELECT x, y FROM (GENERATE x, y UNDER (GENERATE x, y UNDER model)) LIMIT 10")]
           (is (= #{:x :y} (set (keys result)))))))))
+
+;;; Invalid inputs
+
+(deftest syntax-error
+  (is (thrown? ExceptionInfo (query/q "invalid query" [])))
+  (try (query/q "invalid query" [])
+       (catch ExceptionInfo e
+         (is (= :cognitect.anomalies/incorrect (:cognitect.anomalies/category (ex-data e)))))))
