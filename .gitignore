@@ -13,3 +13,6 @@ pom.xml.asc
 .nrepl-port
 .cpcache/
 /.clj-kondo/.cache/
+/node_modules/
+/out/
+package-lock.json

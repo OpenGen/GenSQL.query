@@ -68,16 +68,16 @@
   (merge
    #?(:clj {'clojure.core/merge merge}
       :cljs {'cljs.core/merge merge})
-   {'math/exp math/exp
-    'clojure.core/merge merge
-    'datascript.core/pull datascript.core/pull
-    'inferenceql.inference.gpm/logpdf inferenceql.inference.gpm/logpdf
+   {`math/exp math/exp
+    `clojure.core/merge clojure.core/merge
+    `datascript.core/pull datascript.core/pull
+    `inferenceql.inference.gpm/logpdf inferenceql.inference.gpm/logpdf
 
-    'clojure.core/=  =
-    'clojure.core/>  >
-    'clojure.core/>= >=
-    'clojure.core/<  <
-    'clojrue.core/<= <=}))
+    `clojure.core/=  =
+    `clojure.core/>  >
+    `clojure.core/>= >=
+    `clojure.core/<  <
+    `clojrue.core/<= <=}))
 
 (def input-symbols
   (->> default-environment
@@ -125,7 +125,8 @@
   "Returns `true` if the provided value implements `clojure.lang.IObj`. Only
   values that implement `clojure.lang.IObj` can accept metadata."
   [x]
-  (instance? clojure.lang.IObj x))
+  #?(:clj (instance? clojure.lang.IObj x)
+     :cljs (satisfies? IWithMeta x)))
 
 (defn meta-preserving-transform-map
   "Takes an `instaparse.core/transform` map and returns one that, in addition to

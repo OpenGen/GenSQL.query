@@ -1,0 +1,9 @@
+#kaocha/v1
+{:tests [{:id :clj
+          :source-paths ["src"]
+          :test-paths ["test"]}
+         {:id :cljs
+          :type :kaocha.type/cljs
+          :cljs/timeout 30000
+          :source-paths ["src"]
+          :test-paths ["test"]}]}

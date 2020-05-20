@@ -8,9 +8,8 @@
  :paths ["src" "resources"]
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {org.clojure/test.check {:mvn/version "0.10.0"}
-                               lambdaisland/kaocha {:mvn/version "0.0-529"}
-                               lambdaisland/kaocha-cljs {:mvn/version "0.0-40"}
-                               lambdaisland/kaocha-junit-xml {:mvn/version "0.0-70"}
+                               lambdaisland/kaocha {:mvn/version "1.0-612"}
+                               lambdaisland/kaocha-cljs {:mvn/version "0.0-71"}
                                com.gfredericks/test.chuck {:mvn/version "0.2.10"}}}
            :readme {:extra-deps {seancorfield/readme {:mvn/version "1.0.13"}}
                     :main-opts ["-m" "seancorfield.readme"]}}}

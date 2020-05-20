@@ -1,5 +1,5 @@
 (ns inferenceql.query-test
-  (:import [clojure.lang ExceptionInfo])
+  #?(:clj (:import [clojure.lang ExceptionInfo]))
   (:require [clojure.string :as string]
             [clojure.test :as test :refer [are deftest is testing]]
             [clojure.test.check.clojure-test :refer [defspec]]
