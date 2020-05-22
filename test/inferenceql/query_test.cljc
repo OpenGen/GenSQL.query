@@ -224,6 +224,13 @@
     (let [query "SELECT * FROM data WHERE x=0 AND x=1 OR x=0"]
       (is (= [{:x 0}] (query/q query [{:x 0} {:x 1}]))))))
 
+(deftest conditions-predicate
+  (let [query "SELECT * FROM data WHERE x>0"
+        table [{:x -1}
+               {:x  0}
+               {:x  1}]]
+    (is (= [{:x 1}] (query/q query table)))))
+
 ;; Probabilities
 
 (deftest probability-of-bindings

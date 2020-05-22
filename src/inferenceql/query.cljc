@@ -65,19 +65,16 @@
         (gpm/simulate gpm merged-targets merged-constraints n-samples)))))
 
 (def default-environment
-  (merge
-   #?(:clj {'clojure.core/merge merge}
-      :cljs {'cljs.core/merge merge})
-   {`math/exp math/exp
-    `clojure.core/merge clojure.core/merge
-    `datascript.core/pull datascript.core/pull
-    `inferenceql.inference.gpm/logpdf inferenceql.inference.gpm/logpdf
+  {`math/exp math/exp
+   `merge merge
+   `d/pull d/pull
+   `gpm/logpdf gpm/logpdf
 
-    `clojure.core/=  =
-    `clojure.core/>  >
-    `clojure.core/>= >=
-    `clojure.core/<  <
-    `clojrue.core/<= <=}))
+   `=  =
+   `>  >
+   `>= >=
+   `<  <
+   `<= <=})
 
 (def input-symbols
   (->> default-environment
@@ -264,10 +261,13 @@
    :equality-condition  (fn [c v] [[entity-var c v]])
 
    :predicate symbol
-   :predicate-condition (fn [c p v]
-                          (let [sym (genvar)]
-                            [[entity-var c sym]
-                             [(list (symbol "clojure.core" (name p)) sym v)]]))})
+   :predicate-condition (fn [column predicate value]
+                          (let [sym (genvar)
+                                function (symbol #?(:clj "clojure.core"
+                                                    :cljs "cljs.core")
+                                                 (name predicate))]
+                            [[entity-var column sym]
+                             [(list function sym value)]]))})
 
 (defn condition-clauses
   "Returns a sequence of Datalog `:where` clauses for the conditions ."
