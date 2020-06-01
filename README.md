@@ -2,6 +2,31 @@
 
 ## Usage
 
+### Command-line interface
+
+`inferenceql.query` provides a simple command-line application that allows the user to manually enter and execute InferenceQL queries. It can be launched with the following command:
+
+```bash
+% clj -m inferenceql.query.main --help
+  -d, --data DATA    data CSV path
+  -m, --model MODEL  model EDN path
+  -h, --help
+```
+
+`path` may be either a local file name or a URI.
+
+```
+% clj -m inferenceql.query.main --data data.csv --model model.edn
+```
+
+```
+% clj -m inferenceql.query.main --data https://bcomp.pro/elephantdata --model https://bcomp.pro/elephantdata
+```
+
+Unlike the Clojure interface, the command-line interface currently only supports categorical columns and variables with string categories.
+
+### Clojure interface
+
 ```clojure
 (require '[inferenceql.query :as query])
 ```
@@ -11,6 +36,10 @@
 1. a query to be executed, a string
 2. a data table, a possibly empty vector of maps
 3. (optional) models, a map from model names to model values
+
+See below for usage examples.
+
+## Language
 
 ### `SELECT`
 
