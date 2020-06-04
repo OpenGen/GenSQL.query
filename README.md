@@ -1,4 +1,6 @@
 # inferenceql.query
+![tests](https://github.com/probcomp/inferenceql.query/workflows/tests/badge.svg)
+![linter](https://github.com/probcomp/inferenceql.query/workflows/linter/badge.svg)
 
 ## Usage
 
