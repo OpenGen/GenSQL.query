@@ -22,7 +22,7 @@
 ```
 
 ```
-% clj -m inferenceql.query.main --data https://bcomp.pro/elephantdata --model https://bcomp.pro/elephantdata
+% clj -m inferenceql.query.main --data https://bcomp.pro/elephantdata --model https://bcomp.pro/elephantmodel
 ```
 
 Unlike the Clojure interface, the command-line interface currently only supports categorical columns and variables with string categories.
