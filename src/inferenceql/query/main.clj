@@ -8,7 +8,7 @@
             [clojure.tools.cli :as cli]
             [instaparse.core :as insta]
             [inferenceql.query :as query]
-            [inferenceql.inference.multimixture.search :as search]))
+            [inferenceql.inference.gpm :as gpm]))
 
 (def cli-options
   [["-d" "--data DATA" "data CSV path"]
@@ -20,7 +20,7 @@
   specification, and from that specification creates a multimixture model. See
   `clojure.java.io/reader` for a complete list of supported arguments."
   [x]
-  (-> (slurp x) (edn/read-string) (search/optimized-row-generator)))
+  (-> (slurp x) (edn/read-string) (gpm/Multimixture)))
 
 (defn slurp-csv
   "Opens a reader on x, reads its contents, parses its contents as a table, and
