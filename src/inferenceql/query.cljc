@@ -54,12 +54,12 @@
   (assert map? constrain-constraints)
 
   (reify gpm.proto/GPM
-    (logpdf [this logpdf-targets logpdf-constraints _]
+    (logpdf [this logpdf-targets logpdf-constraints]
       (let [merged-targets (select-keys logpdf-targets constrain-targets)
             merged-constraints (merge constrain-constraints logpdf-constraints)]
         (gpm/logpdf gpm merged-targets merged-constraints)))
 
-    (simulate [this simulate-targets simulate-constraints n-samples _]
+    (simulate [this simulate-targets simulate-constraints n-samples]
       (let [merged-targets (set/intersection (set constrain-targets) (set simulate-targets))
             merged-constraints (merge constrain-constraints simulate-constraints)]
         (gpm/simulate gpm merged-targets merged-constraints n-samples)))))

@@ -22,6 +22,17 @@
   [x]
   (-> (slurp x) (edn/read-string) (gpm/Multimixture)))
 
+(defn model
+  "Attempts to coerce `x` into a model. `x` must either return a multimixture
+  specification when read with `clojure.java.io/reader` or be a valid
+  `inferenceql.inference.gpm/http` server. "
+  [x]
+  (try (slurp-model x)
+       (catch java.io.FileNotFoundException e
+         (if (re-find #"https?://" x)
+           (gpm/http x)
+           (throw e)))))
+
 (defn slurp-csv
   "Opens a reader on x, reads its contents, parses its contents as a table, and
   then converts that table into a vector of maps. See `clojure.java.io/reader`
@@ -74,15 +85,15 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {:keys [data model help]} options]
+        {url :model, :keys [data help]} options]
     (cond (seq errors)
           (doseq [error errors]
             (errorln error))
 
-          (or help (nil? data) (nil? model))
+          (or help (nil? data) (nil? url))
           (errorln summary)
 
           :else
           (let [data (slurp-csv data)
-                model (slurp-model model)]
+                model (model url)]
             (repl data {:model model})))))
