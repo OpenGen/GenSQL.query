@@ -3,6 +3,9 @@
         org.clojure/spec.alpha {:mvn/version "0.2.187"}
         datascript {:mvn/version "0.18.8"}
         instaparse {:mvn/version "1.4.10"}
+        metosin/muuntaja {:mvn/version "0.6.7"}
+        ring/ring-core {:mvn/version "1.8.1"}
+        ring/ring-jetty-adapter {:mvn/version "1.6.3"}
         probcomp/inferenceql.inference {:git/url "git@github.com:probcomp/inferenceql.inference.git"
                                         :sha "5169be4c15fbed41a65971b84ffacfbd7e25df37"}
         probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git"
