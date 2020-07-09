@@ -33,11 +33,7 @@
                            400
                            500)]
               {:status status
-               ;; We need `select-keys` here because otherwise
-               ;; `:instaparse/failure` will be included, and Instaparse failure
-               ;; objects do not serialize correctly.
-               :body (select-keys ex-data [:cognitect.anomalies/category
-                                           :cognitect.anomalies/message])})))))))
+               :body (update ex-data :instaparse/failure pr-str)})))))))
 
 (defn app
   "Returns a Ring handler that executes queries against the provied data and

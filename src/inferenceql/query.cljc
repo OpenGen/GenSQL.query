@@ -392,5 +392,5 @@
        (execute (transform result) rows models)
        (let [failure (insta/get-failure result)
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
-                     :inferenceql.query.instaparse/failure failure}]
+                     :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))
