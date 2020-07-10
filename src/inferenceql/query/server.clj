@@ -3,6 +3,7 @@
   to `inferenceql.query/q`."
   (:require [clojure.string :as string]
             [muuntaja.middleware :as middleware]
+            [ring.middleware.cors :as cors]
             [ring.util.request :as request]
             [inferenceql.query :as query]))
 
@@ -42,4 +43,7 @@
   application/tarnsit+msgpack. For all but the first content type the query is
   expected to be provided as a string."
   [data models]
-  (middleware/wrap-format (handler data models)))
+  (-> (handler data models)
+      (cors/wrap-cors :access-control-allow-origin (constantly true)
+                      :access-control-allow-methods [:post])
+      (middleware/wrap-format)))
