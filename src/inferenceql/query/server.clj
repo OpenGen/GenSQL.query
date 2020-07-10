@@ -25,8 +25,10 @@
         {:status 400
          :body {:request request}}
         (try
-          {:status 200
-           :body (query/q query data models)}
+          (let [result (query/q query data models)]
+            {:status 200
+             :body {:result result
+                    :metadata (meta result)}})
           (catch clojure.lang.ExceptionInfo e
             (let [ex-data (ex-data e)
                   status (if (= :cognitect.anomalies/incorrect
