@@ -3,6 +3,7 @@
   `inferenceql.query.server`."
   (:require [clojure.tools.cli :as cli]
             [ring.adapter.jetty :as jetty]
+            [inferenceql.query.data :as data]
             [inferenceql.query.main :as main]
             [inferenceql.query.server :as server]))
 
@@ -25,8 +26,9 @@
           (main/errorln summary)
 
           :else
-          (let [data (main/slurp-csv data)
-                model (main/model url)
+          (let [model (main/model url)
+                row-coercer (data/row-coercer (get-in model [:model :vars]))
                 models {:model model}
+                data (mapv row-coercer (main/slurp-csv data))
                 app (server/app data models)]
             (jetty/run-jetty app {:port 3000 :join? false})))))

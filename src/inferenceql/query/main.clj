@@ -8,6 +8,7 @@
             [clojure.tools.cli :as cli]
             [instaparse.core :as insta]
             [inferenceql.query :as query]
+            [inferenceql.query.data :as data]
             [inferenceql.inference.gpm :as gpm]))
 
 (def cli-options
@@ -94,6 +95,7 @@
           (errorln summary)
 
           :else
-          (let [data (slurp-csv data)
-                model (model url)]
+          (let [model (model url)
+                row-coercer (data/row-coercer (get-in model [:model :vars]))
+                data (mapv row-coercer (slurp-csv data))]
             (repl data {:model model})))))
