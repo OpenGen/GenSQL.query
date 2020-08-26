@@ -52,6 +52,7 @@
                             (gen/vector (gen/frequency [[20 gen/char-alpha-numeric]
                                                         [1 (gen/return \-)]]))))
        (gen/fmap #(apply str %))
+       (gen/such-that #(not (string/starts-with? % "G__")))
        (gen/fmap symbol)))
 
 (def gen-column
@@ -100,6 +101,13 @@
   (prop/for-all [sym gen-symbol]
     (let [s (pr-str sym)]
       (is (= sym (parse-and-transform-literals s :start :symbol))))))
+
+(defspec symbol-genvar-relationship
+  ;; This invariant is utilized by the function
+  ;; `inferenceql.query/free-variables`.
+  (testing "Symbols can't begin with `inferenceql.query/genvar` prefix."
+    (prop/for-all [s (gen/fmap #(str "G__" %) gen/string)]
+      (is (insta/failure? (query/parse s :start :symbol))))))
 
 ;;; Column parsing
 
@@ -223,6 +231,16 @@
   (testing "OR has higher precedence than AND"
     (let [query "SELECT * FROM data WHERE x=0 AND x=1 OR x=0"]
       (is (= [{:x 0}] (query/q query [{:x 0} {:x 1}]))))))
+
+(deftest conditions-or-multi-clause-subcondition
+  (let [query "SELECT * FROM data WHERE x>0 OR y>0"]
+    (is (= [{:x 1 :y 0}
+            {:x 0 :y 1}
+            {:x 1 :y 1}]
+           (query/q query [{:x 0 :y 0}
+                           {:x 1 :y 0}
+                           {:x 0 :y 1}
+                           {:x 1 :y 1}])))))
 
 (deftest conditions-predicate
   (let [query "SELECT * FROM data WHERE x>0"

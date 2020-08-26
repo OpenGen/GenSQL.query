@@ -71,7 +71,7 @@ float               ::= #'-?\d+\.\d+(E-?\d+)?'
 int                 ::= #'-?\d+'
 nat                 ::= #'\d+'
 string              ::= #'\"([^\"]+)\"'
-symbol              ::= #'[a-zA-Z][\w\-]*'
+symbol              ::= #'(?!G__)[a-zA-Z][\w\-]*'
 
 (* Order by *)
 

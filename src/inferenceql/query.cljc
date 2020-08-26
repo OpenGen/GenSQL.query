@@ -12,6 +12,7 @@
             [instaparse.core :as insta]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.inference.gpm.proto :as gpm.proto]
+            [inferenceql.query.datalog :as datalog]
             [inferenceql.query.math :as math]))
 
 (def entity-var '?entity)
@@ -44,6 +45,11 @@
    (variable (gensym)))
   ([prefix-string]
    (variable (gensym prefix-string))))
+
+(defn genvar?
+  "Returns `true` if `var` was generated with `genvar`."
+  [var]
+  (string/starts-with? (name var) "?G__"))
 
 (defn constrain
   "Constrains the provided generative probabilistic model such that it only
@@ -251,14 +257,37 @@
 
 ;;; Conditions
 
+(defn add-free-variables
+  "Given an `or-join` form like
+
+    (or-join <join-vars> <subcond1> <subcond2>)
+
+  adds to `<join-vars>` the variables from the subclauses that were not generated
+  with `genvar`. Variables generated with `genvar` are presumed to not be needed
+  outside the `or-join`."
+  [form]
+  (let [free-variables (into []
+                             (comp (remove genvar?)
+                                   (distinct))
+                             (datalog/free-variables form))]
+    (-> (vec form)
+        (update 1 into free-variables)
+        (update 1 distinct)
+        (update 1 vec)
+        (seq))))
+
 (def condition-transformations
-  {:presence-condition (fn [c] [[entity-var c '_]])
-   :absence-condition  (fn [c] `[[(~'missing? ~'$ ~entity-var ~c)]])
+  "Keys are condition node tags. Values are functions that accept nodes of that
+  type and return a datalog clause."
+  {:presence-condition (fn [c] [entity-var c '_])
+   :absence-condition  (fn [c] `[(~'missing? ~'$ ~entity-var ~c)])
 
-   :and-condition (fn [cs1 cs2] `[(~'and ~@cs1 ~@cs2)])
-   :or-condition (fn [cs1 cs2] `[(~'or ~@cs1 ~@cs2)])
+   :and-condition (fn [cs1 cs2] `(~'and ~@cs1 ~@cs2))
+   :or-condition (fn [cs1 cs2]
+                   (add-free-variables
+                    `(~'or-join [] ~cs1 ~cs2)))
 
-   :equality-condition  (fn [c v] [[entity-var c v]])
+   :equality-condition  (fn [c v] [entity-var c v])
 
    :predicate symbol
    :predicate-condition (fn [column predicate value]
@@ -266,13 +295,19 @@
                                 function (symbol #?(:clj "clojure.core"
                                                     :cljs "cljs.core")
                                                  (name predicate))]
-                            [[entity-var column sym]
-                             [(list function sym value)]]))})
+                            `(~'and ~[entity-var column sym]
+                              [(~function ~sym ~value)])))})
 
 (defn condition-clauses
   "Returns a sequence of Datalog `:where` clauses for the conditions ."
   [conditions]
-  (insta/transform condition-transformations conditions))
+  (let [condition (insta/transform condition-transformations conditions)]
+    ;; Inline the subclauses if the top-level clause is an `and`. `and` clauses
+    ;; are only allowed within `or` clauses per the datalog grammar:
+    ;; https://docs.datomic.com/on-prem/query.html#grammar
+    (if (= 'and (first condition))
+      (vec (rest condition))
+      [condition])))
 
 ;;; Parsing
 
@@ -297,10 +332,16 @@
                             (map input-symbols
                                  (vals default-environment)))]
     (-> query-plan
-        (update-in [:query]     #(walk/postwalk-replace input-names %))
+        (update-in [:query] #(walk/postwalk-replace input-names %))
         (update-in [:query :in] into (map input-names replaced-symbols))
-        (update-in [:inputs]    into (map (fn [sym] (vary-meta {:function-name sym} assoc ::node-type :function-lookup))
-                                          replaced-symbols)))))
+        (update-in [:inputs] into (map (fn [sym] (vary-meta {:function-name sym} assoc ::node-type :function-lookup))
+                                       replaced-symbols))
+        (update-in [:query :where] #(walk/postwalk (fn [form]
+                                                     (cond-> form
+                                                       (and (coll? form)
+                                                            (= 'or-join (first form)))
+                                                       (add-free-variables)))
+                                                   %)))))
 
 (defn query-plan
   "Given a query parse tree returns a query plan for the top-most query.
