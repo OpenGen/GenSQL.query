@@ -228,9 +228,10 @@
              results)))))
 
 (deftest conditions-precdence
-  (testing "OR has higher precedence than AND"
-    (let [query "SELECT * FROM data WHERE x=0 AND x=1 OR x=0"]
-      (is (= [{:x 0}] (query/q query [{:x 0} {:x 1}]))))))
+  (testing "AND has higher precedence than OR"
+    (let [query "SELECT * FROM data WHERE x=0 AND x=1 OR x=1"]
+      (is (= [{:x 1}]
+             (query/q query [{:x 1}]))))))
 
 (deftest conditions-or-multi-clause-subcondition
   (let [query "SELECT * FROM data WHERE x>0 OR y>0"]

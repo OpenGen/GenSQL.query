@@ -188,14 +188,12 @@ Conditions can be joined together with `AND` and `OR`.
 => [{:x 1 :y 1}]
 ```
 
-`OR` has higher precedence than `AND`. Note that this is different from operator precedence in [many implementations of SQL](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-PRECEDENCE).
+`AND` has higher precedence than `OR`.
 
 ```clojure
-(query/q "SELECT * FROM data WHERE x=0 AND x=1 OR x=0"
-         [{:x 0}
-          {:x 1}
-          {:x 2}])
-=> [{:x 0}]
+(query/q "SELECT * FROM data WHERE x=0 AND x=1 OR x=1"
+         [{:x 1}])
+=> [{:x 1}]
 ```
 
 #### `IS NULL`, `IS NOT NULL`

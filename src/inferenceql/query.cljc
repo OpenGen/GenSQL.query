@@ -278,16 +278,22 @@
 
 (def condition-transformations
   "Keys are condition node tags. Values are functions that accept nodes of that
-  type and return a datalog clause."
-  {:presence-condition (fn [c] [entity-var c '_])
-   :absence-condition  (fn [c] `[(~'missing? ~'$ ~entity-var ~c)])
+  type and return a collection of datalog clauses."
+  {:presence-condition (fn [c] [[entity-var c '_]])
+   :absence-condition  (fn [c] `[[(~'missing? ~'$ ~entity-var ~c)]])
 
-   :and-condition (fn [cs1 cs2] `(~'and ~@cs1 ~@cs2))
+   :and-condition (fn [cs1 cs2] `[~@cs1 ~@cs2])
    :or-condition (fn [cs1 cs2]
-                   (add-free-variables
-                    `(~'or-join [] ~cs1 ~cs2)))
+                   (let [andify (fn [subclauses]
+                                  (if (= 1 (count subclauses))
+                                    (first subclauses)
+                                    `(~'and ~@subclauses)))]
+                     [(add-free-variables
+                       `(~'or-join []
+                         ~(andify cs1)
+                         ~(andify cs2)))]))
 
-   :equality-condition  (fn [c v] [entity-var c v])
+   :equality-condition  (fn [c v] [[entity-var c v]])
 
    :predicate symbol
    :predicate-condition (fn [column predicate value]
@@ -295,19 +301,13 @@
                                 function (symbol #?(:clj "clojure.core"
                                                     :cljs "cljs.core")
                                                  (name predicate))]
-                            `(~'and ~[entity-var column sym]
-                              [(~function ~sym ~value)])))})
+                            `[~[entity-var column sym]
+                              [(~function ~sym ~value)]]))})
 
 (defn condition-clauses
-  "Returns a sequence of Datalog `:where` clauses for the conditions ."
-  [conditions]
-  (let [condition (insta/transform condition-transformations conditions)]
-    ;; Inline the subclauses if the top-level clause is an `and`. `and` clauses
-    ;; are only allowed within `or` clauses per the datalog grammar:
-    ;; https://docs.datomic.com/on-prem/query.html#grammar
-    (if (= 'and (first condition))
-      (vec (rest condition))
-      [condition])))
+  "Returns a sequence of Datalog `:where` clauses for the condition."
+  [condition]
+  (insta/transform condition-transformations condition))
 
 ;;; Parsing
 

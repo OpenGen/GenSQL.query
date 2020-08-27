@@ -23,17 +23,17 @@ table-lookup        ::= table-name
 
 (* Conditions *)
 
-(* 'OR' has higher operator precedence than 'AND'. *)
+(* 'AND' has higher operator precedence than 'OR'. *)
 
-conditions          ::= condition (<ws> <'AND'> <ws> condition)*
+conditions          ::= or-condition / and-conditions
+<and-conditions>    ::= condition (<ws> <'AND'> <ws> condition)*
 <condition>         ::= or-condition
                       | presence-condition
                       | absence-condition
                       | equality-condition
                       | predicate-condition
-<subcondition>      ::= and-condition | condition
-or-condition        ::= subcondition <ws> <'OR'> <ws> subcondition
-and-condition       ::= condition (<ws> <'AND'> <ws> condition)+
+and-condition       ::= condition <ws> <'AND'> <ws> condition
+or-condition        ::= (condition | and-condition) <ws> <'OR'> <ws> (condition | and-condition)
 presence-condition  ::= column-name <ws> <'IS NOT NULL'>
 absence-condition   ::= column-name <ws> <'IS NULL'>
 equality-condition  ::= column-name <ws>? <'='> <ws>? value
