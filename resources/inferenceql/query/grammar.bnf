@@ -1,10 +1,10 @@
 (* Queries *)
 
-query               ::= <'SELECT'> <ws> selections
-                        (<ws> <'FROM'> <ws> source)?
-                        (<ws> <'WHERE'> <ws> conditions)?
-                        (<ws> <'ORDER BY'> <ws> ordering)?
-                        (<ws> <'LIMIT'> <ws> limit)?
+query               ::= <#'(?i)SELECT'> <ws> selections
+                        (<ws> <#'(?i)FROM'> <ws> source)?
+                        (<ws> <#'(?i)WHERE'> <ws> conditions)?
+                        (<ws> <#'(?i)ORDER BY'> <ws> ordering)?
+                        (<ws> <#'(?i)LIMIT'> <ws> limit)?
                         <';'>?
 
 (* Selections *)
@@ -13,7 +13,7 @@ selections        ::= star | paren-selection (<','> <ws>? paren-selection)*
 <paren-selection> ::= selection | <'('> selection <')'>
 <selection>       ::= column-selection | probability-of | density-of
 
-column-selection    ::= column-name (<ws> <'AS'> <ws> selection-name)?
+column-selection    ::= column-name (<ws> <#'(?i)AS'> <ws> selection-name)?
 
 (* Sources *)
 
@@ -26,38 +26,38 @@ table-lookup        ::= table-name
 (* 'AND' has higher operator precedence than 'OR'. *)
 
 conditions          ::= or-condition / and-conditions
-<and-conditions>    ::= condition (<ws> <'AND'> <ws> condition)*
+<and-conditions>    ::= condition (<ws> <#'(?i)AND'> <ws> condition)*
 <condition>         ::= or-condition
                       | presence-condition
                       | absence-condition
                       | equality-condition
                       | predicate-condition
-and-condition       ::= condition <ws> <'AND'> <ws> condition
-or-condition        ::= (condition | and-condition) <ws> <'OR'> <ws> (condition | and-condition)
-presence-condition  ::= column-name <ws> <'IS NOT NULL'>
-absence-condition   ::= column-name <ws> <'IS NULL'>
+and-condition       ::= condition <ws> <#'(?i)AND'> <ws> condition
+or-condition        ::= (condition | and-condition) <ws> <#'(?i)OR'> <ws> (condition | and-condition)
+presence-condition  ::= column-name <ws> <#'(?i)IS NOT NULL'>
+absence-condition   ::= column-name <ws> <#'(?i)IS NULL'>
 equality-condition  ::= column-name <ws>? <'='> <ws>? value
 predicate-condition ::= column-name <ws>? predicate <ws>? value
 predicate           ::= (#"<" | #">" | #"<=" | #">=")
 
 (* Generate *)
 
-generate-model      ::= <'GENERATE'> <ws> variable-names
-                        (<ws> <'GIVEN'> <ws> bindings)?
-                        (<ws> <'UNDER'> <ws> model)?
+generate-model      ::= <#'(?i)GENERATE'> <ws> variable-names
+                        (<ws> <#'(?i)GIVEN'> <ws> bindings)?
+                        (<ws> <#'(?i)UNDER'> <ws> model)?
 variable-names      ::= variable-name (<','> <ws> variable-name)*
 bindings            ::= binding (<','> <ws> binding)*
 
 (* Probability *)
 
-probability-of      ::= <'PROBABILITY OF'> <ws> target
-                        (<ws> <'GIVEN'> <ws> constraints)?
-                        (<ws> <'UNDER'> <ws> model)?
-                        (<ws> <'AS'> <ws> selection-name)?
-density-of          ::= <'PROBABILITY DENSITY OF'> <ws> target
-                        (<ws> <'GIVEN'> <ws> constraints)?
-                        (<ws> <'UNDER'> <ws> model)?
-                        (<ws> <'AS'> <ws> selection-name)?
+probability-of      ::= <#'(?i)PROBABILITY OF'> <ws> target
+                        (<ws> <#'(?i)GIVEN'> <ws> constraints)?
+                        (<ws> <#'(?i)UNDER'> <ws> model)?
+                        (<ws> <#'(?i)AS'> <ws> selection-name)?
+density-of          ::= <#'(?i)PROBABILITY DENSITY OF'> <ws> target
+                        (<ws> <#'(?i)GIVEN'> <ws> constraints)?
+                        (<ws> <#'(?i)UNDER'> <ws> model)?
+                        (<ws> <#'(?i)AS'> <ws> selection-name)?
 target              ::= events
 constraints         ::= events
 binding             ::= column-name <ws>? <'='> <ws>? value
@@ -77,8 +77,8 @@ symbol              ::= #'(?!G__)[a-zA-Z][\w\-]*'
 
 ordering            ::= column-name (<ws> direction)?
 direction           ::= (ascending | descending)
-ascending           ::= <'ASC'>
-descending          ::= <'DESC'>
+ascending           ::= <#'(?i)ASC'>
+descending          ::= <#'(?i)DESC'>
 
 (* Limit *)
 
@@ -94,7 +94,7 @@ selection-name      ::= name
 table-name          ::= "data"
 <model-name>        ::= name
 <variable-name>     ::= name
-name                ::= symbol | <'"'> symbol <'"'>
+name                ::= symbol | <#'(?i)"'> symbol <#'(?i)"'>
 
 star                ::= <'*'>
 
