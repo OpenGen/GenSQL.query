@@ -65,10 +65,10 @@
             merged-constraints (merge constrain-constraints logpdf-constraints)]
         (gpm/logpdf gpm merged-targets merged-constraints)))
 
-    (simulate [this simulate-targets simulate-constraints n-samples]
+    (simulate [this simulate-targets simulate-constraints]
       (let [merged-targets (set/intersection (set constrain-targets) (set simulate-targets))
             merged-constraints (merge constrain-constraints simulate-constraints)]
-        (gpm/simulate gpm merged-targets merged-constraints n-samples)))))
+        (gpm/simulate gpm merged-targets merged-constraints)))))
 
 (def default-environment
   {`math/exp math/exp
@@ -387,7 +387,7 @@
     :generated-table (let [target (get-in x [:generate-model :target])
                            gfn (input (:generate-model x) environment)
                            limit (safe-get x :limit)]
-                       (gpm/simulate gfn target {} limit))))
+                       (repeatedly limit #(gpm/simulate gfn target {})))))
 
 (defn execute
   "Like `q`, only operates on a query parse tree rather than a query string."
