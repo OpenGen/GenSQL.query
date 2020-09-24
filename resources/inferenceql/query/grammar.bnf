@@ -1,72 +1,71 @@
 (* Queries *)
 
-query               ::= <#'(?i)SELECT'> <ws> selections
-                        (<ws> <#'(?i)FROM'> <ws> source)?
-                        (<ws> <#'(?i)WHERE'> <ws> conditions)?
-                        (<ws> <#'(?i)ORDER BY'> <ws> ordering)?
-                        (<ws> <#'(?i)LIMIT'> <ws> limit)?
-                        <';'>?
+query               ::= #'(?i)SELECT' ws selections
+                        (ws #'(?i)FROM' ws source)?
+                        (ws #'(?i)WHERE' ws conditions)?
+                        (ws #'(?i)ORDER BY' ws ordering)?
+                        (ws #'(?i)LIMIT' ws limit)?
+                        ';'?
 
 (* Selections *)
 
-selections        ::= star | paren-selection (<','> <ws>? paren-selection)*
-<paren-selection> ::= selection | <'('> selection <')'>
+selections        ::= star | paren-selection (',' ws? paren-selection)*
+<paren-selection> ::= selection | '(' selection ')'
 <selection>       ::= column-selection | probability-of | density-of
 
-column-selection    ::= column-name (<ws> <#'(?i)AS'> <ws> selection-name)?
+column-selection    ::= column-name (ws <#'(?i)AS'> ws selection-name)?
 
 (* Sources *)
 
-source              ::= table-lookup | <'('> query <')'> | generated-table
-generated-table     ::= <'('> generate-model <')'>
-table-lookup        ::= table-name
+source              ::= lookup | '(' query ')' | generated-table
+generated-table     ::= '(' generate-model ')'
 
 (* Conditions *)
 
 (* 'AND' has higher operator precedence than 'OR'. *)
 
 conditions          ::= or-condition / and-conditions
-<and-conditions>    ::= condition (<ws> <#'(?i)AND'> <ws> condition)*
+<and-conditions>    ::= condition (ws #'(?i)AND' ws condition)*
 <condition>         ::= or-condition
                       | presence-condition
                       | absence-condition
                       | equality-condition
                       | predicate-condition
-and-condition       ::= condition <ws> <#'(?i)AND'> <ws> condition
-or-condition        ::= (condition | and-condition) <ws> <#'(?i)OR'> <ws> (condition | and-condition)
-presence-condition  ::= column-name <ws> <#'(?i)IS NOT NULL'>
-absence-condition   ::= column-name <ws> <#'(?i)IS NULL'>
-equality-condition  ::= column-name <ws>? <'='> <ws>? value
-predicate-condition ::= column-name <ws>? predicate <ws>? value
+and-condition       ::= condition ws <#'(?i)AND'> ws condition
+or-condition        ::= (condition | and-condition) ws #'(?i)OR' ws (condition | and-condition)
+presence-condition  ::= column-name ws #'(?i)IS NOT NULL'
+absence-condition   ::= column-name ws #'(?i)IS NULL'
+equality-condition  ::= column-name ws? '=' ws? value
+predicate-condition ::= column-name ws? predicate ws? value
 predicate           ::= (#"<" | #">" | #"<=" | #">=")
 
 (* Generate *)
 
-generate-model      ::= <#'(?i)GENERATE'> <ws> variable-names
-                        (<ws> <#'(?i)GIVEN'> <ws> bindings)?
-                        (<ws> <#'(?i)UNDER'> <ws> model)?
-variable-names      ::= variable-name (<','> <ws> variable-name)*
-bindings            ::= binding (<','> <ws> binding)*
+generate-model      ::= #'(?i)GENERATE' ws variable-names
+                        (ws #'(?i)GIVEN' ws bindings)?
+                        (ws #'(?i)UNDER' ws model)?
+variable-names      ::= variable-name (',' ws variable-name)*
+bindings            ::= binding (',' ws binding)*
 
 (* Probability *)
 
-probability-of      ::= <#'(?i)PROBABILITY OF'> <ws> target
-                        (<ws> <#'(?i)GIVEN'> <ws> constraints)?
-                        (<ws> <#'(?i)UNDER'> <ws> model)?
-                        (<ws> <#'(?i)AS'> <ws> selection-name)?
-density-of          ::= <#'(?i)PROBABILITY DENSITY OF'> <ws> target
-                        (<ws> <#'(?i)GIVEN'> <ws> constraints)?
-                        (<ws> <#'(?i)UNDER'> <ws> model)?
-                        (<ws> <#'(?i)AS'> <ws> selection-name)?
+probability-of      ::= #'(?i)PROBABILITY OF' ws target
+                        (ws #'(?i)GIVEN' ws constraints)?
+                        (ws #'(?i)UNDER' ws model)?
+                        (ws #'(?i)AS' ws selection-name)?
+density-of          ::= <#'(?i)PROBABILITY DENSITY OF'> ws target
+                        (ws #'(?i)GIVEN' ws constraints)?
+                        (ws #'(?i)UNDER' ws model)?
+                        (ws #'(?i)AS' ws selection-name)?
 target              ::= events
 constraints         ::= events
-binding             ::= column-name <ws>? <'='> <ws>? value
-<events>            ::= star | event (<','> <ws>? event)*
+binding             ::= column-name ws? '=' ws? value
+events              ::= star | event (',' ws? event)*
 <event>             ::= binding | column-name
 
 (* Literals *)
 
-<value>             ::= float | int | string
+value               ::= float | int | string
 float               ::= #'-?\d+\.\d+(E-?\d+)?'
 int                 ::= #'-?\d+'
 nat                 ::= #'\d+'
@@ -75,10 +74,10 @@ symbol              ::= #'(?!G__)[a-zA-Z][\w\-]*'
 
 (* Order by *)
 
-ordering            ::= column-name (<ws> direction)?
+ordering            ::= column-name (ws direction)?
 direction           ::= (ascending | descending)
-ascending           ::= <#'(?i)ASC'>
-descending          ::= <#'(?i)DESC'>
+ascending           ::= #'(?i)ASC'
+descending          ::= #'(?i)DESC'
 
 (* Limit *)
 
@@ -86,16 +85,17 @@ limit               ::= nat
 
 (* Shared *)
 
-model               ::= model-lookup | <'('> generate-model <')'>
-model-lookup        ::= model-name
+model               ::= lookup | '(' generate-model ')'
+lookup              ::= name
 
 selection-name      ::= name
-<column-name>       ::= name
-table-name          ::= "data"
-<model-name>        ::= name
-<variable-name>     ::= name
-name                ::= symbol | <#'(?i)"'> symbol <#'(?i)"'>
+column-name         ::= name
+table-name          ::= name
+model-name          ::= name
+variable-name       ::= name
+function-name       ::= name
+name                ::= symbol | <'"'> symbol <'"'>
 
-star                ::= <'*'>
+star                ::= '*'
 
 ws                  ::= #'\s+'

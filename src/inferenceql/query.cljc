@@ -2,6 +2,7 @@
   "This file defines functions for parsing, transforming, and executing IQL-SQL
   queries. The public API for this file is the functions are `q`, `pq`, and
   `query-plan`."
+  (:refer-clojure :exclude [eval])
   #?(:clj (:require [inferenceql.query.io :as io])
      :cljs (:require-macros [inferenceql.query.io :as io]))
   (:require [clojure.edn :as edn]
@@ -10,10 +11,13 @@
             [clojure.walk :as walk]
             [datascript.core :as d]
             [instaparse.core :as insta]
+            [instaparse.combinators :as combinators]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.query.datalog :as datalog]
-            [inferenceql.query.math :as math]))
+            [inferenceql.query.math :as math]
+            [inferenceql.query.node :as node]
+            [inferenceql.query.parse-tree :as tree]))
 
 (def entity-var '?entity)
 (def default-model-key :model)
@@ -88,59 +92,26 @@
        (map (juxt key (comp variable val)))
        (into {})))
 
-;;; Transformation
+;;; Parsing
 
-(defn map-transformer
-  "Returns a transformer for use with `insta/transform` that converts one level of
-  a Hiccup parse trees into a map. Takes as its argument a sequence of keys for
-  the required \"positional\" subtrees for the node.
+(def bnf (io/inline-file "inferenceql/query/grammar.bnf"))
 
-  For example, for a parse tree for node `A` in the grammar
+(def parse
+  "An instaparse parser for IQL SQL queries. The grammar is inlined at macro
+  expansion time so that it can be used in the ClojureScript context where we
+  don't have access to file resources."
+  (insta/parser bnf))
 
-    A = B C? D?
+(def non-terminals (set (keys (combinators/ebnf bnf))))
 
-  would be transformed by `(map-transformer :B)` into a map like
+(def unparse-transformations (zipmap non-terminals (repeat str)))
 
-    {:B ... :C ... :D ...}
+(defn unparse
+  "Returns a string that when parsed by `parse` will yield the provided parse tree."
+  [node]
+  (insta/transform unparse-transformations node))
 
-  where the key `:B` is taken from the argument to `map-transformer`. Keys `:C`
-  and `:D` will be omitted in the resulting map if the corresponding nodes were
-  not present in the parse tree."
-  [& ks]
-  (fn [& children]
-    (let [[req-children opt-children] (split-at (count ks) children)
-          req-map (zipmap ks req-children)
-          opt-map (reduce (fn [acc node]
-                            (if-let [k (::node-type (meta node))]
-                              (assoc acc k node)
-                              (let [[k & vs] node
-                                    v (or (when (coll? vs)
-                                            (if (= 1 (count vs))
-                                              (first vs)
-                                              (vec vs)))
-                                          true)]
-                                (assoc acc k v))))
-                          {}
-                          opt-children)]
-      (merge req-map opt-map))))
-
-(defn iobj?
-  "Returns `true` if the provided value implements `clojure.lang.IObj`. Only
-  values that implement `clojure.lang.IObj` can accept metadata."
-  [x]
-  #?(:clj (instance? clojure.lang.IObj x)
-     :cljs (satisfies? IWithMeta x)))
-
-(defn meta-preserving-transform-map
-  "Takes an `instaparse.core/transform` map and returns one that, in addition to
-  applying the specified transformation, also attaches the non-terminal as
-  metadata under the key `::node-type`."
-  [transform-map]
-  (reduce-kv (fn [m k f]
-               (assoc m k (comp #(cond-> % (iobj? %) (vary-meta assoc ::node-type k))
-                                f)))
-             {}
-             transform-map))
+;;; Literal transformation
 
 (def literal-transformations
   "An `instaparse.core/transform` transform map that transforms literals into
@@ -155,35 +126,10 @@
   "Transforms an InferenceQL parse tree into a map with the same information, but
   in a format that is easier to work with. The output of this function is
   consumed by `execute`."
-  [parse-tree]
-  (let [all-transformations (meta-preserving-transform-map
-                             (merge literal-transformations
-                                    {:query            (map-transformer)
-                                     :probability-of   (map-transformer)
-                                     :density-of       (map-transformer)
-                                     :column-selection (map-transformer :column)
-                                     :generate-model   (map-transformer :target)
-                                     :ordering         (map-transformer :column)
-                                     :table-lookup     (map-transformer :table-name)
-                                     :model-lookup     (map-transformer :model-name)
-                                     :generated-table  (map-transformer)
-
-                                     :name       keyword
-                                     :table-name keyword
-                                     :predicate  symbol
-
-                                     :star       (constantly :star)
-                                     :ascending  (constantly :ascending)
-                                     :descending (constantly :descending)
-
-                                     :selections     vector
-                                     :conditions     vector
-                                     :constraints    vector
-                                     :variable-names vector
-                                     :target         vector
-
-                                     :binding hash-map}))]
-    (insta/transform all-transformations parse-tree)))
+  [node]
+  (let [all-transformations (merge literal-transformations
+                                   {:name keyword})]
+    (insta/transform all-transformations node)))
 
 ;;; Selections
 
@@ -193,24 +139,41 @@
   variable."
   [variable events]
   (let [row-var (genvar "row-events-")
-        row-events (filterv keyword? events)
-        row-clause (cond (= [:star] events) `[(d/pull ~'$ ~'[*]       ~entity-var) ~row-var]
-                         (seq row-events)   `[(d/pull ~'$ ~row-events ~entity-var) ~row-var]
-                         :else              `[(~'ground {})                        ~row-var])
+        {column-nodes :column-name binding-nodes :binding star :star} (group-by node/tag events)
+        column-names (mapv (comp first tree/children) column-nodes)
+
+        row-clause (cond (some? star)       `[(d/pull ~'$ ~'[*]         ~entity-var) ~row-var]
+                         (seq column-names) `[(d/pull ~'$ ~column-names ~entity-var) ~row-var]
+                         :else              `[(~'ground {})                          ~row-var])
 
         binding-sym (genvar "binding-events-")
-        binding-events (transduce (filter map?) merge {} events)
+        binding-map (or (some->> binding-nodes
+                                 (map (fn [node]
+                                        (let [variable (tree/find-child-in node [:column-name])
+                                              value    (tree/find-child-in node [:value])]
+                                          {variable value})))
+                                 (reduce merge))
+                        {})
 
-        event-clause `[(~'ground ~binding-events) ~binding-sym]
+        event-clause `[(~'ground ~binding-map) ~binding-sym]
         merge-clause `[(merge ~row-var ~binding-sym) ~variable]]
     [row-clause event-clause merge-clause]))
 
-(defn density-selection-clauses
-  "Returns the Datalog clauses for a density selection."
-  [{:keys [target constraints model selection-name]}]
-  (let [model (or model {:model-name :model})
+(def hierarchy
+  (-> (make-hierarchy)
+      (derive :probability-of :logpdf-of)
+      (derive :density-of :logpdf-of)))
 
-        selection-name (or selection-name (keyword (gensym "density")))
+(defmulti datalog-clauses node/tag :hierarchy #'hierarchy)
+
+(defmethod datalog-clauses :logpdf-of
+  [node]
+  (let [model (or (tree/find-child-node-in node [:model])
+                  (transform (parse "model" :start :lookup)))
+
+        selection-name (or (tree/find-child-in node [:selection-name])
+                           (keyword (gensym "density")))
+
         log-density-var (variable (str "log-" (name selection-name)))
         density-var (variable selection-name)
 
@@ -218,8 +181,8 @@
         target-var      (genvar "target-")
         constraints-var (genvar "constraints-")
 
-        target-clauses      (events-clauses target-var      target)
-        constraints-clauses (events-clauses constraints-var constraints)
+        target-clauses      (events-clauses target-var      (tree/find-children-in node [:target      :events]))
+        constraints-clauses (events-clauses constraints-var (tree/find-children-in node [:constraints :events]))
 
         logpdf-clauses `[[(gpm/logpdf ~model-var ~target-var ~constraints-var) ~log-density-var]
                          [(math/exp ~log-density-var) ~density-var]]]
@@ -229,30 +192,24 @@
      :inputs [model]
      :where  (reduce into [target-clauses constraints-clauses logpdf-clauses])}))
 
-(defn column-selection-clauses
-  "Returns the `:find` and `:where` clauses for a `:column-selection` parse tree
-  node as a map."
-  [{:keys [column selection-name]}]
-  (let [name (name (or selection-name column))
+(defmethod datalog-clauses :column-selection
+  [node]
+  (let [column (tree/find-child-in node [:column-name])
+        name (name (or (tree/find-child-in node [:selection-name])
+                       column))
         variable (variable name)]
     {:name [(keyword name)]
      :find [variable]
      :where `[[(~'get-else ~'$ ~entity-var ~column :iql/no-value) ~variable]]}))
 
-(defn selection-clauses
-  [selection]
-  (case (safe-get (meta selection) ::node-type)
-    :column-selection (column-selection-clauses selection)
-    :probability-of   (density-selection-clauses selection)
-    :density-of       (density-selection-clauses selection)))
-
-(defn selections-clauses
-  [selections]
+(defmethod datalog-clauses :selections
+  [node]
   (merge-with into {:where [[entity-var :iql/type :iql.type/row]]}
-              (if (= [:star] selections)
+              (if (tree/find-tag node :star)
                 {:find `[[(~'pull ~entity-var [~'*]) ~'...]]}
-                (->> selections
-                     (map selection-clauses)
+                (->> (tree/children node)
+                     (filter #(contains? #{:column-selection :probability-of :density-of} (node/tag %)))
+                     (map datalog-clauses)
                      (apply merge-with into {:find [entity-var]})))))
 
 ;;; Conditions
@@ -276,46 +233,63 @@
         (update 1 vec)
         (seq))))
 
-(def condition-transformations
-  "Keys are condition node tags. Values are functions that accept nodes of that
-  type and return a collection of datalog clauses."
-  {:presence-condition (fn [c] [[entity-var c '_]])
-   :absence-condition  (fn [c] `[[(~'missing? ~'$ ~entity-var ~c)]])
+(defmethod datalog-clauses :conditions
+  [node]
+  (->> (tree/children node)
+       (filter tree/branch?)
+       (map datalog-clauses)
+       (apply merge-with into)))
 
-   :and-condition (fn [cs1 cs2] `[~@cs1 ~@cs2])
-   :or-condition (fn [cs1 cs2]
-                   (let [andify (fn [subclauses]
-                                  (if (= 1 (count subclauses))
-                                    (first subclauses)
-                                    `(~'and ~@subclauses)))]
-                     [(add-free-variables
-                       `(~'or-join []
-                         ~(andify cs1)
-                         ~(andify cs2)))]))
+(defmethod datalog-clauses :presence-condition
+  [node]
+  (let [attribute (tree/find-child-in node [:column-name])]
+    {:where [[entity-var attribute '_]]}))
 
-   :equality-condition  (fn [c v] [[entity-var c v]])
+(defmethod datalog-clauses :absence-condition
+  [node]
+  (let [attribute (tree/find-child-in node [:column-name])]
+    {:where `[[(~'missing? ~'$ ~entity-var ~attribute)]]}))
 
-   :predicate symbol
-   :predicate-condition (fn [column predicate value]
-                          (let [sym (genvar)
-                                function (symbol #?(:clj "clojure.core"
-                                                    :cljs "cljs.core")
-                                                 (name predicate))]
-                            `[~[entity-var column sym]
-                              [(~function ~sym ~value)]]))})
+(defmethod datalog-clauses :and-condition
+  [node]
+  (->> (tree/children node)
+       (filter tree/branch?)
+       (map datalog-clauses)
+       (apply merge-with into)))
 
-(defn condition-clauses
-  "Returns a sequence of Datalog `:where` clauses for the condition."
-  [condition]
-  (insta/transform condition-transformations condition))
+(defmethod datalog-clauses :equality-condition
+  [node]
+  (let [attribute (tree/find-child-in node [:column-name])
+        value (tree/find-child-in node [:value])]
+    {:where [[entity-var attribute value]]}))
 
-;;; Parsing
+(defmethod datalog-clauses :or-condition
+  [node]
+  (let [andify (fn [subclauses]
+                 (if (= 1 (count subclauses))
+                   (first subclauses)
+                   `(~'and ~@subclauses)))
+        subclauses (->> (tree/children node)
+                        (filter tree/branch?)
+                        (map datalog-clauses))]
+    (assert (every? #(= [:where] (keys %)) subclauses))
+    (let [where-subclauses (->> subclauses
+                                (map :where)
+                                (map andify))]
+      {:where [(add-free-variables
+                `(~'or-join [] ~@where-subclauses))]})))
 
-(def parse
-  "An instaparse parser for IQL SQL queries. The grammar is inlined at macro
-  expansion time so that it can be used in the ClojureScript context where we
-  don't have access to file resources."
-  (insta/parser (io/inline-file "inferenceql/query/grammar.bnf")))
+(defmethod datalog-clauses :predicate-condition
+  [node]
+  (let [sym (genvar)
+        column    (tree/find-child-in node [:column-name])
+        predicate (tree/find-child-in node [:predicate])
+        value     (tree/find-child-in node [:value])
+        function (symbol #?(:clj "clojure.core"
+                            :cljs "cljs.core")
+                         (name predicate))]
+    {:where `[~[entity-var column sym]
+              [(~function ~sym ~value)]]}))
 
 ;;; Query execution
 
@@ -323,7 +297,8 @@
   "Modifies the provided query plan such that all the symbols that are in the
   default environment are provided as inputs."
   [query-plan]
-  (let [replaced-symbols (->> (select-keys (:query query-plan) [:find :where])
+  (let [lookup-node #(tree/node :lookup [%])
+        replaced-symbols (->> (select-keys (:query query-plan) [:find :where])
                               (tree-seq coll? seq)
                               (filter (set (keys default-environment)))
                               (distinct))
@@ -333,8 +308,7 @@
     (-> query-plan
         (update-in [:query] #(walk/postwalk-replace input-names %))
         (update-in [:query :in] into (map input-names replaced-symbols))
-        (update-in [:inputs] into (map (fn [sym] (vary-meta {:function-name sym} assoc ::node-type :function-lookup))
-                                       replaced-symbols))
+        (update-in [:inputs] into (map lookup-node replaced-symbols))
         (update-in [:query :where] #(walk/postwalk (fn [form]
                                                      (cond-> form
                                                        (and (coll? form)
@@ -342,26 +316,24 @@
                                                        (add-free-variables)))
                                                    %)))))
 
-(defn query-plan
-  "Given a query parse tree returns a query plan for the top-most query.
+;; TODO: Add validation disallowing generate without limit
+;; TODO: Add validation requiring that the source table be "data"
+
+(defn plan
+  "Given a query node returns a query plan for the top-most query.
   Subqueries will not be considered and are handled in a different step by the
   interpreter. See `q` for details."
-  [{:keys [selections source conditions limit] :or {source (with-meta {:table-name :data}
-                                                             {::node-type :table-lookup})}}]
-  (let [{sel-find :find sel-in :in sel-where :where sel-inputs :inputs} (selections-clauses selections)
-        source (cond (not= :generated-table (safe-get (meta source) ::node-type))
-                     source
-
-                     (not limit)
-                     (throw (ex-info "Cannot GENERATE without LIMIT" {}))
-
-                     :else
-                     (assoc source :limit limit))
-        cond-where (mapcat condition-clauses conditions)]
+  [node]
+  (let [{sel-find :find sel-in :in sel-where :where sel-inputs :inputs} (datalog-clauses (tree/find-tag node :selections))
+        source-node (or (tree/find-child-in node [:source])
+                        (-> (parse "data" :start :lookup)
+                            (transform)))
+        condition-nodes (filter tree/branch? (tree/find-children-in node [:conditions]))
+        cond-where (mapcat (comp :where datalog-clauses) condition-nodes)]
     {:query {:find sel-find
              :in (into '[$] sel-in)
              :where (into sel-where cond-where)}
-     :inputs (into [source] sel-inputs)}))
+     :inputs (into [source-node] sel-inputs)}))
 
 (defn iql-db
   "Converts a vector of maps into Datalog database that can be queried with `q`."
@@ -370,55 +342,95 @@
                    rows)]
     (d/db-with (d/empty-db) facts)))
 
-(defn input
-  "Turns an input description, a data description of an input to be provided to
-  the Datalog query, into an actual input."
-  [x environment]
-  (case (get (meta x) ::node-type)
-    :table-lookup    (get environment (:table-name x))
-    :model-lookup    (get environment (:model-name x))
-    :function-lookup (get environment (:function-name x))
-    :generate-model  (let [model (if-let [model-desc (:model x)]
-                                   (input model-desc environment)
-                                   (safe-get environment :model))]
-                       (constrain model
-                                  (get x :target [])
-                                  (get x :bindings {})))
-    :generated-table (let [target (get-in x [:generate-model :target])
-                           gfn (input (:generate-model x) environment)
-                           limit (safe-get x :limit)]
-                       (repeatedly limit #(gpm/simulate gfn target {})))))
+(defmulti eval (fn [node _] (node/tag node)))
 
-(defn execute
-  "Like `q`, only operates on a query parse tree rather than a query string."
-  ([parse-map rows]
-   (execute parse-map rows {}))
-  ([{:keys [selections ordering limit] :as parse-map} rows models]
-   (let [environment (merge default-environment models {:data rows})
-         keyfn (get ordering :column :db/id)
-         cmp (case (get ordering :direction)
-               :ascending compare
-               :descending #(compare %2 %1)
-               nil compare)
-         names (-> selections (selections-clauses) (:name)) ; TODO: fix redundant call to selections-clauses
-         {query :query input-descs :inputs} (inputize (query-plan parse-map))
-         inputs (-> (mapv #(input % environment) input-descs)
-                    (update 0 iql-db))
-         rows (cond->> (apply d/q query inputs)
-                names (map #(zipmap (into [:db/id] names) ; TODO: Can this not be hard-coded?
-                                    %))
-                :always (sort-by keyfn cmp)
-                :always (map #(into {}
-                                    (remove (comp #{:iql/no-value} val))
-                                    %))
-                :always (map #(dissoc % :db/id :iql/type))
-                limit (take limit))
-         metadata (or names
-                      (into []
-                            (comp (mapcat keys)
-                                  (distinct))
-                            rows))]
-     (vary-meta rows assoc :iql/columns metadata))))
+(defmethod eval :binding
+  [node _]
+  (let [variable (tree/find-child-in node [:column-name])
+        value    (tree/find-child-in node [:value])]
+    {variable value}))
+
+(defmethod eval :bindings
+  [node env]
+  (transduce (map #(eval % env))
+             merge
+             (tree/find-all-tag node :binding)))
+
+(defmethod eval :variable-name
+  [node _]
+  (first (tree/children node)))
+
+(defmethod eval :variable-names
+  [node env]
+  (mapv #(eval % env) (tree/find-all-tag node :variable-name)))
+
+(defmethod eval :lookup
+  [node env]
+  (get env (first (tree/children node))))
+
+(defmethod eval :generate-model
+  [node env]
+  (let [model (if-let [model-node (tree/find-child-in node [:model])]
+                (eval model-node env)
+                (safe-get env :model))
+        targets (-> node
+                    (tree/find-in [:variable-names])
+                    (eval env))
+        constraints (or (some-> node
+                                (tree/find-in [:bindings])
+                                (eval env))
+                        {})]
+    (constrain model targets constraints)))
+
+(defmethod eval :generated-table
+  [node env]
+  (let [target (eval (tree/find-in node [:variable-names])
+                     env)
+        constraints (or (some-> (tree/find-in node [:bindings])
+                                (eval env))
+                        {})
+        model (eval (tree/find-child-node-in node [:model])
+                    env)]
+    (repeatedly #(gpm/simulate model target constraints))))
+
+(defn order
+  "Reorders `rows` based on the `:ordering` node `node`. Will order by `:db/id` if
+  `node` is `nil`."
+  [node rows]
+  (let [keyfn (or (keyword (tree/find-child-in node [:column-name]))
+                  :db/id)
+        cmp (case (node/tag (tree/find-child-in node [:direction]))
+              :ascending compare
+              :descending #(compare %2 %1)
+              nil compare)]
+    (sort-by keyfn cmp rows)))
+
+(defmethod eval :query
+  [node env]
+  (let [node (transform node)
+        names (-> (tree/find-tag node :selections)
+                  (datalog-clauses)
+                  (:name)) ; TODO: fix redundant call to selections-clauses
+        {query :query input-nodes :inputs} (inputize (plan node))
+        limit (tree/find-child-in node [:limit])
+        inputs (update (mapv #(eval % env) input-nodes)
+                       0
+                       #(iql-db (cond->> % limit (take limit))))
+        rows (cond->> (apply d/q query inputs)
+               names (map #(zipmap (into [:db/id] names) ; TODO: Can this not be hard-coded?
+                                   %))
+               :always (order (tree/find-tag node :ordering))
+               :always (map #(into {}
+                                   (remove (comp #{:iql/no-value} val))
+                                   %))
+               :always (map #(dissoc % :db/id :iql/type))
+               limit (take limit))
+        metadata (or names
+                     (into []
+                           (comp (mapcat keys)
+                                 (distinct))
+                           rows))]
+    (vary-meta rows assoc :iql/columns metadata)))
 
 (defn q
   "Returns the result of executing a query on a set of rows. A registry
@@ -427,10 +439,11 @@
   ([query rows]
    (q query rows {}))
   ([query rows models]
-   (let [result (parse query)]
-     (if-not (insta/failure? result)
-       (execute (transform result) rows models)
-       (let [failure (insta/get-failure result)
+   (let [node-or-failure (parse query)]
+     (if-not (insta/failure? node-or-failure)
+       (let [env (merge default-environment models {:data rows})]
+         (eval node-or-failure env))
+       (let [failure (insta/get-failure node-or-failure)
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                      :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))

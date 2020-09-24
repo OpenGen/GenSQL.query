@@ -8,6 +8,7 @@
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [instaparse.core :as insta]
             [inferenceql.query :as query]
+            [inferenceql.query.parse-tree :as tree]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.inference.gpm.multimixture.specification :as mmix.spec]))
 
@@ -49,7 +50,7 @@
 (def gen-symbol
   (->> (gen/tuple gen/char-alpha
                   (gen/fmap string/join
-                            (gen/vector (gen/frequency [[20 gen/char-alpha-numeric]
+                            (gen/vector (gen/frequency [[20 gen/char-alphanumeric]
                                                         [1 (gen/return \-)]]))))
        (gen/fmap #(apply str %))
        (gen/such-that #(not (string/starts-with? % "G__")))
@@ -62,7 +63,7 @@
   "Generator for full \"tables\" (vectors of maps). Each row will have keys drawn
   from a consistent subset, and the values for each key will be drawn from a
   fixed generator."
-  (let [value-generators [gen/small-integer gen/nat gen/int]]
+  (let [value-generators [gen/small-integer gen/nat gen/small-integer]]
     (gen/bind (gen/map gen-column (gen/elements value-generators))
               (comp gen/vector gen-row))))
 
@@ -93,7 +94,7 @@
       (is (= n (parse-and-transform-literals s :start :nat))))))
 
 (defspec int-parsing
-  (prop/for-all [n gen/int]
+  (prop/for-all [n gen/small-integer]
     (let [s (pr-str n)]
       (is (= n (parse-and-transform-literals s :start :int))))))
 
@@ -351,3 +352,17 @@
   (try (query/q "invalid query" [])
        (catch ExceptionInfo e
          (is (= :cognitect.anomalies/incorrect (:cognitect.anomalies/category (ex-data e)))))))
+
+;;; Unparse
+
+(deftest unparse
+  (let [query "SELECT x, y, z FROM data;"]
+    (is (= query
+           (-> query
+               (query/parse)
+               (query/unparse))))
+    (is (= "x, y, z"
+           (-> query
+               (query/parse)
+               (tree/find-tag :selections)
+               (query/unparse))))))
