@@ -83,48 +83,48 @@
 
 ;;; Literals
 
-(defn parse-and-transform-literals
+(defn parse-and-eval
   [& args]
-  (->> (apply query/parse args)
-       (insta/transform query/literal-transformations)))
+  (-> (apply query/parse args)
+      (query/eval {})))
 
-(defspec nat-parsing
+(defspec nat-evaluation
   (prop/for-all [n gen/nat]
     (let [s (pr-str n)]
-      (is (= n (parse-and-transform-literals s :start :nat))))))
+      (is (= n (parse-and-eval s :start :nat))))))
 
-(defspec int-parsing
+(defspec int-evaluation
   (prop/for-all [n gen/small-integer]
     (let [s (pr-str n)]
-      (is (= n (parse-and-transform-literals s :start :int))))))
+      (is (= n (parse-and-eval s :start :int))))))
 
-(defspec symbol-parsing
+(defspec symbol-evaluation
   (prop/for-all [sym gen-symbol]
     (let [s (pr-str sym)]
-      (is (= sym (parse-and-transform-literals s :start :symbol))))))
+      (is (= sym (parse-and-eval s :start :simple-symbol))))))
 
 (defspec symbol-genvar-relationship
   ;; This invariant is utilized by the function
   ;; `inferenceql.query/free-variables`.
   (testing "Symbols can't begin with `inferenceql.query/genvar` prefix."
     (prop/for-all [s (gen/fmap #(str "G__" %) gen/string)]
-      (is (insta/failure? (query/parse s :start :symbol))))))
+      (is (insta/failure? (query/parse s :start :simple-symbol))))))
 
-;;; Column parsing
+;;; Name
 
-(deftest column-name-parsing
+(deftest name-parsing
   (testing "valid"
-    (are [s] (not (insta/failure? (query/parse s :start :column-name)))
+    (are [s] (not (insta/failure? (query/parse s :start :name)))
       "a"
       "A"
       "a0"
       "a0a"
       "a-"
-      "a-a"))
+      "a-a"
+      "a?"))
   (testing "invalid"
-    (are [s] (insta/failure? (query/parse s :start :column-name))
-      "0a"
-      "-a")))
+    (are [s] (insta/failure? (query/parse s :start :name))
+      "0a")))
 
 ;; Float parsing is a bit different in CLJS. Among other things, whole-numbered
 ;; floats are printed without a decimal point. Someone should come back and try
@@ -132,17 +132,17 @@
 #?(:clj (defspec float-parsing
           (prop/for-all [n (gen/double* {:infinite? false :NaN? false})]
             (let [s (pr-str n)]
-              (is (== n (parse-and-transform-literals s :start :float)))))))
+              (is (== n (parse-and-eval s :start :float)))))))
 
 ;;; Query parsing success/failure
 
 (deftest parsing-success
   (are [start query] (nil? (insta/get-failure (query/parse query :start start)))
-    :query "SELECT * FROM data"))
+    :select-expr "SELECT * FROM data"))
 
 (deftest parsing-failure
   (are [start query] (some? (insta/get-failure (query/parse query :start start)))
-    :query "123abc"))
+    :select-expr "123abc"))
 
 ;;; Basic selection
 
@@ -364,5 +364,5 @@
     (is (= "x, y, z"
            (-> query
                (query/parse)
-               (tree/find-tag :selections)
+               (tree/get-node-in [:select-clause :select-list])
                (query/unparse))))))

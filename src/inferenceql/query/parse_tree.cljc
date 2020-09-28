@@ -1,21 +1,25 @@
 (ns inferenceql.query.parse-tree
-  (:refer-clojure :exclude [find])
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [inferenceql.query.node :as node]))
 
 (defn branch?
+  "Returns true if `node` could have children (but may not)."
   [node]
   (vector? node))
 
 (defn node
+  "Creates a new node."
   [tag children]
   (into [tag] children))
 
 (defn tag
+  "Returns the tag, or node type, of `node`."
   [node]
   (when (branch? node)
     (first node)))
 
 (defn whitespace?
+  "Returns `true` if `node` is a whitespace node. `false` otherwise."
   [node]
   (or (and (branch? node)
            (= :ws (tag node)))
@@ -23,12 +27,19 @@
            (string/blank? node))))
 
 (defn children
+  "Returns `node`'s children."
   [node]
   (into []
         (remove whitespace?)
         (rest node)))
 
+(defn child-nodes
+  "Returns the children of `node` that are themselves nodes."
+  [node]
+  (filter branch? (children node)))
+
 (defn only-child
+  "Returns the only child of `node`. Throws if `node` does not have one child."
   [node]
   (let [children (children node)]
     (if-not (= 1 (count children))
@@ -36,39 +47,30 @@
                       {:node node}))
       (first children))))
 
-(defn find-all
-  [node pred]
-  (filter pred (tree-seq branch? children node)))
+(defn get-node
+  "Returns the first child of `node` with tag `k` if `k` is a keyword, or returns
+  the `k`th child if `k` is a natural number."
+  ([node k]
+   (get-node node k nil))
+  ([node k not-found]
+   (let [children (child-nodes node)]
+     (cond (keyword? k) (nth (filter #(node/has-tag? % k) children)
+                             0
+                             not-found)
+           (nat-int? k) (nth (child-nodes node) k not-found)))))
 
-(defn find
-  [node pred]
-  (first (find-all node pred)))
-
-(defn find-all-tag
-  [node tag]
-  (find-all node #(= tag (inferenceql.query.parse-tree/tag %))))
-
-(defn find-tag
-  [node tag]
-  (find node #(= tag (inferenceql.query.parse-tree/tag %))))
-
-(defn find-in
-  [node tags]
-  (reduce find-tag node tags))
-
-(defn find-child-in
-  [node tags]
-  (some-> (find-in node tags)
-          (children)
-          (first)))
-
-(defn find-child-node-in
-  [node tags]
-  (when-let [children (some-> (find-in node tags)
-                              (children))]
-    (first (filter branch? children))))
-
-(defn find-children-in
-  [node tags]
-  (some-> (find-in node tags)
-          (children)))
+(defn get-node-in
+  "Like `get-in`, but descends via `get-node` instead of `get`."
+  ([node ks]
+   (get-node-in node ks nil))
+  ([node ks not-found]
+   (loop [sentinel #?(:clj (Object.)
+                      :cljs (js-obj))
+          node node
+          ks (seq ks)]
+     (if ks
+       (let [child (get-node node (first ks) sentinel)]
+         (if (identical? sentinel child)
+           not-found
+           (recur sentinel child (next ks))))
+       node))))
