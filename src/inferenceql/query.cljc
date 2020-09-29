@@ -234,9 +234,9 @@
   (let [column (-> node
                    (tree/get-node :column-expr)
                    (eval env))
-        key (or (some-> (tree/get-node-in node [:label-clause :name])
-                        (eval env))
-                (symbol column))
+        key (symbol (or (some-> (tree/get-node-in node [:label-clause :name])
+                                (eval env))
+                        column))
         variable (variable key)]
     {:find [variable]
      :keys [key]

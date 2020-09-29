@@ -5,6 +5,7 @@
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
+            [clojure.walk :as walk]
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [instaparse.core :as insta]
             [inferenceql.query :as query]
@@ -57,6 +58,9 @@
        (gen/fmap symbol)))
 
 (def gen-column
+  (gen/fmap keyword gen-symbol))
+
+(def gen-label
   (gen/fmap keyword gen-symbol))
 
 (def gen-table
@@ -366,3 +370,14 @@
                (query/parse)
                (tree/get-node-in [:select-clause :select-list])
                (query/unparse))))))
+
+;;; Labels
+
+(defspec column-label
+  (prop/for-all [[table column] gen-table-col
+                 label gen-label]
+    (is (= (->> table
+                (map #(select-keys % [column]))
+                (map #(walk/postwalk-replace {column label} %)))
+           (query/q (str "SELECT " (name column) " AS " (name label) " FROM data")
+                    table)))))
