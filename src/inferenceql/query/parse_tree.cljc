@@ -53,14 +53,16 @@
   ([node k]
    (get-node node k nil))
   ([node k not-found]
-   (let [children (child-nodes node)]
-     (cond (keyword? k) (nth (filter #(node/has-tag? % k) children)
-                             0
-                             not-found)
-           (nat-int? k) (nth (child-nodes node) k not-found)))))
+   (when (branch? node)
+     (let [children (child-nodes node)]
+       (cond (keyword? k) (nth (filter #(node/has-tag? % k) children)
+                               0
+                               not-found)
+             (nat-int? k) (nth (child-nodes node) k not-found))))))
 
 (defn get-node-in
-  "Like `get-in`, but descends via `get-node` instead of `get`."
+  "Like `get-in`, but descends via `get-node` instead of `get`. Will skip multiple
+  consecutive instances of each `k` if necessary."
   ([node ks]
    (get-node-in node ks nil))
   ([node ks not-found]
@@ -68,9 +70,12 @@
                       :cljs (js-obj))
           node node
           ks (seq ks)]
-     (if ks
+     (if-not ks
+       node
        (let [child (get-node node (first ks) sentinel)]
          (if (identical? sentinel child)
-           not-found
-           (recur sentinel child (next ks))))
-       node))))
+           (let [child (get-node node (tag node) sentinel)]
+             (if (identical? sentinel child)
+               not-found
+               (recur sentinel child ks)))
+           (recur sentinel child (next ks))))))))

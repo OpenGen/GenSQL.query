@@ -364,9 +364,6 @@
                                                        (add-free-variables)))
                                                    %)))))
 
-;; TODO: Add validation disallowing generate without limit
-;; TODO: Add validation requiring that the source table be "data"
-
 (defn plan
   "Given a `:select-expr` node returns a query plan for the top-most query.
   Subqueries will not be considered and are handled in a different step by the
