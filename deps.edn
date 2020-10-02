@@ -1,13 +1,13 @@
 {:deps {org.clojure/core.match {:mvn/version "1.0.0"}
         org.clojure/data.csv {:mvn/version "0.1.4"}
         org.clojure/spec.alpha {:mvn/version "0.2.187"}
-        datascript {:mvn/version "1.0.1"}
-        instaparse {:mvn/version "1.4.10"}
+        datascript/datascript {:mvn/version "1.0.1"}
+        instaparse/instaparse {:mvn/version "1.4.10"}
         metosin/muuntaja {:mvn/version "0.6.7"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
         ring/ring-core {:mvn/version "1.8.1"}
         ring/ring-jetty-adapter {:mvn/version "1.6.3"}
-        ring-cors {:mvn/version "0.1.13"}
+        ring-cors/ring-cors {:mvn/version "0.1.13"}
         probcomp/inferenceql.inference {:git/url "git@github.com:probcomp/inferenceql.inference.git"
                                         :sha "0afce901df963b64e725af237f789b4e4f4d5a27"}
         probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git"
