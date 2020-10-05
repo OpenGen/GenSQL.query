@@ -171,6 +171,21 @@
       (is (= results (map #(select-keys % ks)
                           table))))))
 
+;;; Metadata
+
+(deftest select-response-metadata
+  (are [query data in-c out-c] (= out-c
+                                  (-> (query/q query (with-meta
+                                                       data
+                                                       {:iql/columns in-c}))
+                                      (meta)
+                                      (:iql/columns)))
+    "SELECT *" [{:x 0}]      [:x]    [:x]
+    "SELECT *" [{:x 0}]      []      [:x]
+    "SELECT *" [{:x 0 :y 1}] [:x]    [:x :y]
+    "SELECT *" [{:x 0}]      [:x :y] [:x :y]
+    "SELECT x" [{}]          [:x]    [:x]))
+
 ;;; Order by
 
 (defn ascending?
@@ -225,6 +240,11 @@
     (let [results (query/q (str "SELECT * FROM data WHERE " (name k) " IS NOT NULL") table)]
       (is (= (remove (comp nil? k) table)
              results)))))
+
+(deftest conditions-null-example
+  (is (= [{}]
+         (query/q "SELECT * FROM data WHERE x IS NULL"
+                  (with-meta [{}] {:iql/columns [:x]})))))
 
 (defspec conditions-null
   (prop/for-all [[table k] gen-table-col]
@@ -381,3 +401,14 @@
                 (map #(walk/postwalk-replace {column label} %)))
            (query/q (str "SELECT " (name column) " AS " (name label) " FROM data")
                     table)))))
+
+;; Adding
+
+(deftest delimited-insertion
+  (let [data [{:x 0}
+              {:x 1}
+              {:x 2}]
+        result (query/q "SELECT * FROM data ADDING COLUMN y;"
+                        data)]
+    (is (= data result))
+    (is (= [:x :y] (:iql/columns (meta result))))))

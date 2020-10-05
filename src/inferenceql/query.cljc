@@ -36,6 +36,13 @@
                      ::coll coll
                      ::k k}))))
 
+(defn all-keys
+  [ms]
+  (into []
+        (comp (mapcat keys)
+              (distinct))
+        ms))
+
 (defn variable
   "Converts a string, symbol, or keyword to a valid Datalog variable of the same
   name."
@@ -294,13 +301,13 @@
   [node env]
   (let [attribute (eval (tree/get-node node :column-expr)
                         env)]
-    {:where [[entity-var attribute '_]]}))
+    {:where `[(~'not [~entity-var ~attribute :iql/no-value])]}))
 
 (defmethod datalog-clauses :absence-condition
   [node env]
   (let [attribute (eval (tree/get-node node :column-expr)
                         env)]
-    {:where `[[(~'missing? ~'$ ~entity-var ~attribute)]]}))
+    {:where `[[~entity-var ~attribute :iql/no-value]]}))
 
 (defmethod datalog-clauses :and-condition
   [node env]
@@ -471,13 +478,31 @@
 
 ;;; Post-processing xforms
 
+(defn add-placeholders
+  "Ensures that every map in `coll` has the same keys by filling in missing cells
+  with the null placeholder."
+  [coll]
+  (let [columns (set/union (set (all-keys coll))
+                           (set (:iql/columns (meta coll))))]
+    (map #(merge (zipmap columns (repeat :iql/no-value))
+                 %)
+         coll)))
+
 (def remove-placeholders-xform
+  "A transducer that removes keys whose values are null placeholders"
   (map #(into {}
               (remove (comp #{:iql/no-value} val))
               %)))
 
+(def private-attrs
+  "Private Datalog attributes that should not be returned to callers."
+  #{:db/id :iql/type})
+
 (def remove-private-attrs-xform
-  (map #(dissoc % :db/id :iql/type)))
+  "A transducer that removes private Datalog attributes in maps."
+  (map #(apply dissoc % private-attrs)))
+
+;; Limit
 
 (defn limit-xform
   [node env]
@@ -486,6 +511,8 @@
           limit (eval nat-node env)]
       (take limit))
     (map identity)))
+
+;;; Order
 
 (defn order-xform
   "Returns a transducer that reorders `rows` based on the `:order-by-clause` node
@@ -499,36 +526,46 @@
                     default-compare)]
     (xforms/sort-by keyfn compare)))
 
-;;; Evaluation
+;;; Adding
 
-(defn all-keys
-  [ms]
-  (into []
-        (comp (mapcat keys)
-              (distinct))
-        ms))
+(defn adding-xform
+  [node env]
+  (if-let [column (some-> (tree/get-node node :name)
+                          (eval env))]
+    (map #(assoc % column :iql/no-value))
+    (map identity)))
+
+;;; Evaluation
 
 (defmethod eval :select-expr
   [node env]
   (let [{:keys [query inputs]} (inputize (plan node env) env)
 
+        adding-clause   (tree/get-node node :adding-clause)
         order-by-clause (tree/get-node node :order-by-clause)
         limit-clause    (tree/get-node node :limit-clause)
 
-        order-xform (order-xform order-by-clause env)
-        limit-xform (limit-xform limit-clause env)
+        adding-xform (adding-xform adding-clause env)
+        order-xform  (order-xform order-by-clause env)
+        limit-xform  (limit-xform limit-clause env)
 
-        inputs (update inputs 0 #(iql-db (into [] limit-xform %)))
+        inputs (update inputs 0 #(iql-db (into []
+                                               (comp adding-xform
+                                                     limit-xform)
+                                               %)))
         datalog-results (apply d/q query inputs)
 
         rows (into []
-                   (comp order-xform
+                   (comp remove-placeholders-xform
+                         order-xform
                          limit-xform
-                         remove-placeholders-xform
                          remove-private-attrs-xform)
                    datalog-results)
 
-        columns (get query :keys (all-keys rows))]
+        all-keys (or (some->> (get query :keys)
+                              (map keyword))
+                     (all-keys datalog-results))
+        columns (remove private-attrs all-keys)]
     (vary-meta rows assoc :iql/columns columns)))
 
 (defn q
@@ -540,7 +577,8 @@
   ([query rows models]
    (let [node-or-failure (parse query)]
      (if-not (insta/failure? node-or-failure)
-       (let [env (merge default-environment models {default-table rows})]
+       (let [rows (add-placeholders rows)
+             env (merge default-environment models {default-table rows})]
          (eval node-or-failure env))
        (let [failure (insta/get-failure node-or-failure)
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
