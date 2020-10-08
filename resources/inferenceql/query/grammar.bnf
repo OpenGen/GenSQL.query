@@ -37,14 +37,17 @@ generated-table-expr ::= generate-expr
 (* 'AND' has higher operator precedence than 'OR'. *)
 
 where-clause        ::= #'(?i)WHERE' ws (or-condition / and-conditions)
-<and-conditions>    ::= condition (ws #'(?i)AND' ws condition)*
+<and-conditions>    ::= '(' and-conditions ')'
+                      | condition (ws #'(?i)AND' ws condition)*
 <condition>         ::= or-condition
                       | presence-condition
                       | absence-condition
                       | equality-condition
                       | predicate-condition
-and-condition       ::= condition ws #'(?i)AND' ws condition
-or-condition        ::= (condition | and-condition) ws #'(?i)OR' ws (condition | and-condition)
+and-condition       ::= '(' and-condition ')'
+                      | condition ws #'(?i)AND' ws condition
+or-condition        ::= '(' or-condition ')'
+                      | (condition | and-condition) ws #'(?i)OR' ws (condition | and-condition)
 presence-condition  ::= column-expr ws #'(?i)IS NOT NULL'
 absence-condition   ::= column-expr ws #'(?i)IS NULL'
 equality-condition  ::= column-expr ws? '=' ws? value
