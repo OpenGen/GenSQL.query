@@ -1,8 +1,24 @@
 (ns inferenceql.query.datalog-test
+  (:refer-clojure :exclude [merge])
   (:require [clojure.core.match :as match]
             [clojure.test :as test :refer [deftest is are]]
             [datascript.core :as datascript]
             [inferenceql.query.datalog :as datalog]))
+
+(deftest merge
+  (is (= '{:find [?e ?x ?y ?e ?y ?z]
+           :where [[?e :iql/type :iql.type/row]
+                   [?e :x ?x]
+                   [?e :y ?y]
+                   [?e :z ?z]]}
+         (datalog/merge '{:find [?e ?x ?y]
+                          :where [[?e :iql/type :iql.type/row]
+                                  [?e :x ?x]
+                                  [?e :y ?y]]}
+                        '{:find [?e ?y ?z]
+                          :where [[?e :iql/type :iql.type/row]
+                                  [?e :y ?y]
+                                  [?e :z ?z]]}))))
 
 (deftest find-clause
   (are [query expected] (= expected (datalog/find-clause query))

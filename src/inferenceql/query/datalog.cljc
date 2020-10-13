@@ -1,7 +1,21 @@
 (ns inferenceql.query.datalog
+  (:refer-clojure :exclude [merge])
   (:require [clojure.set :as set]
             [clojure.string :as string]
             [datascript.core :as d]))
+
+(defn merge
+  "Merges two queries, preserving the clauses from both. Eliminates top-level
+  duplicates in the `:where` clause."
+  [& qs]
+  (reduce (fn [q1 q2]
+            (update (merge-with #(into (vec %1) %2)
+                                q1
+                                q2)
+                    :where
+                    #(into [] (distinct) %)))
+          {}
+          qs))
 
 (defn find-clause
   "Returns the find clauses in a Datalog query."

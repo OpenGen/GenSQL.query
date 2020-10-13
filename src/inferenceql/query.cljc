@@ -60,7 +60,7 @@
   ([]
    (variable (gensym)))
   ([prefix-string]
-   (variable (gensym prefix-string))))
+   (variable (gensym (str "G__" prefix-string)))))
 
 (defn genvar?
   "Returns `true` if `var` was generated with `genvar`."
@@ -95,6 +95,7 @@
    `gpm/logpdf gpm/logpdf
 
    `=  =
+   `not= not=
    `>  >
    `>= >=
    `<  <
@@ -244,23 +245,28 @@
         key (symbol (or (some-> (tree/get-node-in node [:label-clause :name])
                                 (eval env))
                         column))
-        variable (variable key)]
+        variable (genvar key)]
     {:find [variable]
      :keys [key]
      :where `[[(~'get-else ~'$ ~entity-var ~column :iql/no-value) ~variable]]}))
+
+(defmethod datalog-clauses :rowid-selection
+  [_ _]
+  {:find '[?entity]
+   :keys '[rowid]
+   :where [[entity-var :iql/type :iql.type/row]]})
 
 (defmethod datalog-clauses :select-clause
   [node env]
   (let [select-list (tree/get-node node :select-list)
         star-node (tree/get-node select-list :star)]
-    (merge-with into
-                {:where [[entity-var :iql/type :iql.type/row]]}
-                (if star-node
-                  {:find `[[(~'pull ~entity-var [~'*]) ~'...]]}
-                  (->> (tree/child-nodes select-list)
-                       (map #(datalog-clauses % env))
-                       (apply merge-with into {:find [entity-var]
-                                               :keys ['db/id]}))))))
+    (datalog/merge {:where [[entity-var :iql/type :iql.type/row]]}
+                   (if star-node
+                     {:find `[[(~'pull ~entity-var [~'*]) ~'...]]}
+                     (->> (tree/child-nodes select-list)
+                          (map #(datalog-clauses % env))
+                          (apply datalog/merge {:find [entity-var]
+                                                :keys ['db/id]}))))))
 
 ;;; Conditions
 
@@ -295,33 +301,33 @@
   [node env]
   (->> (tree/child-nodes node)
        (map #(datalog-clauses % env))
-       (apply merge-with into)))
+       (apply datalog/merge)))
 
 (defmethod datalog-clauses :presence-condition
   [node env]
-  (let [attribute (eval (tree/get-node node :column-expr)
-                        env)]
-    {:where `[(~'not [~entity-var ~attribute :iql/no-value])]}))
+  (let [{[sym] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)]
+    (datalog/merge (dissoc selection-clauses :find :keys)
+                   {:where `[[(not= ~sym :iql/no-value)]]})))
 
 (defmethod datalog-clauses :absence-condition
   [node env]
-  (let [attribute (eval (tree/get-node node :column-expr)
-                        env)]
-    {:where `[[~entity-var ~attribute :iql/no-value]]}))
+  (let [{[sym] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)]
+    (datalog/merge (dissoc selection-clauses :find :keys)
+                   {:where `[[(= ~sym :iql/no-value)]]})))
 
 (defmethod datalog-clauses :and-condition
   [node env]
-  (->> (tree/child-nodes node)
-       (map #(datalog-clauses % env))
-       (apply merge-with into)))
+  (let [child-clauses (->> (tree/child-nodes node)
+                           (mapv #(datalog-clauses % env)))]
+    (apply datalog/merge child-clauses)))
 
 (defmethod datalog-clauses :equality-condition
   [node env]
-  (let [attribute (eval (tree/get-node node :column-expr)
-                        env)
+  (let [{[variable] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)
         value (eval (tree/get-node node :value)
                     env)]
-    {:where [[entity-var attribute value]]}))
+    (datalog/merge (dissoc selection-clauses :find :keys)
+                   {:where `[[(= ~variable ~value)]]})))
 
 (defmethod datalog-clauses :or-condition
   [node env]
@@ -335,17 +341,17 @@
     (let [where-subclauses (->> subclauses
                                 (map :where)
                                 (map andify))]
-      {:where [(add-free-variables
-                `(~'or-join [] ~@where-subclauses))]})))
+      {:where [`(~'or-join [~entity-var] ~@where-subclauses)]})))
 
 (defmethod datalog-clauses :predicate-condition
   [node env]
-  (let [sym (genvar)
-        column    (eval (tree/get-node-in node [:column-expr])    env)
+  (let [lhs-node (tree/get-node node 0)
+        {[sym] :find :as selection-clauses} (datalog-clauses lhs-node env)
         predicate (eval (tree/get-node-in node [:predicate-expr]) env)
         value     (eval (tree/get-node-in node [:value])          env)]
-    {:where `[~[entity-var column sym]
-              [(~predicate ~sym ~value)]]}))
+    (datalog/merge (dissoc selection-clauses :find :keys)
+                   {:where `[[(not= ~sym :iql/no-value)]
+                             [(~predicate ~sym ~value)]]})))
 
 ;;; Query execution
 
@@ -389,10 +395,9 @@
                                  (datalog-clauses sql-where-clause env)
                                  {})
 
-        all-clauses (merge-with into
-                                datalog-from-clauses ; data source comes first
-                                datalog-select-clauses
-                                datalog-where-clauses)
+        all-clauses (datalog/merge datalog-from-clauses ; data source comes first
+                                   datalog-select-clauses
+                                   datalog-where-clauses)
 
         inputs (get all-clauses :inputs)
         query (dissoc all-clauses :inputs)]

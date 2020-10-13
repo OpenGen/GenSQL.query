@@ -15,11 +15,13 @@ select-clause   ::= #'(?i)SELECT' ws select-list
 select-list ::= star / selection (',' ws? selection)*
 star        ::= '*'
 selection   ::= '(' selection ')'
-              | column-selection
-              | probability-clause
-              | density-clause
+              / rowid-selection
+              / column-selection
+              / probability-clause
+              / density-clause
 
 column-selection ::= column-expr (ws label-clause)?
+rowid-selection ::= 'rowid'
 
 label-clause ::= #'(?i)AS' ws name
 
@@ -28,18 +30,23 @@ label-clause ::= #'(?i)AS' ws name
 from-clause ::= #'(?i)FROM' ws table-expr
 table-expr  ::= '(' table-expr ')'
               | ref
+              | pseudo-column-expr
               | select-expr
               | generated-table-expr
 generated-table-expr ::= generate-expr
+
+
+pseudo-column-expr ::= rowid
+rowid              ::= 'rowid'
 
 (* where-clause *)
 
 (* 'AND' has higher operator precedence than 'OR'. *)
 
 where-clause        ::= #'(?i)WHERE' ws (or-condition / and-conditions)
-<and-conditions>    ::= '(' and-conditions ')'
-                      | condition (ws #'(?i)AND' ws condition)*
-<condition>         ::= or-condition
+<and-conditions>    ::= condition (ws #'(?i)AND' ws condition)*
+condition           ::= '(' condition ')'
+                      | or-condition
                       | presence-condition
                       | absence-condition
                       | equality-condition
@@ -48,10 +55,10 @@ and-condition       ::= '(' and-condition ')'
                       | condition ws #'(?i)AND' ws condition
 or-condition        ::= '(' or-condition ')'
                       | (condition | and-condition) ws #'(?i)OR' ws (condition | and-condition)
-presence-condition  ::= column-expr ws #'(?i)IS NOT NULL'
-absence-condition   ::= column-expr ws #'(?i)IS NULL'
-equality-condition  ::= column-expr ws? '=' ws? value
-predicate-condition ::= column-expr ws? predicate-expr ws? value
+presence-condition  ::= selection ws #'(?i)IS NOT NULL'
+absence-condition   ::= selection ws #'(?i)IS NULL'
+equality-condition  ::= selection ws? '=' ws? value
+predicate-condition ::= selection ws? predicate-expr ws? value
 predicate-expr      ::= #"<" | #">" | #"<=" | #">="
 
 (* adding-clause *)
