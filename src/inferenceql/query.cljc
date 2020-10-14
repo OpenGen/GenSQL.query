@@ -545,33 +545,19 @@
                     default-compare)]
     (xforms/sort-by keyfn compare)))
 
-;;; Adding
-
-(defn adding-xform
-  [node env]
-  (if-let [column (some-> (tree/get-node node :name)
-                          (eval env))]
-    (map #(assoc % column :iql/no-value))
-    (map identity)))
-
 ;;; Evaluation
 
 (defmethod eval :select-expr
   [node env]
   (let [{:keys [query inputs]} (inputize (plan node env) env)
 
-        adding-clause   (tree/get-node node :adding-clause)
         order-by-clause (tree/get-node node :order-by-clause)
         limit-clause    (tree/get-node node :limit-clause)
 
-        adding-xform (adding-xform adding-clause env)
         order-xform  (order-xform order-by-clause env)
         limit-xform  (limit-xform limit-clause env)
 
-        inputs (update inputs 0 #(iql-db (into []
-                                               (comp adding-xform
-                                                     limit-xform)
-                                               %)))
+        inputs (update inputs 0 #(iql-db (into [] limit-xform %)))
         datalog-results (apply d/q query inputs)
 
         rows (into []

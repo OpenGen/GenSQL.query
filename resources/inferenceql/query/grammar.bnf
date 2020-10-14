@@ -2,7 +2,6 @@
 
 select-expr ::= select-clause
                 (ws from-clause)?
-                (ws adding-clause)?
                 (ws where-clause)?
                 (ws order-by-clause)?
                 (ws limit-clause)?
@@ -70,10 +69,6 @@ absence-condition   ::= selection ws #'(?i)IS NULL'
 equality-condition  ::= selection ws? '=' ws? value
 predicate-condition ::= selection ws? predicate-expr ws? value
 predicate-expr      ::= #"<" | #">" | #"<=" | #">="
-
-(* adding-clause *)
-
-adding-clause ::= #'(?i)ADDING COLUMN' name
 
 (* generate-expr *)
 

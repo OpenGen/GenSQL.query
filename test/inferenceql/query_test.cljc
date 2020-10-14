@@ -403,17 +403,6 @@
            (query/q (str "SELECT " (name column) " AS " (name label) " FROM data")
                     table)))))
 
-;; Adding
-
-(deftest delimited-insertion
-  (let [data [{:x 0}
-              {:x 1}
-              {:x 2}]
-        result (query/q "SELECT * FROM data ADDING COLUMN y;"
-                        data)]
-    (is (= data result))
-    (is (= [:x :y] (:iql/columns (meta result))))))
-
 ;; Insert
 
 (deftest insert-into
