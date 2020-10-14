@@ -178,6 +178,24 @@
   [node _]
   (edn/read-string (tree/only-child node)))
 
+(defmethod eval :map-list
+  [node env]
+  (into []
+        (map #(eval % env))
+        (tree/child-nodes node)))
+
+(defmethod eval :map-expr
+  [node env]
+  (into {}
+        (map #(eval % env))
+        (tree/child-nodes node)))
+
+(defmethod eval :map-entry-expr
+  [node env]
+  (let [variable (eval (tree/get-node node :column-expr) env)
+        value    (eval (tree/get-node node :value)       env)]
+    {variable value}))
+
 ;;; Selections
 
 (defn event-list-clauses
@@ -194,7 +212,7 @@
                          :else                         `[(~'ground {})                          ~row-var])
 
         binding-sym (genvar "binding-events-")
-        binding-map (or (some->> (:binding-expr events-by-tag)
+        binding-map (or (some->> (:map-entry-expr events-by-tag)
                                  (map #(eval % env))
                                  (reduce merge))
                         {})
@@ -296,6 +314,14 @@
                         (eval env))]
     {:in ['$]
      :inputs [data-source]}))
+
+(defmethod eval :insert-expr
+  [node env]
+  (let [table (-> (tree/get-node-in node [:into-clause :table-expr])
+                  (eval env))
+        rows (-> (tree/get-node-in node [:values-clause :map-list])
+                 (eval env))]
+    (concat table rows)))
 
 (defmethod datalog-clauses :where-clause
   [node env]
@@ -411,18 +437,6 @@
                    rows)]
     (d/db-with (d/empty-db) facts)))
 
-(defmethod eval :binding-list
-  [node env]
-  (into {}
-        (map #(eval % env))
-        (tree/child-nodes node)))
-
-(defmethod eval :binding-expr
-  [node env]
-  (let [variable (eval (tree/get-node node :column-expr) env)
-        value    (eval (tree/get-node node :value)       env)]
-    {variable value}))
-
 (defmethod eval :variable-list
   [node env]
   (into []
@@ -462,7 +476,7 @@
         targets (-> node (tree/get-node :variable-list) (eval env))
 
         constraints (or (some-> node
-                                (tree/get-node-in [:generate-given-clause :binding-list])
+                                (tree/get-node-in [:generate-given-clause :map-expr])
                                 (eval env))
                         default-constraints)]
     (constrain model targets constraints)))
@@ -489,9 +503,9 @@
   [coll]
   (let [columns (set/union (set (all-keys coll))
                            (set (:iql/columns (meta coll))))]
-    (map #(merge (zipmap columns (repeat :iql/no-value))
-                 %)
-         coll)))
+    (mapv #(merge (zipmap columns (repeat :iql/no-value))
+                  %)
+          coll)))
 
 (def remove-placeholders-xform
   "A transducer that removes keys whose values are null placeholders"

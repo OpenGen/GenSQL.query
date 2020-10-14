@@ -413,3 +413,12 @@
                         data)]
     (is (= data result))
     (is (= [:x :y] (:iql/columns (meta result))))))
+
+;; Insert
+
+(deftest insert-into
+  (let [data [{:x 0}]
+        result (query/q "SELECT * FROM (INSERT INTO data VALUES (x=1), (x=2))"
+                        data)]
+    (is (= [{:x 0} {:x 1} {:x 2}]
+           result))))

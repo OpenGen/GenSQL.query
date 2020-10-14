@@ -28,13 +28,23 @@ label-clause ::= #'(?i)AS' ws name
 (* from-clause *)
 
 from-clause ::= #'(?i)FROM' ws table-expr
+
+(* table expressions *)
+
 table-expr  ::= '(' table-expr ')'
               | ref
               | pseudo-column-expr
               | select-expr
               | generated-table-expr
+              | insert-expr
 generated-table-expr ::= generate-expr
 
+insert-expr   ::= #'(?i)INSERT'
+                  ws into-clause
+                  ws values-clause
+into-clause   ::= #'(?i)INTO' ws table-expr
+values-clause ::= #'(?i)VALUES' ws map-list
+map-list      ::= '(' ws? map-expr ws? ')' (',' ws '(' map-expr ')')*
 
 pseudo-column-expr ::= rowid
 rowid              ::= 'rowid'
@@ -87,16 +97,13 @@ density-clause ::= #'(?i)PROBABILITY DENSITY'
 
 of-clause ::= #'(?i)OF' ws event-list
 
-generate-given-clause    ::= #'(?i)GIVEN' ws binding-list
+generate-given-clause    ::= #'(?i)GIVEN' ws map-expr
 probability-given-clause ::= #'(?i)GIVEN' ws event-list
 
 under-clause  ::= #'(?i)UNDER' ws model-expr
 
-event-list ::= star / event-expr (',' ws event-expr)*
-<event-expr> ::= binding-expr | column-expr
-
-binding-list ::= binding-expr (',' ws binding-expr)*
-binding-expr ::= column-expr ws? '=' ws? value
+event-list ::= star / event-expr (',' ws event-expr)* (* like map-expr, but allows column events *)
+<event-expr> ::= map-entry-expr | column-expr
 
 (* literals *)
 
@@ -106,6 +113,10 @@ int           ::= #'-?\d+'
 nat           ::= #'\d+'
 string        ::= #'\"([^\"]+)\"'
 simple-symbol ::= #'(?!G__)[^0-9][\w\-\_\?]*'
+
+map-expr ::= '(' ws? map-expr ws? ')'
+           | map-entry-expr (',' ws? map-entry-expr)*
+map-entry-expr ::= column-expr ws? '=' ws? value
 
 (* order-by-clause *)
 
