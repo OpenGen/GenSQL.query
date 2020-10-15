@@ -1,4 +1,5 @@
 (ns inferenceql.query-test
+  (:refer-clojure :exclude [alter])
   #?(:clj (:import [clojure.lang ExceptionInfo]))
   (:require [clojure.string :as string]
             [clojure.test :as test :refer [are deftest is testing]]
@@ -411,3 +412,14 @@
                         data)]
     (is (= [{:x 0} {:x 1} {:x 2}]
            result))))
+
+;; Alter
+
+(deftest alter
+  (let [data [{:x 0}
+              {:x 1}
+              {:x 2}]
+        result (query/q "SELECT * FROM (ALTER data ADD y);"
+                        data)]
+    (is (= data result))
+    (is (= [:x :y] (:iql/columns (meta result))))))

@@ -35,8 +35,12 @@ table-expr  ::= '(' table-expr ')'
               | pseudo-column-expr
               | select-expr
               | generated-table-expr
+              | alter-expr
               | insert-expr
+
 generated-table-expr ::= generate-expr
+
+alter-expr ::= #'(?i)ALTER' ws table-expr ws #'(?i)ADD' ws column-expr
 
 insert-expr   ::= #'(?i)INSERT'
                   ws into-clause

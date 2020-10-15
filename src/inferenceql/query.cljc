@@ -315,6 +315,15 @@
     {:in ['$]
      :inputs [data-source]}))
 
+(defmethod eval :alter-expr
+  [node env]
+  (let [table (-> (tree/get-node node :table-expr)
+                  (eval env))
+        column (-> (tree/get-node node :column-expr)
+                   (eval env))]
+    (map #(assoc % column :iql/no-value)
+         table)))
+
 (defmethod eval :insert-expr
   [node env]
   (let [table (-> (tree/get-node-in node [:into-clause :table-expr])
