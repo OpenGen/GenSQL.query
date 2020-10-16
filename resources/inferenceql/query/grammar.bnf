@@ -39,6 +39,7 @@ table-expr  ::= '(' table-expr ')'
               | generated-table-expr
               | alter-expr
               | insert-expr
+              | update-expr
 
 generated-table-expr ::= generate-expr
 
@@ -50,6 +51,11 @@ insert-expr   ::= #'(?i)INSERT'
 into-clause   ::= #'(?i)INTO' ws table-expr
 values-clause ::= #'(?i)VALUES' ws map-list
 map-list      ::= '(' ws? map-expr ws? ')' (',' ws '(' map-expr ')')*
+
+update-expr ::= #'(?i)UPDATE' table-expr
+                ws set-clause
+                ws where-clause
+set-clause ::= #'(?i)SET' map-expr
 
 pseudo-column-expr ::= rowid
 rowid              ::= 'rowid'

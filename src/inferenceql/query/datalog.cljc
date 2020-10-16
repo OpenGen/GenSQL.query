@@ -4,6 +4,13 @@
             [clojure.string :as string]
             [datascript.core :as d]))
 
+(defn db
+  "Converts a vector of maps into Datalog database that can be queried with `q`."
+  [coll]
+  (let [facts (map #(assoc % :iql/type :iql.type/row)
+                   coll)]
+    (d/db-with (d/empty-db) facts)))
+
 (defn merge
   "Merges two queries, preserving the clauses from both. Eliminates top-level
   duplicates in the `:where` clause."

@@ -107,6 +107,47 @@
        (map (juxt key (comp variable val)))
        (into {})))
 
+(defn add-free-variables
+  "Given an `or-join` form like
+
+    (or-join <join-vars> <subcond1> <subcond2>)
+
+  adds to `<join-vars>` the variables from the subclauses that were not generated
+  with `genvar`. Variables generated with `genvar` are presumed to not be needed
+  outside the `or-join`."
+  [form]
+  (let [free-variables (into []
+                             (comp (remove genvar?)
+                                   (distinct))
+                             (datalog/free-variables form))]
+    (-> (vec form)
+        (update 1 into free-variables)
+        (update 1 distinct)
+        (update 1 vec)
+        (seq))))
+
+(defn inputize
+  "Modifies the provided query plan such that all the symbols that are in the
+  default environment are provided as inputs."
+  [query-plan env]
+  (let [replaced-symbols (->> (select-keys (:query query-plan) [:find :where])
+                              (tree-seq coll? seq)
+                              (filter (set (keys default-environment)))
+                              (distinct))
+        input-names (zipmap (keys default-environment)
+                            (map input-symbols
+                                 (vals default-environment)))]
+    (-> query-plan
+        (update-in [:query] #(walk/postwalk-replace input-names %))
+        (update-in [:query :in] into (map input-names replaced-symbols))
+        (update-in [:inputs] into (map #(safe-get env %) replaced-symbols))
+        (update-in [:query :where] #(walk/postwalk (fn [form]
+                                                     (cond-> form
+                                                       (and (coll? form)
+                                                            (= 'or-join (first form)))
+                                                       (add-free-variables)))
+                                                   %)))))
+
 ;;; Parsing
 
 (def bnf (io/inline-file "inferenceql/query/grammar.bnf"))
@@ -288,25 +329,6 @@
 
 ;;; Conditions
 
-(defn add-free-variables
-  "Given an `or-join` form like
-
-    (or-join <join-vars> <subcond1> <subcond2>)
-
-  adds to `<join-vars>` the variables from the subclauses that were not generated
-  with `genvar`. Variables generated with `genvar` are presumed to not be needed
-  outside the `or-join`."
-  [form]
-  (let [free-variables (into []
-                             (comp (remove genvar?)
-                                   (distinct))
-                             (datalog/free-variables form))]
-    (-> (vec form)
-        (update 1 into free-variables)
-        (update 1 distinct)
-        (update 1 vec)
-        (seq))))
-
 (defmethod datalog-clauses :from-clause
   [node env]
   (let [data-source (-> node
@@ -331,6 +353,40 @@
         rows (-> (tree/get-node-in node [:values-clause :map-list])
                  (eval env))]
     (concat table rows)))
+
+(defn set-function
+  "Returns a function that, applies the changes described by the `SET` clause node
+  `node` to its argument."
+  [node env]
+  (let [changes (-> (tree/get-node node :map-expr)
+                    (eval env))]
+    (fn [row]
+      (merge row changes))))
+
+(defn where-predicate
+  "Takes a `:where-clause` node and returns a predicate that returns `true` if its
+  argument satisfies the `WHERE` clause. Returns `false` otherwise."
+  [node env]
+  (let [query (datalog/merge `{:find [~entity-var]
+                               :in [~'$]
+                               :where [[~entity-var :iql/type :iql.type/row]]}
+                             (datalog-clauses node env))]
+    (fn [row]
+      (let [db (datalog/db [row])
+            {:keys [query inputs]} (inputize {:query query, :inputs [db]}
+                                             env)]
+        (boolean (seq (apply d/q query inputs)))))))
+
+(defmethod eval :update-expr
+  [node env]
+  (let [table (-> (tree/get-node node :table-expr)
+                  (eval env))
+        f (set-function (tree/get-node node :set-clause)
+                        env)
+        pred (where-predicate (tree/get-node node :where-clause)
+                              env)]
+    (mapv #(cond-> % (pred %) (f))
+          table)))
 
 (defmethod datalog-clauses :where-clause
   [node env]
@@ -390,28 +446,6 @@
 
 ;;; Query execution
 
-(defn inputize
-  "Modifies the provided query plan such that all the symbols that are in the
-  default environment are provided as inputs."
-  [query-plan env]
-  (let [replaced-symbols (->> (select-keys (:query query-plan) [:find :where])
-                              (tree-seq coll? seq)
-                              (filter (set (keys default-environment)))
-                              (distinct))
-        input-names (zipmap (keys default-environment)
-                            (map input-symbols
-                                 (vals default-environment)))]
-    (-> query-plan
-        (update-in [:query] #(walk/postwalk-replace input-names %))
-        (update-in [:query :in] into (map input-names replaced-symbols))
-        (update-in [:inputs] into (map #(safe-get env %) replaced-symbols))
-        (update-in [:query :where] #(walk/postwalk (fn [form]
-                                                     (cond-> form
-                                                       (and (coll? form)
-                                                            (= 'or-join (first form)))
-                                                       (add-free-variables)))
-                                                   %)))))
-
 (defn plan
   "Given a `:select-expr` node returns a query plan for the top-most query.
   Subqueries will not be considered and are handled in a different step by the
@@ -438,13 +472,6 @@
         query (dissoc all-clauses :inputs)]
     {:query query
      :inputs inputs}))
-
-(defn iql-db
-  "Converts a vector of maps into Datalog database that can be queried with `q`."
-  [rows]
-  (let [facts (map #(assoc % :iql/type :iql.type/row)
-                   rows)]
-    (d/db-with (d/empty-db) facts)))
 
 (defmethod eval :variable-list
   [node env]
@@ -566,7 +593,7 @@
         order-xform  (order-xform order-by-clause env)
         limit-xform  (limit-xform limit-clause env)
 
-        inputs (update inputs 0 #(iql-db (into [] limit-xform %)))
+        inputs (update inputs 0 #(datalog/db (into [] limit-xform %)))
         datalog-results (apply d/q query inputs)
 
         rows (into []
