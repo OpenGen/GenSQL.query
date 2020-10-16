@@ -390,7 +390,7 @@
     (is (= "x, y, z"
            (-> query
                (query/parse)
-               (tree/get-node-in [:select-clause :select-list])
+               (tree/get-node-in [:select-expr :select-clause :select-list])
                (query/unparse))))))
 
 ;;; Labels
@@ -423,3 +423,14 @@
                         data)]
     (is (= data result))
     (is (= [:x :y] (:iql/columns (meta result))))))
+
+;; With
+
+(deftest with
+  (let [data []
+        result (query/q "WITH (INSERT INTO data VALUES (x=1), (x=2), (x=3)) AS data: SELECT * FROM data;"
+                        data)]
+    (is (= [{:x 1}
+            {:x 2}
+            {:x 3}]
+           result))))

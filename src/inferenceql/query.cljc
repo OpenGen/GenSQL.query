@@ -598,3 +598,24 @@
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                      :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))
+
+(defmethod eval :with-map-entry-expr
+  [node env]
+  (let [k (-> (tree/get-node node :name)
+              (eval env))
+        v (-> (tree/get-node node :with-map-value-expr)
+              (eval env))]
+    {k v}))
+
+(defmethod eval :with-map-expr
+  [node env]
+  (into {}
+        (map #(eval % env))
+        (tree/child-nodes node)))
+
+(defmethod eval :with-expr
+  [node env]
+  (let [bindings (-> (tree/get-node node :with-map-expr)
+                     (eval env))
+        subexpr-node (tree/get-node node :with-sub-expr)]
+    (eval subexpr-node (merge env bindings))))

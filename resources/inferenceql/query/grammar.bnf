@@ -1,5 +1,7 @@
 (* Queries *)
 
+query-expr ::= select-expr | with-expr
+
 select-expr ::= select-clause
                 (ws from-clause)?
                 (ws where-clause)?
@@ -127,6 +129,18 @@ descending      ::= #'(?i)DESC'
 (* limit-clause *)
 
 limit-clause ::= #'(?i)LIMIT' ws nat
+
+
+(* with-expr *)
+
+with-expr ::= #'(?i)WITH' ws with-map-expr ws? ':' ws? with-sub-expr
+with-map-expr ::= with-map-entry-expr (ws? ',' ws? with-map-entry-expr)*
+with-map-entry-expr ::= with-map-value-expr ws #'(?i)AS' ws name
+with-map-value-expr ::= '(' ws? with-map-value-expr ws? ')'
+                      | table-expr
+                      | value
+with-sub-expr ::= query-expr
+
 
 (* literals *)
 

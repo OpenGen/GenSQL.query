@@ -14,11 +14,11 @@
   (clojure.core/ex-info msg (merge base-ex-info-map m)))
 
 (defn select-without-limit
-  "Returns an instance of `ExceptionInfo` if the top-level `:select-expr` in
+  "Returns an instance of `ExceptionInfo` if the top-level `:query-expr` in
   `node` selects from a generated table without also providing a limit."
   [node]
-  (when-let [generated-table-expr (tree/get-node-in node [:from-clause :table-expr :generated-table-expr])]
-    (when-not (tree/get-node node :limit-clause)
+  (when-let [generated-table-expr (tree/get-node-in node [:select-expr :from-clause :table-expr :generated-table-expr])]
+    (when-not (tree/get-node-in node [:select-expr :limit-clause])
       (ex-info "Cannot SELECT from generated table without LIMIT"
                {:select-expr (query/unparse node)
                 :generated-table-expr (query/unparse generated-table-expr)}))))
@@ -41,11 +41,11 @@
 
 (defn error
   "Returns an instance of `ExceptionInfo` that describes the first validation
-  failure in `:select-expr` `node`."
+  failure in `:query-expr` `node`."
   [node]
   (some #(% node) validators))
 
 (defn valid?
-  "Returns `true` if `:select-expr` `node` is valid, `false` otherwise. "
+  "Returns `true` if `:query-expr` `node` is valid, `false` otherwise. "
   [node]
   (nil? (some #(% node) validators)))
