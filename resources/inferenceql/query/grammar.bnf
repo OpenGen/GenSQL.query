@@ -54,7 +54,7 @@ map-list      ::= '(' ws? map-expr ws? ')' (ws? ',' ws? '(' map-expr ')')*
 
 update-expr ::= #'(?i)UPDATE' table-expr
                 ws set-clause
-                ws where-clause
+                (ws where-clause)?
 set-clause ::= #'(?i)SET' map-expr
 
 pseudo-column-expr ::= rowid

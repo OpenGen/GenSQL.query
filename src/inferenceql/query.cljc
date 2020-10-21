@@ -383,8 +383,9 @@
                   (eval env))
         f (set-function (tree/get-node node :set-clause)
                         env)
-        pred (where-predicate (tree/get-node node :where-clause)
-                              env)]
+        pred (or (some-> (tree/get-node node :where-clause)
+                         (where-predicate env))
+                 (constantly true))]
     (mapv #(cond-> % (pred %) (f))
           table)))
 
