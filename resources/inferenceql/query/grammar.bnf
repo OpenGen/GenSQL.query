@@ -13,9 +13,9 @@ select-expr ::= select-clause
 
 select-clause   ::= #'(?i)SELECT' ws select-list
 
-select-list ::= star / selection (',' ws? selection)*
+select-list ::= star / selection (ws? ',' ws? selection)*
 star        ::= '*'
-selection   ::= '(' selection ')'
+selection   ::= '(' ws? selection ws? ')'
               / rowid-selection
               / column-selection
               / probability-clause
@@ -32,7 +32,7 @@ from-clause ::= #'(?i)FROM' ws table-expr
 
 (* table expressions *)
 
-table-expr  ::= '(' table-expr ')'
+table-expr  ::= '(' ws? table-expr ws? ')'
               | ref
               | pseudo-column-expr
               | select-expr
@@ -50,7 +50,7 @@ insert-expr   ::= #'(?i)INSERT'
                   ws values-clause
 into-clause   ::= #'(?i)INTO' ws table-expr
 values-clause ::= #'(?i)VALUES' ws map-list
-map-list      ::= '(' ws? map-expr ws? ')' (',' ws '(' map-expr ')')*
+map-list      ::= '(' ws? map-expr ws? ')' (ws? ',' ws? '(' map-expr ')')*
 
 update-expr ::= #'(?i)UPDATE' table-expr
                 ws set-clause
@@ -66,15 +66,15 @@ rowid              ::= 'rowid'
 
 where-clause        ::= #'(?i)WHERE' ws (or-condition / and-conditions)
 <and-conditions>    ::= condition (ws #'(?i)AND' ws condition)*
-condition           ::= '(' condition ')'
+condition           ::= '(' ws? condition ws? ')'
                       | or-condition
                       | presence-condition
                       | absence-condition
                       | equality-condition
                       | predicate-condition
-and-condition       ::= '(' and-condition ')'
+and-condition       ::= '(' ws? and-condition ws? ')'
                       | condition ws #'(?i)AND' ws condition
-or-condition        ::= '(' or-condition ')'
+or-condition        ::= '(' ws? or-condition ws? ')'
                       | (condition | and-condition) ws #'(?i)OR' ws (condition | and-condition)
 presence-condition  ::= selection ws #'(?i)IS NOT NULL'
 absence-condition   ::= selection ws #'(?i)IS NULL'
@@ -109,7 +109,7 @@ probability-given-clause ::= #'(?i)GIVEN' ws event-list
 
 under-clause  ::= #'(?i)UNDER' ws model-expr
 
-event-list ::= star / event-expr (',' ws event-expr)* (* like map-expr, but allows column events *)
+event-list ::= star / event-expr (ws? ',' ws? event-expr)* (* like map-expr, but allows column events *)
 <event-expr> ::= map-entry-expr | column-expr
 
 (* literals *)
@@ -122,7 +122,7 @@ string        ::= #'\"([^\"]+)\"'
 simple-symbol ::= #'(?!G__)[^0-9][\w\-\_\?]*'
 
 map-expr ::= '(' ws? map-expr ws? ')'
-           | map-entry-expr (',' ws? map-entry-expr)*
+           | map-entry-expr (ws? ',' ws? map-entry-expr)*
 map-entry-expr ::= column-expr ws? '=' ws? value
 
 (* order-by-clause *)
@@ -152,9 +152,9 @@ with-sub-expr ::= query-expr
 
 ref ::= name
 
-model-expr ::= ref | '(' generate-expr ')'
+model-expr ::= ref | '(' ws? generate-expr ws? ')'
 
-variable-list ::= variable-expr (',' ws variable-expr)*
+variable-list ::= variable-expr (',' ws? variable-expr)*
 variable-expr ::= name
 
 column-expr ::= name
