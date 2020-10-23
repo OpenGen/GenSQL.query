@@ -7,7 +7,6 @@
      :cljs (:require-macros [inferenceql.query.io :as io]))
   (:require [clojure.edn :as edn]
             [clojure.set :as set]
-            [clojure.string :as string]
             [clojure.walk :as walk]
             [datascript.core :as d]
             [instaparse.core :as insta]
@@ -42,30 +41,6 @@
         (comp (mapcat keys)
               (distinct))
         ms))
-
-(defn variable
-  "Converts a string, symbol, or keyword to a valid Datalog variable of the same
-  name."
-  [x]
-  ;; Not using a protocol here for now to avoid having to deal with differing
-  ;; types in Clojure and ClojureScript.
-  (cond (string? x) (symbol (cond->> x
-                              (not (string/starts-with? x "?"))
-                              (str "?")))
-        (symbol? x) (variable (name x))
-        (keyword? x) (variable (name x))))
-
-(defn genvar
-  "Like `gensym`, but generates Datalog variables."
-  ([]
-   (variable (gensym)))
-  ([prefix-string]
-   (variable (gensym (str "G__" prefix-string)))))
-
-(defn genvar?
-  "Returns `true` if `var` was generated with `genvar`."
-  [var]
-  (string/starts-with? (name var) "?G__"))
 
 (defrecord ConstrainedGPM [gpm targets constraints]
   gpm.proto/GPM
@@ -104,27 +79,8 @@
 (def input-symbols
   (->> default-environment
        (set/map-invert)
-       (map (juxt key (comp variable val)))
+       (map (juxt key (comp datalog/variable val)))
        (into {})))
-
-(defn add-free-variables
-  "Given an `or-join` form like
-
-    (or-join <join-vars> <subcond1> <subcond2>)
-
-  adds to `<join-vars>` the variables from the subclauses that were not generated
-  with `genvar`. Variables generated with `genvar` are presumed to not be needed
-  outside the `or-join`."
-  [form]
-  (let [free-variables (into []
-                             (comp (remove genvar?)
-                                   (distinct))
-                             (datalog/free-variables form))]
-    (-> (vec form)
-        (update 1 into free-variables)
-        (update 1 distinct)
-        (update 1 vec)
-        (seq))))
 
 (defn inputize
   "Modifies the provided query plan such that all the symbols that are in the
@@ -145,7 +101,7 @@
                                                      (cond-> form
                                                        (and (coll? form)
                                                             (= 'or-join (first form)))
-                                                       (add-free-variables)))
+                                                       (datalog/add-free-variables)))
                                                    %)))))
 
 ;;; Parsing
@@ -247,12 +203,12 @@
   (let [events-by-tag (group-by node/tag (tree/children node))
         column-names (mapv #(eval % env) (:column-expr events-by-tag))
 
-        row-var (genvar "row-events-")
+        row-var (datalog/genvar "row-events-")
         row-clause (cond (some? (:star events-by-tag)) `[(d/pull ~'$ ~'[*]         ~entity-var) ~row-var]
                          (seq column-names)            `[(d/pull ~'$ ~column-names ~entity-var) ~row-var]
                          :else                         `[(~'ground {})                          ~row-var])
 
-        binding-sym (genvar "binding-events-")
+        binding-sym (datalog/genvar "binding-events-")
         binding-map (or (some->> (:map-entry-expr events-by-tag)
                                  (map #(eval % env))
                                  (reduce merge))
@@ -274,12 +230,12 @@
                         (symbol))
                 (gensym "density"))
 
-        log-density-var (variable (str "log-" key))
-        density-var (variable key)
+        log-density-var (datalog/variable (str "log-" key))
+        density-var (datalog/variable key)
 
-        model-var       (genvar "model-")
-        target-var      (genvar "target-")
-        constraints-var (genvar "constraints-")
+        model-var       (datalog/genvar "model-")
+        target-var      (datalog/genvar "target-")
+        constraints-var (datalog/genvar "constraints-")
 
         target-clauses (event-list-clauses (tree/get-node-in node [:of-clause :event-list])
                                            target-var
@@ -304,7 +260,7 @@
         key (symbol (or (some-> (tree/get-node-in node [:label-clause :name])
                                 (eval env))
                         column))
-        variable (genvar key)]
+        variable (datalog/genvar key)]
     {:find [variable]
      :keys [key]
      :where `[[(~'get-else ~'$ ~entity-var ~column :iql/no-value) ~variable]]}))

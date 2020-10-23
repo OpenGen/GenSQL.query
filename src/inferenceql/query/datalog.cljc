@@ -24,6 +24,30 @@
           {}
           qs))
 
+(defn variable
+  "Converts a string, symbol, or keyword to a valid Datalog variable of the same
+  name."
+  [x]
+  ;; Not using a protocol here for now to avoid having to deal with differing
+  ;; types in Clojure and ClojureScript.
+  (cond (string? x) (symbol (cond->> x
+                              (not (string/starts-with? x "?"))
+                              (str "?")))
+        (symbol? x) (variable (name x))
+        (keyword? x) (variable (name x))))
+
+(defn genvar
+  "Like `gensym`, but generates Datalog variables."
+  ([]
+   (variable (gensym)))
+  ([prefix-string]
+   (variable (gensym (str "G__" prefix-string)))))
+
+(defn genvar?
+  "Returns `true` if `var` was generated with `genvar`."
+  [var]
+  (string/starts-with? (name var) "?G__"))
+
 (defn find-clause
   "Returns the find clauses in a Datalog query."
   [query]
@@ -59,6 +83,25 @@
   (->> (tree-seq seqable? seq form)
        (filter variable?)
        (distinct)))
+
+(defn add-free-variables
+  "Given an `or-join` form like
+
+    (or-join <join-vars> <subcond1> <subcond2>)
+
+  adds to `<join-vars>` the variables from the subclauses that were not generated
+  with `genvar`. Variables generated with `genvar` are presumed to not be needed
+  outside the `or-join`."
+  [form]
+  (let [free-variables (into []
+                             (comp (remove genvar?)
+                                   (distinct))
+                             (free-variables form))]
+    (-> (vec form)
+        (update 1 into free-variables)
+        (update 1 distinct)
+        (update 1 vec)
+        (seq))))
 
 (defn tuple-get
   "Given a tuple and a vector of named keys for the elements of that tuple,
