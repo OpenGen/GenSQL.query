@@ -9,9 +9,9 @@ jobs:
         with:
           java-version: 11
       - name: Setup Clojure tools
-        uses: DeLaGuardo/setup-clojure@2.0
+        uses: DeLaGuardo/setup-clojure@master
         with:
-          tools-deps: 1.10.1.716
+          tools-deps: 1.10.1.739
       - name: Setup node
         uses: actions/setup-node@v1
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
       - name: Install ws
         run: npm install ws
       - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.2.0
+        uses: webfactory/ssh-agent@v0.4.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Run tests in README
