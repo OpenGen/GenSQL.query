@@ -45,10 +45,10 @@ generated-table-expr ::= generate-expr
 
 alter-expr ::= #'(?i)ALTER' ws table-expr ws #'(?i)ADD' ws column-expr
 
-insert-expr   ::= #'(?i)INSERT'
-                  ws into-clause
-                  ws values-clause
-into-clause   ::= #'(?i)INTO' ws table-expr
+insert-expr          ::= #'(?i)INSERT'
+                         ws insert-into-clause
+                         ws values-clause
+insert-into-clause   ::= #'(?i)INTO' ws table-expr
 values-clause ::= #'(?i)VALUES' ws map-list
 map-list      ::= '(' ws? map-expr ws? ')' (ws? ',' ws? '(' map-expr ')')*
 
@@ -87,6 +87,12 @@ predicate-expr      ::= #"<" | #">" | #"<=" | #">="
 generate-expr ::= #'(?i)GENERATE' ws variable-list
                   (ws generate-given-clause)?
                   (ws under-clause)?
+
+incorporate-expr        ::= #'(?i)INCORPORATE'
+                            ws rows-clause
+                            ws incorporate-into-clause
+rows-clause             ::= #'(?i)ROW' ws map-expr
+incorporate-into-clause ::= #'(?i)INTO' ws model-expr
 
 (* probability-clause *)
 
@@ -152,7 +158,10 @@ with-sub-expr ::= query-expr
 
 ref ::= name
 
-model-expr ::= ref | '(' ws? generate-expr ws? ')'
+model-expr ::= '(' ws? model-expr ws? ')'
+             | ref
+             | generate-expr
+             | incorporate-expr
 
 variable-list ::= variable-expr (',' ws? variable-expr)*
 variable-expr ::= name

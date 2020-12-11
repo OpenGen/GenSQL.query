@@ -1,7 +1,6 @@
 (ns inferenceql.query.main
   (:refer-clojure :exclude [print])
   (:require [clojure.data.csv :as csv]
-            [clojure.edn :as edn]
             [clojure.main :as main]
             [clojure.pprint :as pprint]
             [clojure.repl :as repl]
@@ -21,7 +20,7 @@
   specification, and from that specification creates a multimixture model. See
   `clojure.java.io/reader` for a complete list of supported arguments."
   [x]
-  (-> (slurp x) (edn/read-string) (gpm/Multimixture)))
+  (-> (slurp x) (gpm/read-string)))
 
 (defn model
   "Attempts to coerce `x` into a model. `x` must either return a multimixture

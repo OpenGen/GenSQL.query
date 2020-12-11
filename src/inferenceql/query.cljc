@@ -304,7 +304,7 @@
 
 (defmethod eval :insert-expr
   [node env]
-  (let [table (-> (tree/get-node-in node [:into-clause :table-expr])
+  (let [table (-> (tree/get-node-in node [:insert-into-clause :table-expr])
                   (eval env))
         rows (-> (tree/get-node-in node [:values-clause :map-list])
                  (eval env))]
@@ -473,6 +473,16 @@
                                 (eval env))
                         default-constraints)]
     (constrain model targets constraints)))
+
+(defmethod eval :incorporate-expr
+  [node env]
+  (let [row (-> node
+                (tree/get-node-in [:rows-clause :map-expr])
+                (eval env))
+        model (-> node
+                  (tree/get-node-in [:incorporate-into-clause :model-expr])
+                  (eval env))]
+    (gpm/incorporate model row)))
 
 (defmethod eval :generated-table-expr
   [node env]
