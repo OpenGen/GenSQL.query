@@ -1,5 +1,5 @@
 (ns inferenceql.query.main
-  (:refer-clojure :exclude [print])
+  (:refer-clojure :exclude [eval print])
   (:require [clojure.data.csv :as csv]
             [clojure.main :as main]
             [clojure.pprint :as pprint]
@@ -13,6 +13,7 @@
 (def cli-options
   [["-d" "--data DATA" "data CSV path"]
    ["-m" "--model MODEL" "model EDN path"]
+   ["-e" "--eval STRING" "evaluate query in STRING"]
    ["-h" "--help"]])
 
 (defn slurp-model
@@ -58,6 +59,13 @@
                               {}
                               row))))))
 
+(defn eval
+  "Evaluate a query and return the results."
+  [query data models]
+  (try (query/q query data models)
+       (catch Exception e
+         e)))
+
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
   [data models]
@@ -67,9 +75,7 @@
                                 :line-start request-prompt
                                 :stream-end request-exit
                                 (read-line)))
-                      :eval #(try (query/q % data models)
-                                  (catch Exception e
-                                    e))
+                      :eval #(eval % data models)
                       :print print]]
     (apply main/repl repl-options)))
 
@@ -85,16 +91,21 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {url :model, :keys [data help]} options]
+        {url :model, query :eval, :keys [data help]} options]
     (cond (seq errors)
           (doseq [error errors]
             (errorln error))
 
-          (or help (nil? data) (nil? url))
+          (or help
+              (nil? url)
+              (and (nil? data) ; reading from stdin
+                   (nil? query)))
           (errorln summary)
 
           :else
-          (let [model (model url)
+          (let [models {:model (model url)}
                 row-coercer (data/row-coercer (get-in model [:model :vars]))
-                data (mapv row-coercer (slurp-csv data))]
-            (repl data {:model model})))))
+                data (mapv row-coercer (slurp-csv (or data *in*)))]
+            (if query
+              (print (eval query data models))
+              (repl data models))))))

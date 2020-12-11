@@ -6,16 +6,19 @@
 
 ### Command-line interface
 
-`inferenceql.query` provides a simple command-line application that allows the user to manually enter and execute InferenceQL queries. It can be launched with the following command:
+`inferenceql.query` provides a simple command-line application that allows the user to manually enter and evaluate InferenceQL queries. It can be launched with the following command:
 
 ```bash
-% clj -m inferenceql.query.main --help
+% clj -M -m inferenceql.query.main --help
   -d, --data DATA    data CSV path
   -m, --model MODEL  model EDN path
+  -e, --eval QUERY   QUERY to evaluate
   -h, --help
 ```
 
-`path` may be either a local file name or a URI.
+If a query is provided it will be evaluated and the result will be printed. If a query is not provided a REPL will be launched.
+
+`DATA` may be either a local file name or a URI.
 
 ```
 % clj -m inferenceql.query.main --data data.csv --model model.edn
@@ -25,7 +28,15 @@
 % clj -m inferenceql.query.main --data https://bcomp.pro/elephantdata --model https://bcomp.pro/elephantmodel
 ```
 
-Unlike the Clojure interface, the command-line interface currently only supports categorical columns and variables with string categories.
+If `DATA` is not provided the dataset will be read from stdin.
+
+``` bash
+% curl -sL https://bcomp.pro/elephantdata | clojure -M -m inferenceql.query.main --model https://bcomp.pro/elephantmodel --eval "SELECT * FROM data LIMIT 1"
+
+| elephant | rain | student_happy | teacher_sick |
+|----------+------+---------------+--------------|
+|       no |   no |           yes |           no |
+```
 
 ### Clojure interface
 
@@ -33,9 +44,9 @@ Unlike the Clojure interface, the command-line interface currently only supports
 (require '[inferenceql.query :as query])
 ```
 
-`inferenceql.query` exposes the function `inferenceql.query/q`, which can be used to execute queries. It accepts three positional arguments:
+`inferenceql.query` exposes the function `inferenceql.query/q`, which can be used to evaluate queries. It accepts three positional arguments:
 
-1. a query to be executed, a string
+1. a query to be evaluate, a string
 2. a data table, a possibly empty vector of maps
 3. (optional) models, a map from model names to model values
 
