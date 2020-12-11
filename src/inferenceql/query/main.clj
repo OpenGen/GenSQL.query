@@ -48,16 +48,18 @@
 (defn print
   "Prints the results of an InferenceQL query to the console."
   [result]
-  (cond (insta/failure? result) (clojure.core/print result)
-        (instance? Exception result) (repl/pst result)
-        :else (let [columns (:iql/columns (meta result))]
-                (pprint/print-table
-                 (map name columns)
-                 (for [row result]
-                   (reduce-kv (fn [m k v]
-                                (assoc m (name k) v))
-                              {}
-                              row))))))
+  (if (instance? Exception result)
+    (if-let [parse-failure (:instaparse/failure (ex-data result))]
+      (clojure.core/print parse-failure)
+      (repl/pst result))
+    (let [columns (:iql/columns (meta result))]
+      (pprint/print-table
+       (map name columns)
+       (for [row result]
+         (reduce-kv (fn [m k v]
+                      (assoc m (name k) v))
+                    {}
+                    row))))))
 
 (defn eval
   "Evaluate a query and return the results."
