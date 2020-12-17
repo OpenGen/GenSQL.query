@@ -5,7 +5,6 @@
             [clojure.pprint :as pprint]
             [clojure.repl :as repl]
             [clojure.tools.cli :as cli]
-            [instaparse.core :as insta]
             [inferenceql.query :as query]
             [inferenceql.query.data :as data]
             [inferenceql.inference.gpm :as gpm]))
