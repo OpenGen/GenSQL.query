@@ -17,6 +17,7 @@
             [inferenceql.query.math :as math]
             [inferenceql.query.node :as node]
             [inferenceql.query.parse-tree :as tree]
+            [inferenceql.inference.search.view :as view]
             [net.cgrand.xforms :as xforms]))
 
 (def entity-var '?entity)
@@ -476,13 +477,19 @@
 
 (defmethod eval :incorporate-expr
   [node env]
-  (let [row (-> node
-                (tree/get-node-in [:rows-clause :map-expr])
-                (eval env))
-        model (-> node
+  (let [model (-> node
                   (tree/get-node-in [:incorporate-into-clause :model-expr])
-                  (eval env))]
-    (gpm/incorporate model row)))
+                  (eval env))
+        row-or-column-clause (tree/get-node-in node [:row-or-column-clause 0])]
+    (case (tree/tag row-or-column-clause)
+      :row-clause (let [row (-> node
+                                (tree/get-node-in [:row-clause :map-expr])
+                                (eval env))]
+                    (gpm/incorporate model row))
+      :column-clause (let [column (-> node
+                                      (tree/get-node-in [:column-clause :maps-expr])
+                                      (eval env))]
+                       (view/search model column)))))
 
 (defmethod eval :generated-table-expr
   [node env]

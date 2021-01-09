@@ -88,10 +88,14 @@ generate-expr ::= #'(?i)GENERATE' ws variable-list
                   (ws generate-given-clause)?
                   (ws under-clause)?
 
+(* incorporate-expr *)
+
 incorporate-expr        ::= #'(?i)INCORPORATE'
-                            ws rows-clause
+                            ws row-or-column-clause
                             ws incorporate-into-clause
-rows-clause             ::= #'(?i)ROW' ws map-expr
+row-or-column-clause    ::= row-clause | column-clause
+row-clause              ::= #'(?i)ROW' ws map-expr
+column-clause           ::= #'(?i)COLUMN' ws map-expr
 incorporate-into-clause ::= #'(?i)INTO' ws model-expr
 
 (* probability-clause *)
@@ -127,8 +131,9 @@ nat           ::= #'\d+'
 string        ::= #'\"([^\"]+)\"'
 simple-symbol ::= #'(?!G__)[^0-9][\w\-\_\?]*'
 
-map-expr ::= '(' ws? map-expr ws? ')'
-           | map-entry-expr (ws? ',' ws? map-entry-expr)*
+map-expr       ::= '(' ws? map-expr ws? ')'
+                 | map-entry-expr (ws? ',' ws? map-entry-expr)*
+maps-expr      ::= map-expr (ws? ',' ws? map-expr)*
 map-entry-expr ::= column-expr ws? '=' ws? value
 
 (* order-by-clause *)
