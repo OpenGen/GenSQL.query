@@ -1,15 +1,19 @@
 (ns inferenceql.query.data
   "Functions for manipulating InferenceQL datasets."
-  (:require [clojure.edn :as edn]))
+  (:require [clojure.edn :as edn]
+            [clojure.string :as string]))
 
 (defn value-coercer
   "Returns a function that will attempt to coerce a value to a data type
   compatible with the given statistical type."
   [stattype]
-  (case stattype
-    :binary (comp boolean edn/read-string)
-    :categorical str
-    :gaussian (comp double edn/read-string)))
+  (let [coerce (case stattype
+                  :binary (comp boolean edn/read-string)
+                  :categorical str
+                  :gaussian (comp double edn/read-string))]
+    (fn [value]
+      (when-not (string/blank? value)
+        (coerce value)))))
 
 (defn row-coercer
   "Returns a function that will attempt to coerce the values in a map to values
