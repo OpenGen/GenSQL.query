@@ -105,7 +105,7 @@
 
           :else
           (let [models {:model (model url)}
-                row-coercer (data/row-coercer (get-in model [:model :vars]))
+                row-coercer (data/row-coercer (get-in models [:model :vars]))
                 data (mapv row-coercer (slurp-csv (or data *in*)))]
             (if query
               (print (eval query data models))
