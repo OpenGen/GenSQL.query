@@ -45,12 +45,12 @@
 
 (defrecord ConstrainedGPM [gpm targets constraints]
   gpm.proto/GPM
-  (logpdf [this logpdf-targets logpdf-constraints]
+  (logpdf [_ logpdf-targets logpdf-constraints]
     (let [merged-targets (select-keys logpdf-targets targets)
           merged-constraints (merge constraints logpdf-constraints)]
       (gpm/logpdf gpm merged-targets merged-constraints)))
 
-  (simulate [this simulate-targets simulate-constraints]
+  (simulate [_ simulate-targets simulate-constraints]
     (let [merged-targets (set/intersection (set targets) (set simulate-targets))
           merged-constraints (merge constraints simulate-constraints)]
       (gpm/simulate gpm merged-targets merged-constraints))))
