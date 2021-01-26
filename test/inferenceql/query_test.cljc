@@ -429,6 +429,13 @@
     (is (= [{:x 0} {:x -1} {:x -1}]
            result))))
 
+(deftest update-set-where-rowid
+  (let [data [{:x 0} {:x 1} {:x 2}]
+        result (query/q "SELECT * FROM (UPDATE data SET x=-1 WHERE rowid=2)"
+                        data)]
+    (is (= [{:x 0} {:x -1} {:x 2}]
+           result))))
+
 ;;; Alter
 
 (deftest alter

@@ -320,31 +320,28 @@
     (fn [row]
       (merge row changes))))
 
-(defn where-predicate
-  "Takes a `:where-clause` node and returns a predicate that returns `true` if its
-  argument satisfies the `WHERE` clause. Returns `false` otherwise."
-  [node env]
-  (let [query (datalog/merge `{:find [~entity-var]
-                               :in [~'$]
-                               :where [[~entity-var :iql/type :iql.type/row]]}
-                             (datalog-clauses node env))]
-    (fn [row]
-      (let [db (datalog/db [row])
-            {:keys [query inputs]} (inputize {:query query, :inputs [db]}
-                                             env)]
-        (boolean (seq (apply d/q query inputs)))))))
-
 (defmethod eval :update-expr
   [node env]
-  (let [table (-> (tree/get-node node :table-expr)
+  (let [where-clauses (some-> (tree/get-node node :where-clause)
+                              (datalog-clauses env))
+        table (-> (tree/get-node node :table-expr)
                   (eval env))
         f (set-function (tree/get-node node :set-clause)
-                        env)
-        pred (or (some-> (tree/get-node node :where-clause)
-                         (where-predicate env))
-                 (constantly true))]
-    (mapv #(cond-> % (pred %) (f))
-          table)))
+                        env)]
+    (if-not where-clauses
+      (mapv f table)
+      (let [query (datalog/merge `{:find [[~entity-var ...]]
+                                   :in [~'$]
+                                   :where [[~entity-var :iql/type :iql.type/row]]}
+                                 where-clauses)
+            db (datalog/db table)
+            {:keys [query inputs]} (inputize {:query query :inputs [db]}
+                                             env)
+            affected-eids (apply d/q query inputs)]
+        (reduce (fn [table eid]
+                  (update table (dec eid) f))
+                (vec table)
+                affected-eids)))))
 
 (defmethod datalog-clauses :where-clause
   [node env]
