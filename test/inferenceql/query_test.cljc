@@ -12,7 +12,8 @@
             [inferenceql.query :as query]
             [inferenceql.query.parse-tree :as tree]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.inference.gpm.multimixture.specification :as mmix.spec]))
+            [inferenceql.inference.gpm.multimixture.specification :as mmix.spec]
+            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]))
 
 (def simple-mmix
   {:vars {:x :categorical
@@ -216,7 +217,7 @@
 
 (defspec select-order-by-desc
   (prop/for-all [[table col] gen-table-col]
-    (let [query (str "SELECT * FROM data ORDER BY " (name col) " DESC") ]
+    (let [query (str "SELECT * FROM data ORDER BY " (name col) " DESC")]
       (is (->> (query/q query table)
                (map col)
                (descending?))))))
@@ -457,3 +458,62 @@
             {:x 2}
             {:x 3}]
            result))))
+
+;; Incorporate Column
+
+(def incorporate-test-data
+  {0 {:color "red" :flip true}
+   1 {:color "red" :flip true}
+   2 {:color "red" :flip true}
+   3 {:color "red" :flip false}
+   4 {:color "blue" :flip false}
+   5 {:color "green" :flip false}})
+
+(def incorporate-test-xcat-model
+  (let [options {:color ["red" "blue" "green"]}
+        view-1-name (gensym)
+        view-2-name (gensym)
+        xcat-spec {:views {view-1-name {:hypers {:color {:alpha 2}}}
+                           view-2-name {:hypers {:flip {:alpha 1 :beta 1}}}}
+                   :types {:color  :categorical
+                           :flip :bernoulli}}
+
+        xcat-latents {:global {:alpha 0.5}
+                      :local {view-1-name {:alpha 1
+                                           :counts {:one 4 :two 2}
+                                           :y {0 :one
+                                               1 :one
+                                               2 :one
+                                               3 :one
+                                               4 :two
+                                               5 :two}}
+                              view-2-name {:alpha 1
+                                           :counts {:one 3 :two 3}
+                                           :y {0 :one
+                                               1 :one
+                                               2 :one
+                                               3 :two
+                                               4 :two
+                                               5 :two}}}}]
+    (construct-xcat-from-latents xcat-spec xcat-latents incorporate-test-data {:options options})))
+
+(deftest incorporate-column
+  (let [row-order (-> (keys incorporate-test-data)
+                    (sort))
+        data (mapv #(get incorporate-test-data %) row-order)
+        model incorporate-test-xcat-model
+        query "SELECT (PROBABILITY OF label=true
+                        GIVEN color, flip
+                        UNDER (INCORPORATE COLUMN (1=true, 2=true) AS label INTO model)
+                        AS prob)
+               FROM data;"
+        result (query/q query data {:model model})
+        uniq-probs (sort (distinct (map :prob result)))
+        [low-p high-p] uniq-probs]
+    ;; Our model has two views. The :label column gets incorporated into
+    ;; the first view.
+    ;; Within the first view, there are two clusters.
+    ;; All postively labeled rows are in the first cluster, so all rows
+    ;; in that cluster should have a higher probability.
+    (is (= (count uniq-probs) 2))
+    (is (= [high-p high-p high-p high-p low-p low-p] (map :prob result)))))

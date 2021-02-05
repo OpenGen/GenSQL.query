@@ -52,13 +52,12 @@ insert-into-clause   ::= #'(?i)INTO' ws table-expr
 values-clause ::= #'(?i)VALUES' ws map-list
 map-list      ::= '(' ws? map-expr ws? ')' (ws? ',' ws? '(' map-expr ')')*
 
-update-expr ::= #'(?i)UPDATE' table-expr
+update-expr ::= #'(?i)UPDATE' ws table-expr
                 ws set-clause
                 (ws where-clause)?
-set-clause ::= #'(?i)SET' map-expr
+set-clause ::= #'(?i)SET' ws map-expr
 
-pseudo-column-expr ::= rowid
-rowid              ::= 'rowid'
+pseudo-column-expr ::= 'rowid'
 
 (* where-clause *)
 
@@ -95,7 +94,7 @@ incorporate-expr        ::= #'(?i)INCORPORATE'
                             ws incorporate-into-clause
 row-or-column-clause    ::= row-clause | column-clause
 row-clause              ::= #'(?i)ROW' ws map-expr
-column-clause           ::= #'(?i)COLUMN' ws map-expr
+column-clause           ::= #'(?i)COLUMN' ws map-expr ws label-clause
 incorporate-into-clause ::= #'(?i)INTO' ws model-expr
 
 (* probability-clause *)
@@ -124,17 +123,18 @@ event-list ::= star / event-expr (ws? ',' ws? event-expr)* (* like map-expr, but
 
 (* literals *)
 
-value         ::= float | int | string
+value         ::= float | int | bool | string
 float         ::= #'-?\d+\.\d+(E-?\d+)?'
 int           ::= #'-?\d+'
 nat           ::= #'\d+'
+bool          ::= #'true|false'
 string        ::= #'\"([^\"]+)\"'
-simple-symbol ::= #'(?!G__)[^0-9][\w\-\_\?]*'
+simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?]*'
 
+key ::= rowid | column-expr
 map-expr       ::= '(' ws? map-expr ws? ')'
                  | map-entry-expr (ws? ',' ws? map-entry-expr)*
-maps-expr      ::= map-expr (ws? ',' ws? map-expr)*
-map-entry-expr ::= column-expr ws? '=' ws? value
+map-entry-expr ::= key ws? '=' ws? value
 
 (* order-by-clause *)
 
@@ -172,6 +172,7 @@ variable-list ::= variable-expr (',' ws? variable-expr)*
 variable-expr ::= name
 
 column-expr ::= name
+rowid ::= nat
 
 name ::= simple-symbol | '"' simple-symbol '"'
 
