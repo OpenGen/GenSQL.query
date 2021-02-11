@@ -622,9 +622,10 @@
 
 (defmethod eval :with-map-expr
   [node env]
-  (into {}
-        (map #(eval % env))
-        (tree/child-nodes node)))
+  (reduce (fn [env node]
+            (merge env (eval node env)))
+          env
+          (tree/child-nodes node)))
 
 (defmethod eval :with-expr
   [node env]

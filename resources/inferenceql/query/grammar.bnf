@@ -131,7 +131,7 @@ bool          ::= #'true|false'
 string        ::= #'\"([^\"]+)\"'
 simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?]*'
 
-key ::= rowid | column-expr
+key            ::= rowid | column-expr
 map-expr       ::= '(' ws? map-expr ws? ')'
                  | map-entry-expr (ws? ',' ws? map-entry-expr)*
 map-entry-expr ::= key ws? '=' ws? value

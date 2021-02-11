@@ -459,6 +459,18 @@
             {:x 3}]
            result))))
 
+(deftest with-rebind
+  (let [data []
+        result (query/q "WITH (INSERT INTO data VALUES (x=1)) AS data,
+                              (INSERT INTO data VALUES (x=2)) AS data,
+                              (INSERT INTO data VALUES (x=3)) AS data:
+                         SELECT * FROM data;"
+                        data)]
+    (is (= [{:x 1}
+            {:x 2}
+            {:x 3}]
+           result))))
+
 ;; Incorporate Column
 
 (def incorporate-test-data
