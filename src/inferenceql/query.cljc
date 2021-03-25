@@ -20,6 +20,7 @@
             [inferenceql.inference.search.crosscat :as crosscat]
             [net.cgrand.xforms :as xforms]))
 
+(def eid-var '?e)
 (def entity-var '?entity)
 
 (def default-table :data)
@@ -67,6 +68,7 @@
 (def default-environment
   {`math/exp math/exp
    `merge merge
+   `d/entity d/entity
    `d/pull d/pull
    `gpm/logpdf gpm/logpdf
 
@@ -140,8 +142,8 @@
 
 (def hierarchy
   (-> (make-hierarchy)
-      (derive :probability-clause :logpdf-clause)
-      (derive :density-clause :logpdf-clause)))
+      (derive :probability-clause :pdf-clause)
+      (derive :density-clause :pdf-clause)))
 
 (defmulti datalog-clauses (fn [node _]
                             (node/tag node))
@@ -195,67 +197,52 @@
 (defmethod eval :map-entry-expr
   [node env]
   (let [variable (eval (tree/get-node node :key) env)
-        value    (eval (tree/get-node node :value)       env)]
+        value    (eval (tree/get-node node :value) env)]
     {variable value}))
 
 ;;; Selections
 
-(defn event-list-clauses
-  "Given an `:event-list` node and a variable, returns a sequence of Datalog
-  `:where` clauses that bind the values satisfying those events to the provided
-  variable."
-  [node variable env]
-  (let [events-by-tag (group-by node/tag (tree/children node))
-        column-names (mapv #(eval % env) (:column-expr events-by-tag))
+(defmethod eval :event-list
+  [node env]
+  (let [nodes-by-tag (->> (tree/children node)
+                          (group-by tree/tag))
+        m (->> (:map-entry-expr nodes-by-tag)
+               (map #(eval % env))
+               (into {}))
+        cols (if (:star nodes-by-tag)
+               keys
+               (constantly
+                (->> (:column-expr nodes-by-tag)
+                     (map #(eval % env)))))]
+    (fn [row]
+      (merge (select-keys row (cols row))
+             m))))
 
-        row-var (datalog/genvar "row-events-")
-        row-clause (cond (some? (:star events-by-tag)) `[(d/pull ~'$ ~'[*]         ~entity-var) ~row-var]
-                         (seq column-names)            `[(d/pull ~'$ ~column-names ~entity-var) ~row-var]
-                         :else                         `[(~'ground {})                          ~row-var])
-
-        binding-sym (datalog/genvar "binding-events-")
-        binding-map (or (some->> (:map-entry-expr events-by-tag)
-                                 (map #(eval % env))
-                                 (reduce merge))
-                        {})
-
-        event-clause `[(~'ground ~binding-map) ~binding-sym]
-        merge-clause `[(merge ~row-var ~binding-sym) ~variable]]
-    [row-clause event-clause merge-clause]))
-
-(defmethod datalog-clauses :logpdf-clause
+(defmethod datalog-clauses :pdf-clause
   [node env]
   (let [model (or (some-> (tree/get-node-in node [:under-clause :model-expr])
                           (eval env))
                   (safe-get env default-model))
-
         key (or (some-> (tree/get-node-in node [:label-clause :name])
                         (eval env)
                         (name)
                         (symbol))
                 (gensym "density"))
-
-        log-density-var (datalog/variable (str "log-" key))
+        target (-> (tree/get-node-in node [:of-clause :event-list])
+                   (eval env))
+        constraints (or (some-> (tree/get-node-in node [:probability-given-clause :event-list])
+                                (eval env))
+                        (constantly {}))
+        pdf-var (datalog/variable (str key "-function"))
+        pdf (fn [row]
+              (math/exp (gpm/logpdf model (target row) (constraints row))))
         density-var (datalog/variable key)
-
-        model-var       (datalog/genvar "model-")
-        target-var      (datalog/genvar "target-")
-        constraints-var (datalog/genvar "constraints-")
-
-        target-clauses (event-list-clauses (tree/get-node-in node [:of-clause :event-list])
-                                           target-var
-                                           env)
-        constraints-clauses (event-list-clauses (tree/get-node-in node [:probability-given-clause :event-list])
-                                                constraints-var
-                                                env)
-
-        logpdf-clauses `[[(gpm/logpdf ~model-var ~target-var ~constraints-var) ~log-density-var]
-                         [(math/exp ~log-density-var) ~density-var]]]
+        pdf-clause `[(~pdf-var ~entity-var) ~density-var]]
     {:find   [density-var]
      :keys   [key]
-     :in     [model-var]
-     :inputs [model]
-     :where  (reduce into [target-clauses constraints-clauses logpdf-clauses])}))
+     :in     [pdf-var]
+     :inputs [pdf]
+     :where  [pdf-clause]}))
 
 (defmethod datalog-clauses :column-selection
   [node env]
@@ -268,24 +255,25 @@
         variable (datalog/genvar key)]
     {:find [variable]
      :keys [key]
-     :where `[[(~'get-else ~'$ ~entity-var ~column :iql/no-value) ~variable]]}))
+     :where `[[(~'get-else ~'$ ~eid-var ~column :iql/no-value) ~variable]]}))
 
 (defmethod datalog-clauses :rowid-selection
   [_ _]
-  {:find '[?entity]
+  {:find [eid-var]
    :keys '[rowid]
-   :where [[entity-var :iql/type :iql.type/row]]})
+   :where [[eid-var :iql/type :iql.type/row]]})
 
 (defmethod datalog-clauses :select-clause
   [node env]
   (let [select-list (tree/get-node node :select-list)
         star-node (tree/get-node select-list :star)]
-    (datalog/merge {:where [[entity-var :iql/type :iql.type/row]]}
+    (datalog/merge {:where `[[~eid-var :iql/type :iql.type/row]
+                             [(d/entity ~'$ ~eid-var) ~entity-var]]}
                    (if star-node
-                     {:find `[[(~'pull ~entity-var [~'*]) ~'...]]}
+                     {:find `[[(~'pull ~eid-var [~'*]) ~'...]]}
                      (->> (tree/child-nodes select-list)
                           (map #(datalog-clauses % env))
-                          (apply datalog/merge {:find [entity-var]
+                          (apply datalog/merge {:find [eid-var]
                                                 :keys ['db/id]}))))))
 
 ;;; Conditions
@@ -334,9 +322,9 @@
                         env)]
     (if-not where-clauses
       (mapv f table)
-      (let [query (datalog/merge `{:find [[~entity-var ...]]
+      (let [query (datalog/merge `{:find [[~eid-var ...]]
                                    :in [~'$]
-                                   :where [[~entity-var :iql/type :iql.type/row]]}
+                                   :where [[~eid-var :iql/type :iql.type/row]]}
                                  where-clauses)
             db (datalog/db table)
             {:keys [query inputs]} (inputize {:query query :inputs [db]}
@@ -391,7 +379,7 @@
     (let [where-subclauses (->> subclauses
                                 (map :where)
                                 (map andify))]
-      {:where [`(~'or-join [~entity-var] ~@where-subclauses)]})))
+      {:where [`(~'or-join [~eid-var] ~@where-subclauses)]})))
 
 (defmethod datalog-clauses :predicate-condition
   [node env]
@@ -490,9 +478,9 @@
       :column-clause (let [column-clause (tree/get-node-in node
                                                            [:row-or-column-clause :column-clause])
                            ;; TODO: use column-name when crosscat/incorporate-labels supports it.
-                           column-name (-> column-clause
-                                           (tree/get-node :label-clause)
-                                           (eval env))
+                           _column-name (-> column-clause
+                                            (tree/get-node :label-clause)
+                                            (eval env))
                            column-values (-> column-clause
                                              (tree/get-node :map-expr)
                                              (eval env))

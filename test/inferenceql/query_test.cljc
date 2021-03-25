@@ -293,12 +293,12 @@
 (deftest probability-of-rows
   (let [models {:model (gpm/Multimixture simple-mmix)}
         q1 (comp first vals first #(query/q %1 %2 models))]
-    (are [expected x] (= expected
-                         (q1 "SELECT (PROBABILITY OF x UNDER model) FROM data"
-                             [{:x x}]))
-      0.25 "no"
-      0.75 "yes")
-
+    (doseq [event #{"x" "*"}]
+      (are [expected x] (= expected
+                           (q1 (str "SELECT (PROBABILITY OF " event " UNDER model) FROM data")
+                               [{:x x}]))
+        0.25 "no"
+        0.75 "yes"))
     (are [expected x y] (= expected
                            (q1 "SELECT (PROBABILITY OF x GIVEN y UNDER model) FROM data"
                                [{:x x :y y}]))

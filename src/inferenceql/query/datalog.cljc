@@ -30,11 +30,17 @@
   [x]
   ;; Not using a protocol here for now to avoid having to deal with differing
   ;; types in Clojure and ClojureScript.
-  (cond (string? x) (symbol (cond->> x
-                              (not (string/starts-with? x "?"))
-                              (str "?")))
-        (symbol? x) (variable (name x))
-        (keyword? x) (variable (name x))))
+  (let [munged-name (fn [x]
+                      ;; Working around an apparent bug in Datascript's handling
+                      ;; of variable names that contain forward-slashes.
+                      (str (when-let [namepace (namespace x)]
+                             (str namepace "-"))
+                           (name x)))]
+    (cond (string? x) (symbol (cond->> x
+                                (not (string/starts-with? x "?"))
+                                (str "?")))
+          (symbol? x) (variable (munged-name x))
+          (keyword? x) (variable (munged-name x)))))
 
 (defn genvar
   "Like `gensym`, but generates Datalog variables."
