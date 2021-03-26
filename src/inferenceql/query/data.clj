@@ -19,10 +19,8 @@
   "Returns a function that will attempt to coerce the values in a map to values
   that match on the statistical types provided."
   [variable->stattype]
-  (reduce-kv (fn [coercers variable stattype]
-               (fn [row]
-                 (-> row
-                     (update variable (value-coercer stattype))
-                     (coercers))))
-             identity
-             variable->stattype))
+  (fn [row]
+    (reduce-kv (fn [row variable stattype]
+                 (update row variable (value-coercer stattype)))
+               row
+               variable->stattype)))

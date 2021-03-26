@@ -3,6 +3,7 @@
         org.clojure/spec.alpha {:mvn/version "0.2.187"}
         datascript/datascript {:mvn/version "1.0.1"}
         instaparse/instaparse {:mvn/version "1.4.10"}
+        medley/medley {:mvn/version "1.3.0"}
         metosin/muuntaja {:mvn/version "0.6.7"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
         ring/ring-core {:mvn/version "1.8.1"}

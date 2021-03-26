@@ -7,7 +7,8 @@
             [clojure.tools.cli :as cli]
             [inferenceql.query :as query]
             [inferenceql.query.data :as data]
-            [inferenceql.inference.gpm :as gpm]))
+            [inferenceql.inference.gpm :as gpm]
+            [medley.core :as medley]))
 
 (def cli-options
   [["-d" "--data DATA" "data CSV path"]
@@ -105,8 +106,10 @@
 
           :else
           (let [models {:model (model url)}
-                row-coercer (data/row-coercer (get-in models [:model :vars]))
-                data (mapv row-coercer (slurp-csv (or data *in*)))]
+                coerce-vals (data/row-coercer (get-in models [:model :vars]))
+                remove-nils #(medley/remove-vals nil? %)
+                data (mapv (comp remove-nils coerce-vals)
+                           (slurp-csv (or data *in*)))]
             (if query
               (print (eval query data models))
               (repl data models))))))
