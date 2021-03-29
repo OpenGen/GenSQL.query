@@ -18,6 +18,7 @@
             [inferenceql.query.node :as node]
             [inferenceql.query.parse-tree :as tree]
             [inferenceql.inference.search.crosscat :as crosscat]
+            [medley.core :as medley]
             [net.cgrand.xforms :as xforms]))
 
 (def eid-var '?e)
@@ -215,8 +216,9 @@
                 (->> (:column-expr nodes-by-tag)
                      (map #(eval % env)))))]
     (fn [row]
-      (merge (select-keys row (cols row))
-             m))))
+      (medley/remove-vals #{:iql/no-value}
+       (merge (select-keys row (cols row))
+              m)))))
 
 (defmethod datalog-clauses :pdf-clause
   [node env]

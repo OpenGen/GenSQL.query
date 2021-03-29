@@ -280,6 +280,21 @@
 
 ;; Probabilities
 
+(deftest probability-of-missing
+  (let [model (gpm/Multimixture
+               {:vars {:x :categorical
+                       :y :categorical}
+                :views [[{:probability 0.5
+                          :parameters  {:x {"yes" 1.0 "no" 0.0}
+                                        :y {"yes" 1.0 "no" 0.0}}}
+                         {:probability 0.5
+                          :parameters  {:x {"yes" 0.0 "no" 1.0}
+                                        :y {"yes" 0.0 "no" 1.0}}}]]})
+        q1 (comp first vals first #(query/q %1 %2 %3))]
+    (is (= 0.5 (q1 "SELECT (PROBABILITY OF y=\"yes\" GIVEN x UNDER model) FROM data;"
+                   [{}]
+                   {:model model})))))
+
 (deftest probability-of-bindings
   (let [rows [{}]
         models {:model (gpm/Multimixture simple-mmix)}
