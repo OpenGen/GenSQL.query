@@ -22,6 +22,18 @@ jobs:
         uses: webfactory/ssh-agent@v0.4.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Cache m2
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: m2-${{ hashFiles('deps.edn') }}
+      - name: Cache gitlibs
+        uses: actions/cache@v2
+        with:
+          path: ~/.gitlibs
+          key: gitlibs-${{ hashFiles('deps.edn') }}
+      - name: Prepare dependencies
+        run: clojure -M:readme:test -P
       - name: Run tests in README
         run: clojure -A:readme
       - name: Run tests
