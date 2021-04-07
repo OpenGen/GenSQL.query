@@ -461,20 +461,18 @@
 
 (defmethod eval :generate-expr
   [node env]
-  (let [default-under-clause (parse "UNDER model" :start :under-clause)
-        default-constraints {}
+  (let [model (or (some-> (tree/get-node-in node [:under-clause :model-expr])
+                          (eval env))
+                  (safe-get env :model))
 
-        model (-> node
-                  (tree/get-node :under-clause default-under-clause)
-                  (tree/get-node :model-expr)
-                  (eval env))
+        targets (let [variables-node (tree/get-node-in node [:generate-variables-clause 0])]
+                  (case (tree/tag variables-node)
+                    :star (gpm/variables model)
+                    :variable-list (eval variables-node env)))
 
-        targets (-> node (tree/get-node :variable-list) (eval env))
-
-        constraints (or (some-> node
-                                (tree/get-node-in [:generate-given-clause :map-expr])
+        constraints (or (some-> (tree/get-node-in node [:generate-given-clause :map-expr])
                                 (eval env))
-                        default-constraints)]
+                        {})]
     (condition model targets constraints)))
 
 (defmethod eval :incorporate-expr

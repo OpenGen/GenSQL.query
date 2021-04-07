@@ -114,7 +114,7 @@
 (defspec symbol-genvar-relationship
   ;; This invariant is utilized by the function
   ;; `inferenceql.query/free-variables`.
-  (testing "Symbols can't begin with `inferenceql.query/genvar` prefix."
+  (testing "symbols can't begin with `inferenceql.query/genvar` prefix."
     (prop/for-all [s (gen/fmap #(str "G__" %) gen/string)]
       (is (insta/failure? (query/parse s :start :simple-symbol))))))
 
@@ -370,9 +370,12 @@
 ;;; Generate
 
 (deftest generate-generates-correct-columns
-  (testing "Generate"
+  (testing "generate"
     (let [model simple-model
           q #(query/q % [] {:model model})]
+      (testing "with star "
+        (doseq [result (q "SELECT * FROM (GENERATE * UNDER model) LIMIT 10")]
+          (is (= #{:x :y} (set (keys result))))))
       (testing "with a single variable"
         (doseq [result (q "SELECT * FROM (GENERATE y UNDER model) LIMIT 10")]
           (is (= #{:y} (set (keys result))))))

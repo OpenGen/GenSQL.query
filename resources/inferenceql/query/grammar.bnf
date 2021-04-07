@@ -83,9 +83,12 @@ predicate-expr      ::= #"<" | #">" | #"<=" | #">="
 
 (* generate-expr *)
 
-generate-expr ::= #'(?i)GENERATE' ws variable-list
+generate-expr ::= #'(?i)GENERATE'
+                  (ws generate-variables-clause)
                   (ws generate-given-clause)?
                   (ws under-clause)?
+
+generate-variables-clause ::= star / variable-list
 
 (* incorporate-expr *)
 
