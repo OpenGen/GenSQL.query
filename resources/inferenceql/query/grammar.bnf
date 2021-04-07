@@ -97,6 +97,21 @@ row-clause              ::= #'(?i)ROW' ws map-expr
 column-clause           ::= #'(?i)COLUMN' ws map-expr ws label-clause
 incorporate-into-clause ::= #'(?i)INTO' ws model-expr
 
+(* conditioned-by-expr *)
+
+conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED BY' ws conditioning-event-expr
+
+conditioning-event-expr ::= '(' ws? conditioning-event-expr ws? ')'
+                          | conditioning-conjunction-expr
+                          | equivalence-relation-expr
+                          | env-event-expr
+
+conditioning-conjunction-expr ::= conditioning-event-expr (ws #'(?i)AND' ws conditioning-event-expr)+
+
+equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
+
+env-event-expr ::= nilable-ref
+
 (* probability-clause *)
 
 probability-clause ::= #'(?i)PROBABILITY'
@@ -155,18 +170,21 @@ with-map-expr ::= with-map-entry-expr (ws? ',' ws? with-map-entry-expr)*
 with-map-entry-expr ::= with-map-value-expr ws #'(?i)AS' ws name
 with-map-value-expr ::= '(' ws? with-map-value-expr ws? ')'
                       | table-expr
+                      | model-expr
                       | value
 with-sub-expr ::= query-expr
 
 
 (* literals *)
 
-ref ::= name
+ref ::= nilable-ref
+nilable-ref ::= name ('.' name)*
 
 model-expr ::= '(' ws? model-expr ws? ')'
              | ref
              | generate-expr
              | incorporate-expr
+             | conditioned-by-expr
 
 variable-list ::= variable-expr (',' ws? variable-expr)*
 variable-expr ::= name

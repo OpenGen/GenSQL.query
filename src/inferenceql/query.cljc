@@ -45,26 +45,30 @@
               (distinct))
         ms))
 
-(defrecord ConstrainedGPM [gpm targets constraints]
+(defrecord ConditionedGPM [gpm targets conditions]
   gpm.proto/GPM
-  (logpdf [_ logpdf-targets logpdf-constraints]
+  (logpdf [_ logpdf-targets logpdf-conditions]
     (let [merged-targets (select-keys logpdf-targets targets)
-          merged-constraints (merge constraints logpdf-constraints)]
-      (gpm/logpdf gpm merged-targets merged-constraints)))
+          merged-conditions (merge conditions logpdf-conditions)]
+      (gpm/logpdf gpm merged-targets merged-conditions)))
 
-  (simulate [_ simulate-targets simulate-constraints]
+  (simulate [_ simulate-targets simulate-conditions]
     (let [merged-targets (set/intersection (set targets) (set simulate-targets))
-          merged-constraints (merge constraints simulate-constraints)]
-      (gpm/simulate gpm merged-targets merged-constraints))))
+          merged-conditions (merge conditions simulate-conditions)]
+      (gpm/simulate gpm merged-targets merged-conditions)))
 
-(defn constrain
-  "Constrains the provided generative probabilistic model such that it only
+  gpm.proto/Variables
+  (variables [_]
+    (set/intersection targets (gpm/variables gpm))))
+
+(defn condition
+  "Conditions the provided generative probabilistic model such that it only
   simulates the provided targets, and is always subject to the provided
-  constraints."
-  [gpm targets constraints]
+  conditions."
+  [gpm targets conditions]
   (assert vector? targets)
-  (assert map? constraints)
-  (->ConstrainedGPM gpm targets constraints))
+  (assert map? conditions)
+  (->ConditionedGPM gpm targets conditions))
 
 (def default-environment
   {`math/exp math/exp
@@ -210,34 +214,35 @@
         m (->> (:map-entry-expr nodes-by-tag)
                (map #(eval % env))
                (into {}))
-        cols (if (:star nodes-by-tag)
-               keys
-               (constantly
-                (->> (:column-expr nodes-by-tag)
-                     (map #(eval % env)))))]
-    (fn [row]
-      (medley/remove-vals #{:iql/no-value}
-       (merge (select-keys row (cols row))
-              m)))))
+        ks (if (:star nodes-by-tag)
+             keys
+             (constantly
+              (->> (:column-expr nodes-by-tag)
+                   (map #(eval % env)))))]
+    (fn [env]
+      (merge m (select-keys env (ks env))))))
 
 (defmethod datalog-clauses :pdf-clause
   [node env]
-  (let [model (or (some-> (tree/get-node-in node [:under-clause :model-expr])
-                          (eval env))
-                  (safe-get env default-model))
-        key (or (some-> (tree/get-node-in node [:label-clause :name])
+  (let [key (or (some-> (tree/get-node-in node [:label-clause :name])
                         (eval env)
                         (name)
                         (symbol))
                 (gensym "density"))
         target (-> (tree/get-node-in node [:of-clause :event-list])
                    (eval env))
-        constraints (or (some-> (tree/get-node-in node [:probability-given-clause :event-list])
-                                (eval env))
-                        (constantly {}))
+        conditions (if-let [given-node (tree/get-node-in node [:probability-given-clause :event-list])]
+                     (eval given-node env)
+                     (constantly {}))
         pdf-var (datalog/variable (str key "-function"))
         pdf (fn [row]
-              (math/exp (gpm/logpdf model (target row) (constraints row))))
+              (let [env (-> env
+                            (merge row)
+                            (assoc ::row row))
+                    model (if-let [node (tree/get-node-in node [:under-clause :model-expr])]
+                            (eval node env)
+                            (safe-get env default-model))]
+                (math/exp (gpm/logpdf model (target row) (conditions row)))))
         density-var (datalog/variable key)
         pdf-clause `[(~pdf-var ~entity-var) ~density-var]]
     {:find   [density-var]
@@ -430,11 +435,17 @@
 
 (defmethod eval :ref
   [node env]
-  (let [k (-> node
-              (tree/get-node :name)
-              (eval env)
-              (keyword))]
-    (safe-get env k)))
+  (if-let [x (-> (tree/get-node node :nilable-ref)
+                 (eval env))]
+    x
+    (throw (ex-info (str "Unable to resolve symbol: " (unparse node) " in this context")
+                    {:cognitect.anomalies/category :incorrect}))))
+
+(defmethod eval :nilable-ref
+  [node env]
+  (let [ks (->> (tree/child-nodes node)
+                (map #(eval % env)))]
+    (get-in env ks)))
 
 (defmethod eval :predicate-expr
   [node _]
@@ -464,7 +475,7 @@
                                 (tree/get-node-in [:generate-given-clause :map-expr])
                                 (eval env))
                         default-constraints)]
-    (constrain model targets constraints)))
+    (condition model targets constraints)))
 
 (defmethod eval :incorporate-expr
   [node env]
@@ -492,6 +503,48 @@
                                              {}
                                              column-values)]
                        (crosscat/incorporate-labels model labels)))))
+
+(defmethod eval :conditioned-by-expr
+  [node env]
+  (let [model (-> node
+                  (tree/get-node :model-expr)
+                  (eval env))
+        constraints (-> node
+                        (tree/get-node :conditioning-event-expr)
+                        (eval env))]
+    (condition model (gpm/variables model) constraints)))
+
+(defmethod eval :conditioning-event-expr
+  [node env]
+  (let [[child-node] (tree/children node)
+        m (eval child-node env)]
+    (medley/remove-vals #{:iql/no-value} m)))
+
+(defmethod eval :env-event-expr
+  [node env]
+  (let [k (-> (tree/get-node-in node [:nilable-ref :name])
+              (eval env))]
+    (if-let [
+             v (-> (tree/only-child node)
+                   (eval env))]
+      {k v}
+      {})))
+
+(defmethod eval :conditioning-conjunction-expr
+  [node env]
+  (->> (tree/child-nodes node)
+       (map #(eval % env))
+       (into {})))
+
+(defmethod eval :equivalence-relation-expr
+  [node env]
+  (let [[variable-expr value-expr] (tree/child-nodes node)
+        variable (eval variable-expr env)
+        value (case (tree/tag value-expr)
+                :variable-expr (let [var-name (eval value-expr env)]
+                                 (get env var-name))
+                (eval value-expr env))]
+    {variable value}))
 
 (defmethod eval :generated-table-expr
   [node env]

@@ -25,16 +25,18 @@
              :parameters  {:x {"yes" 0.0 "no" 1.0}
                            :y {"yes" 0.0 "no" 1.0}}}]]})
 
-;;; inferenceql.query/constrain
+(def simple-model (gpm/Multimixture simple-mmix))
 
-(defspec constrain
+;;; Model conditioning
+
+(defspec condition
   (let [model (gpm/Multimixture simple-mmix)]
     (prop/for-all [x-value (gen/elements (mmix.spec/categories simple-mmix :x))
                    y-value (gen/elements (mmix.spec/categories simple-mmix :y))]
       (let [target {:x x-value}
-            constraint {:y y-value}
-            constrained-model (query/constrain model (mmix.spec/variables simple-mmix) constraint)]
-        (is (= (gpm/logpdf model             target constraint)
+            condition {:y y-value}
+            constrained-model (query/condition model (mmix.spec/variables simple-mmix) condition)]
+        (is (= (gpm/logpdf model             target condition)
                (gpm/logpdf constrained-model target {})))))))
 
 ;;; Generators
@@ -297,7 +299,7 @@
 
 (deftest probability-of-bindings
   (let [rows [{}]
-        models {:model (gpm/Multimixture simple-mmix)}
+        models {:model simple-model}
         q1 (comp first vals first #(query/q % rows models))]
     (is (= 0.25 (q1 "SELECT (PROBABILITY OF x=\"no\"                  UNDER model) FROM data LIMIT 1")))
     (is (= 0.75 (q1 "SELECT (PROBABILITY OF x=\"yes\"                 UNDER model) FROM data LIMIT 1")))
@@ -306,7 +308,7 @@
     (is (= 0.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))))
 
 (deftest probability-of-rows
-  (let [models {:model (gpm/Multimixture simple-mmix)}
+  (let [models {:model simple-model}
         q1 (comp first vals first #(query/q %1 %2 models))]
     (doseq [event #{"x" "*"}]
       (are [expected x] (= expected
@@ -325,14 +327,14 @@
 (deftest probability-of-generate
   (is (= 1.0 (->> (query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER (GENERATE x GIVEN y=\"yes\" UNDER model)) FROM data"
                            [{}]
-                           {:model (gpm/Multimixture simple-mmix)})
+                           {:model simple-model})
                   first
                   vals
                   first))))
 
 (deftest density-of-bindings
   (let [rows [{}]
-        models {:model (gpm/Multimixture simple-mmix)}
+        models {:model simple-model}
         q1 (comp first vals first #(query/q % rows models))]
     (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"                  UNDER model) FROM data LIMIT 1")))
     (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\"                 UNDER model) FROM data LIMIT 1")))
@@ -341,7 +343,7 @@
     (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))))
 
 (deftest density-of-rows
-  (let [models {:model (gpm/Multimixture simple-mmix)}
+  (let [models {:model simple-model}
         q1 (comp first vals first #(query/q %1 %2 models))]
     (are [expected x] (= expected
                          (q1 "SELECT (PROBABILITY DENSITY OF x UNDER model) FROM data"
@@ -360,7 +362,7 @@
 (deftest density-of-generate
   (is (= 1.0 (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x GIVEN y=\"yes\" UNDER model)) FROM data"
                            [{}]
-                           {:model (gpm/Multimixture simple-mmix)})
+                           {:model simple-model})
                   first
                   vals
                   first))))
@@ -369,7 +371,7 @@
 
 (deftest generate-generates-correct-columns
   (testing "Generate"
-    (let [model (gpm/Multimixture simple-mmix)
+    (let [model simple-model
           q #(query/q % [] {:model model})]
       (testing "with a single variable"
         (doseq [result (q "SELECT * FROM (GENERATE y UNDER model) LIMIT 10")]
@@ -526,13 +528,14 @@
 
 (deftest incorporate-column
   (let [row-order (-> (keys incorporate-test-data)
-                    (sort))
+                      (sort))
         data (mapv #(get incorporate-test-data %) row-order)
         model incorporate-test-xcat-model
-        query "SELECT (PROBABILITY OF label=true
-                        GIVEN color, flip
-                        UNDER (INCORPORATE COLUMN (1=true, 2=true) AS label INTO model)
-                        AS prob)
+        query "WITH (INCORPORATE COLUMN (1=true, 2=true) AS label INTO model) AS model:
+               SELECT (PROBABILITY OF label=true
+                       GIVEN color, flip
+                       UNDER model
+                       AS prob)
                FROM data;"
         result (query/q query data {:model model})
         uniq-probs (sort (distinct (map :prob result)))
@@ -542,5 +545,37 @@
     ;; Within the first view, there are two clusters.
     ;; All postively labeled rows are in the first cluster, so all rows
     ;; in that cluster should have a higher probability.
-    (is (= (count uniq-probs) 2))
-    (is (= [high-p high-p high-p high-p low-p low-p] (map :prob result)))))
+    (is (= 2 (count uniq-probs)))
+    (is (= (map :prob result) [high-p high-p high-p high-p low-p low-p]))))
+
+;;; Condition by
+
+(deftest conditioned-by
+  (testing "generate"
+    (let [q #(query/q % [] {:model simple-model})]
+      (doseq [result (q "SELECT * FROM (GENERATE x UNDER model CONDITIONED BY x=\"yes\") LIMIT 10")]
+        (is (= {:x "yes"} (select-keys result [:x]))))
+      (doseq [result (q "WITH \"yes\" AS v: SELECT * FROM (GENERATE x UNDER model CONDITIONED BY x=v) LIMIT 10")]
+        (is (= {:x "yes"} (select-keys result [:x]))))
+      (doseq [result (q "WITH \"yes\" AS v: SELECT * FROM (GENERATE x UNDER model CONDITIONED BY x=v) LIMIT 10")]
+        (is (= {:x "yes"} (select-keys result [:x]))))))
+
+  (let [q (fn [query rows]
+            (-> (query/q query rows {:model simple-model})
+                (first)
+                (vals)
+                (first)))]
+    (testing "logpdf"
+      (testing "condition present"
+        (is (= 0.0 (q "SELECT PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{:y "no"}]))))
+      (testing "condition missing"
+        (testing "in select"
+          (is (= 0.75 (q "SELECT PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{}]))))
+        (testing "in with"
+          (is (= 0.75 (q "WITH model CONDITIONED BY y AS model: SELECT PROBABILITY OF x=\"yes\" UNDER model" [{:y "no"}])))))))
+
+  (testing "variables"
+    (are [vars] (= vars (gpm/variables (query/condition simple-model vars {})))
+      #{:x}
+      #{:y}
+      #{:x :y})))
