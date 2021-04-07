@@ -276,10 +276,10 @@ If a variable appears alone, then the probability of the variable with that name
     {:p 0.25}]
 ```
 
-#### `GIVEN`
+#### `CONDITIONED BY`
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x GIVEN y UNDER model AS p) FROM data"
+(query/q "SELECT (PROBABILITY OF x UNDER model CONDITIONED BY y AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -294,7 +294,7 @@ If a variable appears alone, then the probability of the variable with that name
 Literal events may also be provided.
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x=\"yes\" GIVEN y UNDER model AS p) FROM data"
+(query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -307,7 +307,7 @@ Literal events may also be provided.
 ```
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x GIVEN y=\"yes\" UNDER model AS p) FROM data"
+(query/q "SELECT (PROBABILITY OF x UNDER model CONDITIONED BY y=\"yes\" AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -322,7 +322,7 @@ Literal events may also be provided.
 Though their semantics differ, the only difference between the _syntax_ of `PROBABILITY DENSITY OF` and the syntax of `PROBABILITY OF` is the addition of the keyword `DENSITY`.
 
 ```clojure
-(query/q "SELECT (PROBABILITY DENSITY OF x GIVEN y UNDER model AS p) FROM data"
+(query/q "SELECT (PROBABILITY DENSITY OF x UNDER model CONDITIONED BY y AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -355,10 +355,10 @@ One can also use generated values from a model as a data source.
     {:x "yes"}]
 ```
 
-One can also generate values that are subject to constraints.
+One can also generate values that are subject to conditions.
 
 ```clojure
-(query/q "SELECT * FROM (GENERATE x GIVEN y=\"yes\" UNDER model) LIMIT 3"
+(query/q "SELECT * FROM (GENERATE x UNDER model CONDITIONED BY y=\"yes\" ) LIMIT 3"
          [{:x "no"}]
          {:model model})
 => [{:x "yes"}
@@ -366,10 +366,10 @@ One can also generate values that are subject to constraints.
     {:x "yes"}]
 ```
 
-One can also compute the probability of an event under a model that is subject to constraints.
+One can also compute the probability of an event under a model that is subject to conditions.
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x UNDER (GENERATE x GIVEN y=\"yes\" UNDER model) AS p) FROM data"
+(query/q "SELECT (PROBABILITY OF x UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" ) AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}

@@ -35,9 +35,9 @@
                    y-value (gen/elements (mmix.spec/categories simple-mmix :y))]
       (let [target {:x x-value}
             condition {:y y-value}
-            constrained-model (query/condition model (mmix.spec/variables simple-mmix) condition)]
+            conditioned-model (query/condition model (mmix.spec/variables simple-mmix) condition)]
         (is (= (gpm/logpdf model             target condition)
-               (gpm/logpdf constrained-model target {})))))))
+               (gpm/logpdf conditioned-model target {})))))))
 
 ;;; Generators
 
@@ -293,7 +293,7 @@
                           :parameters  {:x {"yes" 0.0 "no" 1.0}
                                         :y {"yes" 0.0 "no" 1.0}}}]]})
         q1 (comp first vals first #(query/q %1 %2 %3))]
-    (is (= 0.5 (q1 "SELECT (PROBABILITY OF y=\"yes\" GIVEN x UNDER model) FROM data;"
+    (is (= 0.5 (q1 "SELECT (PROBABILITY OF y=\"yes\" UNDER model CONDITIONED BY x) FROM data;"
                    [{}]
                    {:model model})))))
 
@@ -301,11 +301,11 @@
   (let [rows [{}]
         models {:model simple-model}
         q1 (comp first vals first #(query/q % rows models))]
-    (is (= 0.25 (q1 "SELECT (PROBABILITY OF x=\"no\"                  UNDER model) FROM data LIMIT 1")))
-    (is (= 0.75 (q1 "SELECT (PROBABILITY OF x=\"yes\"                 UNDER model) FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" GIVEN y=\"yes\" UNDER model) FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY OF x=\"no\"  GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))
-    (is (= 0.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))))
+    (is (= 0.25 (q1 "SELECT (PROBABILITY OF x=\"no\"  UNDER model)                          FROM data LIMIT 1")))
+    (is (= 0.75 (q1 "SELECT (PROBABILITY OF x=\"yes\" UNDER model)                          FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"yes\") FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY OF x=\"no\"  UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))
+    (is (= 0.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))))
 
 (deftest probability-of-rows
   (let [models {:model simple-model}
@@ -317,7 +317,7 @@
         0.25 "no"
         0.75 "yes"))
     (are [expected x y] (= expected
-                           (q1 "SELECT (PROBABILITY OF x GIVEN y UNDER model) FROM data"
+                           (q1 "SELECT (PROBABILITY OF x UNDER model CONDITIONED BY y) FROM data"
                                [{:x x :y y}]))
       1.0 "yes" "yes"
       1.0 "no"  "no"
@@ -325,7 +325,7 @@
       0.0 "no"  "yes")))
 
 (deftest probability-of-generate
-  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER (GENERATE x GIVEN y=\"yes\" UNDER model)) FROM data"
+  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" )) FROM data"
                            [{}]
                            {:model simple-model})
                   first
@@ -336,11 +336,11 @@
   (let [rows [{}]
         models {:model simple-model}
         q1 (comp first vals first #(query/q % rows models))]
-    (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"                  UNDER model) FROM data LIMIT 1")))
-    (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\"                 UNDER model) FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" GIVEN y=\"yes\" UNDER model) FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"  GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))
-    (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" GIVEN y=\"no\"  UNDER model) FROM data LIMIT 1")))))
+    (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"  UNDER model)                          FROM data LIMIT 1")))
+    (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model)                          FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"yes\") FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"  UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))
+    (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))))
 
 (deftest density-of-rows
   (let [models {:model simple-model}
@@ -352,7 +352,7 @@
       0.75 "yes")
 
     (are [expected x y] (= expected
-                           (q1 "SELECT (PROBABILITY DENSITY OF x GIVEN y UNDER model) FROM data"
+                           (q1 "SELECT (PROBABILITY DENSITY OF x UNDER model CONDITIONED BY y) FROM data"
                                [{:x x :y y}]))
       1.0 "yes" "yes"
       1.0 "no"  "no"
@@ -360,7 +360,7 @@
       0.0 "no"  "yes")))
 
 (deftest density-of-generate
-  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x GIVEN y=\"yes\" UNDER model)) FROM data"
+  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" )) FROM data"
                            [{}]
                            {:model simple-model})
                   first
@@ -382,9 +382,6 @@
       (testing "with multiple variables"
         (doseq [result (q "SELECT * FROM (GENERATE x, y UNDER model) LIMIT 10")]
           (is (= #{:x :y} (set (keys result))))))
-      (testing "with a literal event"
-        (doseq [result (q "SELECT * FROM (GENERATE x GIVEN x=\"yes\" UNDER model) LIMIT 10")]
-          (is (= {:x "yes"} (select-keys result [:x])))))
       (testing "expressions can have a subset of columns selected from them"
         (doseq [result (q "SELECT y FROM (GENERATE x, y UNDER model) LIMIT 10")]
           (is (= [:y] (keys result)))))
@@ -536,8 +533,8 @@
         model incorporate-test-xcat-model
         query "WITH (INCORPORATE COLUMN (1=true, 2=true) AS label INTO model) AS model:
                SELECT (PROBABILITY OF label=true
-                       GIVEN color, flip
                        UNDER model
+                       CONDITIONED BY color AND flip
                        AS prob)
                FROM data;"
         result (query/q query data {:model model})

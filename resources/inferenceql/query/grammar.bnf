@@ -85,7 +85,6 @@ predicate-expr      ::= #"<" | #">" | #"<=" | #">="
 
 generate-expr ::= #'(?i)GENERATE'
                   (ws generate-variables-clause)
-                  (ws generate-given-clause)?
                   (ws under-clause)?
 
 generate-variables-clause ::= star / variable-list
@@ -119,20 +118,15 @@ env-event-expr ::= nilable-ref
 
 probability-clause ::= #'(?i)PROBABILITY'
                        (ws of-clause)
-                       (ws probability-given-clause)?
                        (ws under-clause)?
                        (ws label-clause)?
 
 density-clause ::= #'(?i)PROBABILITY DENSITY'
                    (ws of-clause)
-                   (ws probability-given-clause)?
                    (ws under-clause)?
                    (ws label-clause)?
 
 of-clause ::= #'(?i)OF' ws event-list
-
-generate-given-clause    ::= #'(?i)GIVEN' ws map-expr
-probability-given-clause ::= #'(?i)GIVEN' ws event-list
 
 under-clause  ::= #'(?i)UNDER' ws model-expr
 

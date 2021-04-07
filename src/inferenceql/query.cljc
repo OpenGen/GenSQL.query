@@ -231,9 +231,6 @@
                 (gensym "density"))
         target (-> (tree/get-node-in node [:of-clause :event-list])
                    (eval env))
-        conditions (if-let [given-node (tree/get-node-in node [:probability-given-clause :event-list])]
-                     (eval given-node env)
-                     (constantly {}))
         pdf-var (datalog/variable (str key "-function"))
         pdf (fn [row]
               (let [env (-> env
@@ -242,7 +239,7 @@
                     model (if-let [node (tree/get-node-in node [:under-clause :model-expr])]
                             (eval node env)
                             (safe-get env default-model))]
-                (math/exp (gpm/logpdf model (target row) (conditions row)))))
+                (math/exp (gpm/logpdf model (target row) {}))))
         density-var (datalog/variable key)
         pdf-clause `[(~pdf-var ~entity-var) ~density-var]]
     {:find   [density-var]
@@ -461,19 +458,14 @@
 
 (defmethod eval :generate-expr
   [node env]
-  (let [model (or (some-> (tree/get-node-in node [:under-clause :model-expr])
-                          (eval env))
-                  (safe-get env :model))
-
+  (let [model (if-let [model-node (tree/get-node-in node [:under-clause :model-expr])]
+                (eval model-node env)
+                (safe-get env :model))
         targets (let [variables-node (tree/get-node-in node [:generate-variables-clause 0])]
                   (case (tree/tag variables-node)
                     :star (gpm/variables model)
-                    :variable-list (eval variables-node env)))
-
-        constraints (or (some-> (tree/get-node-in node [:generate-given-clause :map-expr])
-                                (eval env))
-                        {})]
-    (condition model targets constraints)))
+                    :variable-list (eval variables-node env)))]
+    (condition model targets {})))
 
 (defmethod eval :incorporate-expr
   [node env]
