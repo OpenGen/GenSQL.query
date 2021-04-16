@@ -114,6 +114,23 @@ equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
 
 env-event-expr ::= nilable-ref
 
+(* constrained-by-expr *)
+
+constrained-by-expr ::= model-expr ws #'(?i)CONSTRAINED BY' ws constrain-event-expr
+
+constrain-event-expr ::= '(' ws? constrain-event-expr ws? ')'
+                       | constrain-conjunction-expr
+                       | constrain-disjunction-expr
+                       | binary-relation-expr
+                       | env-event-expr
+
+constrain-conjunction-expr ::= constrain-event-expr (ws #'(?i)AND' ws constrain-event-expr)+
+constrain-disjunction-expr ::= constrain-event-expr (ws #'(?i)OR'  ws constrain-event-expr)+
+
+binary-relation-expr ::= variable-expr ws? binary-op ws? (value / ref)
+
+binary-op ::= #"=" | #"<" | #">" | #"<=" | #">="
+
 (* probability-clause *)
 
 probability-clause ::= #'(?i)PROBABILITY'
@@ -182,6 +199,7 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | generate-expr
              | incorporate-expr
              | conditioned-by-expr
+             | constrained-by-expr
 
 variable-list ::= variable-expr (',' ws? variable-expr)*
 variable-expr ::= name

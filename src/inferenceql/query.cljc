@@ -12,6 +12,7 @@
             [instaparse.core :as insta]
             [instaparse.combinators :as combinators]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.gpm.constrained :as constrained]
             [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.query.datalog :as datalog]
             [inferenceql.query.math :as math]
@@ -535,6 +536,38 @@
                                  (get env var-name))
                 (eval value-expr env))]
     {variable value}))
+
+(defn ^:private event->sexpr
+  "Takes a :constrain-event-expr node and returns a s-expression with the same
+  structure. For instance, if the node was parsed from the string \"x=3\" the
+  value returned will be '(= :x 3)."
+  [node]
+  (let [f (fn [node]
+            (if-not (tree/branch? node)
+              node
+              (case (tree/tag node)
+                :constrain-event-expr (recur (tree/only-child-node node))
+                :constrain-conjunction-expr (cons 'and (tree/child-nodes node))
+                :constrain-disjunction-expr (cons 'or (tree/child-nodes node))
+                :binary-relation-expr (let [[lhs op rhs] (tree/children node)]
+                                        (list op lhs rhs))
+                :binary-op (symbol (tree/only-child node))
+                :variable-expr (eval node {})
+                :value (eval node {}))))]
+    (walk/prewalk f node)))
+
+(defmethod eval :constrained-by-expr
+  [node env]
+  (let [model (-> node
+                  (tree/get-node :model-expr)
+                  (eval env))
+        event (-> (tree/get-node node :constrain-event-expr)
+                  (event->sexpr))
+        opts {:operation? seq?
+              :operator first
+              :operands rest
+              :variable? keyword?}]
+    (constrained/constrain model event opts)))
 
 (defmethod eval :generated-table-expr
   [node env]

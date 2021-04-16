@@ -12,8 +12,10 @@
             [inferenceql.query :as query]
             [inferenceql.query.parse-tree :as tree]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.inference.gpm.multimixture.specification :as mmix.spec]
-            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]))
+            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]
+            [net.cgrand.xforms.rfs :as rfs]))
 
 (def simple-mmix
   {:vars {:x :categorical
@@ -579,3 +581,71 @@
       #{:x}
       #{:y}
       #{:x :y})))
+
+(defn almost-equal?
+  ([x y]
+   (almost-equal? x y 10E-4))
+  ([x y threshold]
+   (< (Math/abs (- x y))
+      threshold)))
+
+(deftest approximate-equality
+  (are [x y] (almost-equal? x y)
+    10E-4 10E-5
+    10E-5 10E-4)
+  (are [x y] (not (almost-equal? x y))
+    10E-3 10E-4
+    10E-4 10E-3))
+
+(deftest constrained-by
+  (testing "generate"
+    (let [model (reify gpm.proto/GPM
+                  (logpdf [_ _ _]
+                    (throw (ex-info "Not implemented")))
+                  (simulate [_ _ _]
+                    {:x (rand-int 10)
+                     :y (rand-int 10)}))
+          rows-constrained-by (fn [event]
+                                (let [query (string/join \space
+                                                         ["SELECT * FROM GENERATE x, y"
+                                                          "UNDER model CONSTRAINED BY" event
+                                                          "LIMIT 10"])]
+                                  (query/q query [] {:model model})))]
+      (testing "binary operation"
+        (doseq [{:keys [x]} (rows-constrained-by "x = 5")]
+          (is (= x 5))))
+      (testing "conjunction"
+        (doseq [{:keys [x y]} (rows-constrained-by "x > 5 AND y < 5")]
+          (is (and (> x 5) (< y 5)))))
+      (testing "disjunction"
+        (doseq [{:keys [x y]} (rows-constrained-by "x >= 5 OR y <= 5")]
+          (is (or (>= x 5)
+                  (<= y 5)))))
+      (testing "precedence"
+        (doseq [{:keys [x]} (rows-constrained-by "x = 0 AND x = 1 OR x = 1")]
+          (is (= x 1))))
+      (testing "parentheses"
+        (doseq [{:keys [x y]} (rows-constrained-by "(x = 0 AND y = 1) OR x = 1")]
+          (is (or (and (= x 0)
+                       (= y 1))
+                  (= x 1))))))))
+
+(def gen-logprob
+  "Generates a log probability."
+  (gen/fmap #(Math/log %)
+            (gen/double* {:min 0 :max 1 :NaN? false})))
+
+(defspec constrained-by-logpdf
+  (prop/for-all [x (gen/such-that pos? gen/nat)
+                 probs (gen/not-empty (gen/vector gen-logprob))]
+    (let [expected (transduce (map #(Math/exp %))
+                              rfs/avg
+                              probs)
+          model (reify gpm.proto/GPM
+                  (logpdf [_ _ {x :x}]
+                    (rand-nth probs))
+                  (simulate [_ _ _]
+                    {:x x}))
+          query (str "SELECT PROBABILITY OF x = " x " UNDER model CONSTRAINED BY x > 0 AS prob LIMIT 1")
+          actual (:prob (first (query/q query [{}] {:model model})))]
+      (is (almost-equal? expected actual 10E-2)))))

@@ -47,6 +47,16 @@
                       {:node node}))
       (first children))))
 
+(defn only-child-node
+  "Returns the only child of `node`. Throws if `node` does not have one child
+  node."
+  [node]
+  (let [child-nodes (child-nodes node)]
+    (if-not (= 1 (count child-nodes))
+      (throw (ex-info (str "Expected one child node, but found " (count child-nodes))
+                      {:node node}))
+      (first child-nodes))))
+
 (defn get-node
   "Returns the first child of `node` with tag `k` if `k` is a keyword, or returns
   the `k`th child if `k` is a natural number."

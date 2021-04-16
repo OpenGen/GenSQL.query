@@ -10,7 +10,7 @@
         ring/ring-jetty-adapter {:mvn/version "1.6.3"}
         ring-cors/ring-cors {:mvn/version "0.1.13"}
         probcomp/inferenceql.inference {:git/url "git@github.com:probcomp/inferenceql.inference.git"
-                                        :sha "3f3473c6a69edd4f5852900ca4263b9bfd43c077"}
+                                        :sha "67feef4a61c8f1a941c1238f769dea664091d0c8"}
         probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git"
                            :sha "8dc9d09f747c1e29886bb9628a0110c6f6bc6f5a"}}
  :paths ["src" "resources"]
