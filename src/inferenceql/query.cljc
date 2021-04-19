@@ -575,14 +575,6 @@
                                           env)]
     (repeatedly #(gpm/simulate model targets {}))))
 
-(defmethod eval :ascending
-  [_ _]
-  compare)
-
-(defmethod eval :descending
-  [_ _]
-  #(compare %2 %1))
-
 ;;; Post-processing xforms
 
 (defn add-placeholders
@@ -628,9 +620,11 @@
   (let [keyfn (or (some-> (tree/get-node node :name)
                           (eval env))
                   default-keyfn)
-        compare (or (some-> (tree/get-node node :compare-expr)
-                            (eval env))
-                    default-compare)]
+        compare (if-let [compare-node (tree/get-node node :compare-expr)]
+                  (case (tree/tag (tree/only-child-node compare-node))
+                    :ascending compare
+                    :descending #(compare %2 %1))
+                  default-compare)]
     (xforms/sort-by keyfn compare)))
 
 ;;; Evaluation
