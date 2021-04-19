@@ -4,16 +4,21 @@
             [clojure.main :as main]
             [clojure.pprint :as pprint]
             [clojure.repl :as repl]
+            [clojure.string :as string]
             [clojure.tools.cli :as cli]
             [inferenceql.query :as query]
             [inferenceql.query.data :as data]
             [inferenceql.inference.gpm :as gpm]
             [medley.core :as medley]))
 
+(def formats #{"csv" "table"})
+
 (def cli-options
   [["-d" "--data DATA" "data CSV path"]
    ["-m" "--model MODEL" "model EDN path"]
    ["-e" "--eval STRING" "evaluate query in STRING"]
+   ["-o" "--output FORMAT" "output format"
+    :validate [formats (str "Must be one of: " (string/join ", " formats))]]
    ["-h" "--help"]])
 
 (defn slurp-model
@@ -45,21 +50,38 @@
     (mapv #(zipmap headers %)
           rows)))
 
-(defn print
-  "Prints the results of an InferenceQL query to the console."
+(defn print-exception
+  [result]
+  (if-let [parse-failure (:instaparse/failure (ex-data result))]
+      (clojure.core/print parse-failure)
+      (repl/pst result)))
+
+(defn print-table
+  "Prints the results of an InferenceQL query to the console as a table."
   [result]
   (if (instance? Exception result)
-    (if-let [parse-failure (:instaparse/failure (ex-data result))]
-      (clojure.core/print parse-failure)
-      (repl/pst result))
-    (let [columns (:iql/columns (meta result))]
-      (pprint/print-table
-       (map name columns)
-       (for [row result]
-         (reduce-kv (fn [m k v]
-                      (assoc m (name k) v))
-                    {}
-                    row))))))
+    (print-exception result)
+    (let [columns (:iql/columns (meta result))
+          header-row (map name columns)
+          cells (for [row result]
+                  (reduce-kv (fn [m k v]
+                               (assoc m (name k) v))
+                             {}
+                             row))]
+      (pprint/print-table header-row cells))))
+
+(defn print-csv
+  "Prints the results of an InferenceQL query to the console as a CSV."
+  [result]
+  (if (instance? Exception result)
+    (print-exception result)
+    (let [columns (get (meta result)
+                       :iql/columns
+                       (into #{} (mapcat keys) result))
+          header-row (map name columns)
+          cells (map (apply juxt columns) result)
+          table (into [header-row] cells)]
+      (csv/write-csv *out* table))))
 
 (defn eval
   "Evaluate a query and return the results."
@@ -70,16 +92,18 @@
 
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
-  [data models]
-  (let [repl-options [:prompt #(clojure.core/print "iql> ")
-                      :read (fn [request-prompt request-exit]
-                              (case (main/skip-whitespace *in*)
-                                :line-start request-prompt
-                                :stream-end request-exit
-                                (read-line)))
-                      :eval #(eval % data models)
-                      :print print]]
-    (apply main/repl repl-options)))
+  ([data models]
+   (repl data models {}))
+  ([data models {:keys [print]}]
+   (let [repl-options [:prompt #(clojure.core/print "iql> ")
+                       :read (fn [request-prompt request-exit]
+                               (case (main/skip-whitespace *in*)
+                                 :line-start request-prompt
+                                 :stream-end request-exit
+                                 (read-line)))
+                       :eval #(eval % data models)
+                       :print print]]
+     (apply main/repl repl-options))))
 
 (defn errorln
   "Like `clojure.core/println`, but prints to `clojure.core/*err*` instead of
@@ -93,7 +117,11 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {url :model, query :eval, :keys [data help]} options]
+        {url :model, query :eval, :keys [data help output]} options
+        print (case output
+                "table" print-table
+                "csv" print-csv
+                nil print-table)]
     (cond (seq errors)
           (doseq [error errors]
             (errorln error))
@@ -112,4 +140,4 @@
                            (slurp-csv (or data *in*)))]
             (if query
               (print (eval query data models))
-              (repl data models))))))
+              (repl data models {:print print}))))))
