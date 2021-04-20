@@ -601,7 +601,7 @@
   (testing "generate"
     (let [model (reify gpm.proto/GPM
                   (logpdf [_ _ _]
-                    (throw (ex-info "Not implemented")))
+                    (throw (ex-info "Not implemented" {})))
                   (simulate [_ _ _]
                     {:x (rand-int 10)
                      :y (rand-int 10)}))
