@@ -92,18 +92,16 @@
 
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
-  ([data models]
-   (repl data models {}))
-  ([data models {:keys [print]}]
-   (let [repl-options [:prompt #(clojure.core/print "iql> ")
-                       :read (fn [request-prompt request-exit]
-                               (case (main/skip-whitespace *in*)
-                                 :line-start request-prompt
-                                 :stream-end request-exit
-                                 (read-line)))
-                       :eval #(eval % data models)
-                       :print print]]
-     (apply main/repl repl-options))))
+  [data models & {:keys [print] :or {print print-table}}]
+  (let [repl-options [:prompt #(clojure.core/print "iql> ")
+                      :read (fn [request-prompt request-exit]
+                              (case (main/skip-whitespace *in*)
+                                :line-start request-prompt
+                                :stream-end request-exit
+                                (read-line)))
+                      :eval #(eval % data models)
+                      :print print]]
+    (apply main/repl repl-options)))
 
 (defn errorln
   "Like `clojure.core/println`, but prints to `clojure.core/*err*` instead of
