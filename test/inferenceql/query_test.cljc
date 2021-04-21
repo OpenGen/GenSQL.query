@@ -13,9 +13,7 @@
             [inferenceql.query.parse-tree :as tree]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.inference.gpm.proto :as gpm.proto]
-            [inferenceql.inference.gpm.multimixture.specification :as mmix.spec]
-            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]
-            [net.cgrand.xforms.rfs :as rfs]))
+            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]))
 
 (def simple-mmix
   {:vars {:x :categorical
@@ -28,18 +26,6 @@
                            :y {"yes" 0.0 "no" 1.0}}}]]})
 
 (def simple-model (gpm/Multimixture simple-mmix))
-
-;;; Model conditioning
-
-(defspec condition
-  (let [model (gpm/Multimixture simple-mmix)]
-    (prop/for-all [x-value (gen/elements (mmix.spec/categories simple-mmix :x))
-                   y-value (gen/elements (mmix.spec/categories simple-mmix :y))]
-      (let [target {:x x-value}
-            condition {:y y-value}
-            conditioned-model (query/condition model (mmix.spec/variables simple-mmix) condition)]
-        (is (= (gpm/logpdf model             target condition)
-               (gpm/logpdf conditioned-model target {})))))))
 
 ;;; Generators
 
@@ -574,13 +560,8 @@
         (testing "in select"
           (is (= 0.75 (q "SELECT PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{}]))))
         (testing "in with"
-          (is (= 0.75 (q "WITH model CONDITIONED BY y AS model: SELECT PROBABILITY OF x=\"yes\" UNDER model" [{:y "no"}])))))))
+          (is (= 0.75 (q "WITH model CONDITIONED BY y AS model: SELECT PROBABILITY OF x=\"yes\" UNDER model" [{:y "no"}]))))))))
 
-  (testing "variables"
-    (are [vars] (= vars (gpm/variables (query/condition simple-model vars {})))
-      #{:x}
-      #{:y}
-      #{:x :y})))
 
 (defn almost-equal?
   ([x y]
@@ -597,55 +578,43 @@
     10E-3 10E-4
     10E-4 10E-3))
 
+(defn event->sexpr
+  [event {:keys [operation? operator operands variable?] :as opts}]
+  (cond (operation? event)
+        (let [operands (map #(event->sexpr % opts)
+                            (operands event))]
+          (cons (operator event) operands))
+
+        (variable? event)
+        (symbol (name event))
+
+        :else
+        event))
+
 (deftest constrained-by
-  (testing "generate"
-    (let [model (reify gpm.proto/GPM
-                  (logpdf [_ _ _]
-                    (throw (ex-info "Not implemented" {})))
-                  (simulate [_ _ _]
-                    {:x (rand-int 10)
-                     :y (rand-int 10)}))
-          rows-constrained-by (fn [event]
-                                (let [query (string/join \space
-                                                         ["SELECT * FROM GENERATE x, y"
-                                                          "UNDER model CONSTRAINED BY" event
-                                                          "LIMIT 10"])]
-                                  (query/q query [] {:model model})))]
-      (testing "binary operation"
-        (doseq [{:keys [x]} (rows-constrained-by "x = 5")]
-          (is (= x 5))))
-      (testing "conjunction"
-        (doseq [{:keys [x y]} (rows-constrained-by "x > 5 AND y < 5")]
-          (is (and (> x 5) (< y 5)))))
-      (testing "disjunction"
-        (doseq [{:keys [x y]} (rows-constrained-by "x >= 5 OR y <= 5")]
-          (is (or (>= x 5)
-                  (<= y 5)))))
-      (testing "precedence"
-        (doseq [{:keys [x]} (rows-constrained-by "x = 0 AND x = 1 OR x = 1")]
-          (is (= x 1))))
-      (testing "parentheses"
-        (doseq [{:keys [x y]} (rows-constrained-by "(x = 0 AND y = 1) OR x = 1")]
-          (is (or (and (= x 0)
-                       (= y 1))
-                  (= x 1))))))))
+  (are [event-expr sexpr]
+      (let [model (reify gpm.proto/Constrain
+                    (constrain [gpm event opts]
+                      {:event event :opts opts}))
+            model-expr (str "model CONSTRAINED BY " event-expr)
+            {:keys [event opts]} (query/eval (query/parse model-expr :start :model-expr)
+                                             {:model model})]
+        (= sexpr (event->sexpr event opts)))
+    "x = 5"
+    '(= x 5)
 
-(def gen-logprob
-  "Generates a log probability."
-  (gen/fmap #(Math/log %)
-            (gen/double* {:min 0 :max 1 :NaN? false})))
+    "x > 5 AND y < 5"
+    '(and (> x 5) (< y 5))
 
-(defspec constrained-by-logpdf
-  (prop/for-all [x (gen/such-that pos? gen/nat)
-                 probs (gen/not-empty (gen/vector gen-logprob))]
-    (let [expected (transduce (map #(Math/exp %))
-                              rfs/avg
-                              probs)
-          model (reify gpm.proto/GPM
-                  (logpdf [_ _ {x :x}]
-                    (rand-nth probs))
-                  (simulate [_ _ _]
-                    {:x x}))
-          query (str "SELECT PROBABILITY OF x = " x " UNDER model CONSTRAINED BY x > 0 AS prob LIMIT 1")
-          actual (:prob (first (query/q query [{}] {:model model})))]
-      (is (almost-equal? expected actual 10E-2)))))
+    "x >= 5 OR y <= 5"
+    '(or (>= x 5) (<= y 5))
+
+    "x = 0 AND x = 1 OR x = 1"
+    '(or (and (= x 0)
+              (= x 1))
+         (= x 1))
+
+    "x = 0 AND (y = 1 OR x = 1)"
+    '(and (= x 0)
+          (or (= y 1)
+              (= x 1)))))

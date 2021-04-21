@@ -12,9 +12,8 @@
             [instaparse.core :as insta]
             [instaparse.combinators :as combinators]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.inference.gpm.constrained :as constrained]
-            [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.query.datalog :as datalog]
+            [inferenceql.query.gpm.subset :as subset]
             [inferenceql.query.math :as math]
             [inferenceql.query.node :as node]
             [inferenceql.query.parse-tree :as tree]
@@ -45,31 +44,6 @@
         (comp (mapcat keys)
               (distinct))
         ms))
-
-(defrecord ConditionedGPM [gpm targets conditions]
-  gpm.proto/GPM
-  (logpdf [_ logpdf-targets logpdf-conditions]
-    (let [merged-targets (select-keys logpdf-targets targets)
-          merged-conditions (merge conditions logpdf-conditions)]
-      (gpm/logpdf gpm merged-targets merged-conditions)))
-
-  (simulate [_ simulate-targets simulate-conditions]
-    (let [merged-targets (set/intersection (set targets) (set simulate-targets))
-          merged-conditions (merge conditions simulate-conditions)]
-      (gpm/simulate gpm merged-targets merged-conditions)))
-
-  gpm.proto/Variables
-  (variables [_]
-    (set/intersection targets (gpm/variables gpm))))
-
-(defn condition
-  "Conditions the provided generative probabilistic model such that it only
-  simulates the provided targets, and is always subject to the provided
-  conditions."
-  [gpm targets conditions]
-  (assert vector? targets)
-  (assert map? conditions)
-  (->ConditionedGPM gpm targets conditions))
 
 (def default-environment
   {`math/exp math/exp
@@ -458,11 +432,11 @@
   (let [model (if-let [model (eval-child-in node env [:under-clause :model-expr])]
                 model
                 (safe-get env :model))
-        targets (let [variables-node (tree/get-node-in node [:generate-variables-clause 0])]
-                  (case (tree/tag variables-node)
-                    :star (gpm/variables model)
-                    :variable-list (eval variables-node env)))]
-    (condition model targets {})))
+        variables (let [variables-node (tree/get-node-in node [:generate-variables-clause 0])]
+                    (case (tree/tag variables-node)
+                      :star (gpm/variables model)
+                      :variable-list (eval variables-node env)))]
+    (subset/subset-gpm model variables)))
 
 (defmethod eval :incorporate-expr
   [node env]
@@ -484,9 +458,13 @@
 
 (defmethod eval :conditioned-by-expr
   [node env]
-  (let [model (eval-child node env :model-expr)
-        constraints (eval-child node env :conditioning-event-expr)]
-    (condition model (gpm/variables model) constraints)))
+  (let [model (-> node
+                  (tree/get-node :model-expr)
+                  (eval env))
+        conditions (-> node
+                       (tree/get-node :conditioning-event-expr)
+                       (eval env))]
+    (gpm/condition model conditions)))
 
 (defmethod eval :conditioning-event-expr
   [node env]
@@ -547,12 +525,12 @@
               :operator first
               :operands rest
               :variable? keyword?}]
-    (constrained/constrain model event opts)))
+    (gpm/constrain model event opts)))
 
 (defmethod eval :generated-table-expr
   [node env]
-  (let [{:keys [targets] :as model} (eval-child node env :generate-expr)]
-    (repeatedly #(gpm/simulate model targets {}))))
+  (let [model (eval-child node env :generate-expr)]
+    (repeatedly #(gpm/simulate model (gpm/variables model) {}))))
 
 ;;; Post-processing xforms
 
