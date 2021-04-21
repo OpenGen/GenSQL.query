@@ -138,4 +138,4 @@
                            (slurp-csv (or data *in*)))]
             (if query
               (print (eval query data models))
-              (repl data models {:print print}))))))
+              (repl data models :print print))))))
