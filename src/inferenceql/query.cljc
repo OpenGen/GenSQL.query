@@ -4,8 +4,7 @@
   `query-plan`."
   #?(:clj (:require [inferenceql.query.io :as io])
      :cljs (:require-macros [inferenceql.query.io :as io]))
-  (:require [clojure.edn :as edn]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
             [clojure.walk :as walk]
             [datascript.core :as d]
             [instaparse.core :as insta]
@@ -14,6 +13,7 @@
             [inferenceql.query.datalog :as datalog]
             [inferenceql.query.gpm.subset :as subset]
             [inferenceql.query.lang.eval :as eval]
+            [inferenceql.query.lang.literals]
             [inferenceql.query.math :as math]
             [inferenceql.query.node :as node]
             [inferenceql.query.parse-tree :as tree]
@@ -123,50 +123,6 @@
     (if-not (= 1 (count child-nodes))
       (throw (ex-info "Datalog clauses for node is not defined" {:node node}))
       (datalog-clauses (first child-nodes) env))))
-
-;;; Literals
-
-(defmethod eval/eval :string
-  [node _]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval/eval :simple-symbol
-  [node _]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval/eval :nat
-  [node _]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval/eval :float
-  [node _]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval/eval :int
-  [node _]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval/eval :bool
-  [node _]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval/eval :map-list
-  [node env]
-  (into []
-        (map #(eval/eval % env))
-        (tree/child-nodes node)))
-
-(defmethod eval/eval :map-expr
-  [node env]
-  (into {}
-        (map #(eval/eval % env))
-        (tree/child-nodes node)))
-
-(defmethod eval/eval :map-entry-expr
-  [node env]
-  (let [variable (eval/eval (tree/get-node node :key) env)
-        value    (eval/eval (tree/get-node node :value) env)]
-    {variable value}))
 
 ;;; Selections
 
