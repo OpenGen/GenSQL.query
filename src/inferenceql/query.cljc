@@ -2,7 +2,6 @@
   "This file defines functions for parsing, transforming, and executing IQL-SQL
   queries. The public API for this file is the functions are `q`, `pq`, and
   `query-plan`."
-  (:refer-clojure :exclude [eval])
   #?(:clj (:require [inferenceql.query.io :as io])
      :cljs (:require-macros [inferenceql.query.io :as io]))
   (:require [clojure.edn :as edn]
@@ -14,6 +13,7 @@
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.datalog :as datalog]
             [inferenceql.query.gpm.subset :as subset]
+            [inferenceql.query.lang.eval :as eval]
             [inferenceql.query.math :as math]
             [inferenceql.query.node :as node]
             [inferenceql.query.parse-tree :as tree]
@@ -108,29 +108,6 @@
 
 ;;; Core functions
 
-(defmulti eval (fn eval-dispatch [node _] (node/tag node)))
-
-(defn eval-child-in
-  "Like `inferenceql.query.parse-tree/get-node-in`, but evaluates the node."
-  [node env tags]
-  (when-let [child (tree/get-node-in node tags)]
-    (eval child env)))
-
-(defn eval-child
-  "Like `inferenceql.query.parse-tree/get-node`, but evaluates the node."
-  [node env tag]
-  (eval-child-in node env [tag]))
-
-(defmethod eval :default
-  [node env]
-  (let [children (tree/children node)
-        child-nodes (tree/child-nodes node)]
-    (cond (= 1 (count child-nodes))
-          (eval (first child-nodes) env)
-
-          (= 1 (count children))
-          (first children))))
-
 (def hierarchy
   (-> (make-hierarchy)
       (derive :probability-clause :pdf-clause)
@@ -149,79 +126,79 @@
 
 ;;; Literals
 
-(defmethod eval :string
+(defmethod eval/eval :string
   [node _]
   (edn/read-string (tree/only-child node)))
 
-(defmethod eval :simple-symbol
+(defmethod eval/eval :simple-symbol
   [node _]
   (edn/read-string (tree/only-child node)))
 
-(defmethod eval :nat
+(defmethod eval/eval :nat
   [node _]
   (edn/read-string (tree/only-child node)))
 
-(defmethod eval :float
+(defmethod eval/eval :float
   [node _]
   (edn/read-string (tree/only-child node)))
 
-(defmethod eval :int
+(defmethod eval/eval :int
   [node _]
   (edn/read-string (tree/only-child node)))
 
-(defmethod eval :bool
+(defmethod eval/eval :bool
   [node _]
   (edn/read-string (tree/only-child node)))
 
-(defmethod eval :map-list
+(defmethod eval/eval :map-list
   [node env]
   (into []
-        (map #(eval % env))
+        (map #(eval/eval % env))
         (tree/child-nodes node)))
 
-(defmethod eval :map-expr
+(defmethod eval/eval :map-expr
   [node env]
   (into {}
-        (map #(eval % env))
+        (map #(eval/eval % env))
         (tree/child-nodes node)))
 
-(defmethod eval :map-entry-expr
+(defmethod eval/eval :map-entry-expr
   [node env]
-  (let [variable (eval (tree/get-node node :key) env)
-        value    (eval (tree/get-node node :value) env)]
+  (let [variable (eval/eval (tree/get-node node :key) env)
+        value    (eval/eval (tree/get-node node :value) env)]
     {variable value}))
 
 ;;; Selections
 
-(defmethod eval :event-list
+(defmethod eval/eval :event-list
   [node env]
   (let [nodes-by-tag (->> (tree/children node)
                           (group-by tree/tag))
         m (->> (:map-entry-expr nodes-by-tag)
-               (map #(eval % env))
+               (map #(eval/eval % env))
                (into {}))
         ks (if (:star nodes-by-tag)
              keys
              (constantly
               (->> (:column-expr nodes-by-tag)
-                   (map #(eval % env)))))]
+                   (map #(eval/eval % env)))))]
     (fn [env]
       (merge m (select-keys env (ks env))))))
 
 (defmethod datalog-clauses :pdf-clause
   [node env]
-  (let [key (or (some-> (eval-child-in node env [:label-clause :name])
+  (let [key (or (some-> (eval/eval-child-in node env [:label-clause :name])
                         (name)
                         (symbol))
                 (gensym "density"))
         target (-> (tree/get-node-in node [:of-clause :event-list])
-                   (eval env))
+                   (eval/eval env))
         pdf-var (datalog/variable (str key "-function"))
         pdf (fn [row]
               (let [env (-> env
                             (merge row)
                             (assoc ::row row))
-                    model (if-let [model (eval-child-in node env [:under-clause :model-expr])]
+                    model (if-let [model (eval/eval-child-in node env [:under-clause :model-expr])]
                             model
                             (safe-get env default-model))]
                 (math/exp (gpm/logpdf model (target row) {}))))
@@ -235,8 +212,8 @@
 
 (defmethod datalog-clauses :column-selection
   [node env]
-  (let [column (eval-child node env :column-expr)
-        key (symbol (or (eval-child-in node env [:label-clause :name])
+  (let [column (eval/eval-child node env :column-expr)
+        key (symbol (or (eval/eval-child-in node env [:label-clause :name])
                         column))
         variable (datalog/genvar key)]
     {:find [variable]
@@ -266,36 +243,36 @@
 
 (defmethod datalog-clauses :from-clause
   [node env]
-  (let [data-source (eval-child node env :table-expr)]
+  (let [data-source (eval/eval-child node env :table-expr)]
     {:in ['$]
      :inputs [data-source]}))
 
-(defmethod eval :alter-expr
+(defmethod eval/eval :alter-expr
   [node env]
-  (let [table (eval-child node env :table-expr)
-        column (eval-child node env :column-expr)]
+  (let [table (eval/eval-child node env :table-expr)
+        column (eval/eval-child node env :column-expr)]
     (map #(assoc % column :iql/no-value)
          table)))
 
-(defmethod eval :insert-expr
+(defmethod eval/eval :insert-expr
   [node env]
-  (let [table (eval-child-in node env [:insert-into-clause :table-expr])
-        rows (eval-child-in node env [:values-clause :map-list])]
+  (let [table (eval/eval-child-in node env [:insert-into-clause :table-expr])
+        rows (eval/eval-child-in node env [:values-clause :map-list])]
     (concat table rows)))
 
 (defn set-function
   "Returns a function that, applies the changes described by the `SET` clause node
   `node` to its argument."
   [node env]
-  (let [changes (eval-child node env :map-expr)]
+  (let [changes (eval/eval-child node env :map-expr)]
     (fn [row]
       (merge row changes))))
 
-(defmethod eval :update-expr
+(defmethod eval/eval :update-expr
   [node env]
   (let [where-clauses (some-> (tree/get-node node :where-clause)
                               (datalog-clauses env))
-        table (eval-child node env :table-expr)
+        table (eval/eval-child node env :table-expr)
         f (set-function (tree/get-node node :set-clause)
                         env)]
     (if-not where-clauses
@@ -340,7 +317,7 @@
 (defmethod datalog-clauses :equality-condition
   [node env]
   (let [{[variable] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)
-        value (eval-child node env :value)]
+        value (eval/eval-child node env :value)]
     (datalog/merge (dissoc selection-clauses :find :keys)
                    {:where `[[(= ~variable ~value)]]})))
 
@@ -362,8 +339,8 @@
   [node env]
   (let [lhs-node (tree/get-node node 0)
         {[sym] :find :as selection-clauses} (datalog-clauses lhs-node env)
-        predicate (eval-child node env :predicate-expr)
-        value     (eval-child node env :value)]
+        predicate (eval/eval-child node env :predicate-expr)
+        value     (eval/eval-child node env :value)]
     (datalog/merge (dissoc selection-clauses :find :keys)
                    {:where `[[(not= ~sym :iql/no-value)]
                              [(~predicate ~sym ~value)]]})))
@@ -397,58 +374,40 @@
     {:query query
      :inputs inputs}))
 
-(defmethod eval :variable-list
+(defmethod eval/eval :variable-list
   [node env]
   (into []
-        (map #(eval % env))
+        (map #(eval/eval % env))
         (tree/child-nodes node)))
 
-(defmethod eval :ref
-  [node env]
-  (if-let [x (eval-child node env :nilable-ref)]
-    x
-    (throw (ex-info (str "Unable to resolve symbol: " (unparse node) " in this context")
-                    {:cognitect.anomalies/category :incorrect}))))
-
-(defmethod eval :nilable-ref
-  [node env]
-  (let [ks (->> (tree/child-nodes node)
-                (map #(eval % env)))]
-    (get-in env ks)))
-
-(defmethod eval :predicate-expr
+(defmethod eval/eval :predicate-expr
   [node _]
   (symbol #?(:clj "clojure.core"
              :cljs "cljs.core")
           (tree/only-child node)))
 
-(defmethod eval :name
+(defmethod eval/eval :generate-expr
   [node env]
-  (-> (eval-child node env :simple-symbol)
-      (keyword)))
-
-(defmethod eval :generate-expr
-  [node env]
-  (let [model (if-let [model (eval-child-in node env [:under-clause :model-expr])]
+  (let [model (if-let [model (eval/eval-child-in node env [:under-clause :model-expr])]
                 model
                 (safe-get env :model))
         variables (let [variables-node (tree/get-node-in node [:generate-variables-clause 0])]
                     (case (tree/tag variables-node)
                       :star (gpm/variables model)
-                      :variable-list (eval variables-node env)))]
+                      :variable-list (eval/eval variables-node env)))]
     (subset/subset-gpm model variables)))
 
-(defmethod eval :incorporate-expr
+(defmethod eval/eval :incorporate-expr
   [node env]
-  (let [model (eval-child-in node env [:incorporate-into-clause :model-expr])
+  (let [model (eval/eval-child-in node env [:incorporate-into-clause :model-expr])
         row-or-column-clause (tree/get-node-in node [:row-or-column-clause 0])]
     (case (tree/tag row-or-column-clause)
-      :row-clause (let [row (eval-child-in node env [:row-or-column-clause :row-clause :map-expr])]
+      :row-clause (let [row (eval/eval-child-in node env [:row-or-column-clause :row-clause :map-expr])]
                     (gpm/incorporate model row))
       :column-clause (let [column-clause (tree/get-node-in node [:row-or-column-clause :column-clause])
                            ;; TODO: use column-name when crosscat/incorporate-labels supports it.
-                           _column-name (eval-child column-clause env :label-clause)
-                           column-values (eval-child column-clause env :map-expr)
+                           _column-name (eval/eval-child column-clause env :label-clause)
+                           column-values (eval/eval-child column-clause env :map-expr)
                            ;; rowids in iql.inference start at 0.
                            labels (reduce-kv (fn [accum k v]
                                                (assoc accum (dec k) v))
@@ -456,45 +415,45 @@
                                              column-values)]
                        (crosscat/incorporate-labels model labels)))))
 
-(defmethod eval :conditioned-by-expr
+(defmethod eval/eval :conditioned-by-expr
   [node env]
   (let [model (-> node
                   (tree/get-node :model-expr)
-                  (eval env))
+                  (eval/eval env))
         conditions (-> node
                        (tree/get-node :conditioning-event-expr)
-                       (eval env))]
+                       (eval/eval env))]
     (gpm/condition model conditions)))
 
-(defmethod eval :conditioning-event-expr
+(defmethod eval/eval :conditioning-event-expr
   [node env]
   (let [[child-node] (tree/children node)
-        m (eval child-node env)]
+        m (eval/eval child-node env)]
     (medley/remove-vals #{:iql/no-value} m)))
 
-(defmethod eval :env-event-expr
+(defmethod eval/eval :env-event-expr
   [node env]
-  (let [k (eval-child-in node env [:nilable-ref :name])]
+  (let [k (eval/eval-child-in node env [:nilable-ref :name])]
     (if-let [
              v (-> (tree/only-child node)
-                   (eval env))]
+                   (eval/eval env))]
       {k v}
       {})))
 
-(defmethod eval :conditioning-conjunction-expr
+(defmethod eval/eval :conditioning-conjunction-expr
   [node env]
   (->> (tree/child-nodes node)
-       (map #(eval % env))
+       (map #(eval/eval % env))
        (into {})))
 
-(defmethod eval :equivalence-relation-expr
+(defmethod eval/eval :equivalence-relation-expr
   [node env]
   (let [[variable-expr value-expr] (tree/child-nodes node)
-        variable (eval variable-expr env)
+        variable (eval/eval variable-expr env)
         value (case (tree/tag value-expr)
-                :variable-expr (let [var-name (eval value-expr env)]
+                :variable-expr (let [var-name (eval/eval value-expr env)]
                                  (get env var-name))
-                (eval value-expr env))]
+                (eval/eval value-expr env))]
     {variable value}))
 
 (defn ^:private event->sexpr
@@ -512,13 +471,13 @@
                 :binary-relation-expr (let [[lhs op rhs] (tree/children node)]
                                         (list op lhs rhs))
                 :binary-op (symbol (tree/only-child node))
-                :variable-expr (eval node {})
-                :value (eval node {}))))]
+                :variable-expr (eval/eval node {})
+                :value (eval/eval node {}))))]
     (walk/prewalk f node)))
 
-(defmethod eval :constrained-by-expr
+(defmethod eval/eval :constrained-by-expr
   [node env]
-  (let [model (eval-child node env :model-expr)
+  (let [model (eval/eval-child node env :model-expr)
         event (-> (tree/get-node node :constrain-event-expr)
                   (event->sexpr))
         opts {:operation? seq?
@@ -527,9 +486,9 @@
               :variable? keyword?}]
     (gpm/constrain model event opts)))
 
-(defmethod eval :generated-table-expr
+(defmethod eval/eval :generated-table-expr
   [node env]
-  (let [model (eval-child node env :generate-expr)]
+  (let [model (eval/eval-child node env :generate-expr)]
     (repeatedly #(gpm/simulate model (gpm/variables model) {}))))
 
 ;;; Post-processing xforms
@@ -563,7 +522,7 @@
 (defn limit-xform
   [node env]
   (if node
-    (let [limit (eval-child node env :nat)]
+    (let [limit (eval/eval-child node env :nat)]
       (take limit))
     (map identity)))
 
@@ -573,7 +532,7 @@
   "Returns a transducer that reorders `rows` based on the `:order-by-clause` node
   `node`. Will order by `:db/id` if `node` is `nil`."
   [node env]
-  (let [keyfn (or (eval-child node env :name)
+  (let [keyfn (or (eval/eval-child node env :name)
                   default-keyfn)
         compare (if-let [compare-node (tree/get-node node :compare-expr)]
                   (case (tree/tag (tree/only-child-node compare-node))
@@ -584,7 +543,7 @@
 
 ;;; Evaluation
 
-(defmethod eval :select-expr
+(defmethod eval/eval :select-expr
   [node env]
   (let [{:keys [query inputs]} (inputize (plan node env) env)
 
@@ -621,26 +580,26 @@
      (if-not (insta/failure? node-or-failure)
        (let [rows (add-placeholders rows)
              env (merge default-environment models {default-table rows})]
-         (eval node-or-failure env))
+         (eval/eval node-or-failure env))
        (let [failure (insta/get-failure node-or-failure)
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                      :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))
 
-(defmethod eval :with-map-entry-expr
+(defmethod eval/eval :with-map-entry-expr
   [node env]
-  (let [k (eval-child node env :name)
-        v (eval-child node env :with-map-value-expr)]
+  (let [k (eval/eval-child node env :name)
+        v (eval/eval-child node env :with-map-value-expr)]
     {k v}))
 
-(defmethod eval :with-map-expr
+(defmethod eval/eval :with-map-expr
   [node env]
   (reduce (fn [env node]
-            (merge env (eval node env)))
+            (merge env (eval/eval node env)))
           env
           (tree/child-nodes node)))
 
-(defmethod eval :with-expr
+(defmethod eval/eval :with-expr
   [node env]
-  (let [bindings (eval-child node env :with-map-expr)]
-    (eval-child node (merge env bindings) :with-sub-expr)))
+  (let [bindings (eval/eval-child node env :with-map-expr)]
+    (eval/eval-child node (merge env bindings) :with-sub-expr)))

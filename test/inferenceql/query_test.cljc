@@ -10,6 +10,7 @@
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [instaparse.core :as insta]
             [inferenceql.query :as query]
+            [inferenceql.query.lang.eval :as eval]
             [inferenceql.query.parse-tree :as tree]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.inference.gpm.proto :as gpm.proto]
@@ -82,7 +83,7 @@
 (defn parse-and-eval
   [& args]
   (-> (apply query/parse args)
-      (query/eval {})))
+      (eval/eval {})))
 
 (defspec nat-evaluation
   (prop/for-all [n gen/nat]
@@ -597,8 +598,8 @@
                     (constrain [gpm event opts]
                       {:event event :opts opts}))
             model-expr (str "model CONSTRAINED BY " event-expr)
-            {:keys [event opts]} (query/eval (query/parse model-expr :start :model-expr)
-                                             {:model model})]
+            {:keys [event opts]} (eval/eval (query/parse model-expr :start :model-expr)
+                                            {:model model})]
         (= sexpr (event->sexpr event opts)))
     "x = 5"
     '(= x 5)
