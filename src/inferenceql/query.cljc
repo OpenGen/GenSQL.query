@@ -10,6 +10,7 @@
             [instaparse.core :as insta]
             [instaparse.combinators :as combinators]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.query.coll :as coll]
             [inferenceql.query.datalog :as datalog]
             [inferenceql.query.gpm.subset :as subset]
             [inferenceql.query.lang.eval :as eval]
@@ -29,22 +30,6 @@
 (def default-model :model)
 (def default-compare compare)
 (def default-keyfn :db/id)
-
-(defn safe-get
-  [coll k]
-  (if (contains? coll k)
-    (get coll k)
-    (throw (ex-info "Collection does not contain key"
-                    {::error ::safe-get
-                     ::coll coll
-                     ::k k}))))
-
-(defn all-keys
-  [ms]
-  (into []
-        (comp (mapcat keys)
-              (distinct))
-        ms))
 
 (def default-environment
   {`math/exp math/exp
@@ -80,7 +65,7 @@
     (-> query-plan
         (update-in [:query] #(walk/postwalk-replace input-names %))
         (update-in [:query :in] into (map input-names replaced-symbols))
-        (update-in [:inputs] into (map #(safe-get env %) replaced-symbols))
+        (update-in [:inputs] into (map #(coll/safe-get env %) replaced-symbols))
         (update-in [:query :where] #(walk/postwalk (fn [form]
                                                      (cond-> form
                                                        (and (coll? form)
@@ -157,7 +142,7 @@
                             (assoc ::row row))
                     model (if-let [model (eval/eval-child-in node env [:under-clause :model-expr])]
                             model
-                            (safe-get env default-model))]
+                            (coll/safe-get env default-model))]
                 (math/exp (gpm/logpdf model (target row) {}))))
         density-var (datalog/variable key)
         pdf-clause `[(~pdf-var ~entity-var) ~density-var]]
@@ -347,7 +332,7 @@
   [node env]
   (let [model (if-let [model (eval/eval-child-in node env [:under-clause :model-expr])]
                 model
-                (safe-get env :model))
+                (coll/safe-get env :model))
         variables (let [variables-node (tree/get-node-in node [:generate-variables-clause 0])]
                     (case (tree/tag variables-node)
                       :star (gpm/variables model)
@@ -383,7 +368,7 @@
   "Ensures that every map in `coll` has the same keys by filling in missing cells
   with the null placeholder."
   [coll]
-  (let [columns (set/union (set (all-keys coll))
+  (let [columns (set/union (set (coll/all-keys coll))
                            (set (:iql/columns (meta coll))))]
     (mapv #(merge (zipmap columns (repeat :iql/no-value))
                   %)
@@ -451,7 +436,7 @@
 
         all-keys (or (some->> (get query :keys)
                               (map keyword))
-                     (all-keys datalog-results))
+                     (coll/all-keys datalog-results))
         columns (remove private-attrs all-keys)]
     (vary-meta rows assoc :iql/columns columns)))
 
