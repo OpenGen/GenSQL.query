@@ -13,15 +13,12 @@
             [inferenceql.query.lang.condition]
             [inferenceql.query.lang.constrain]
             [inferenceql.query.lang.literals]
+            [inferenceql.query.lang.select.plan :as plan]
             [inferenceql.query.math :as math]
-            [inferenceql.query.node :as node]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.inference.search.crosscat :as crosscat]
             [instaparse.core :as insta]
             [net.cgrand.xforms :as xforms]))
-
-(def eid-var '?e)
-(def entity-var '?entity)
 
 (def default-table :data)
 (def default-model :model)
@@ -42,52 +39,6 @@
    `<  <
    `<= <=})
 
-(def input-symbols
-  (->> default-environment
-       (set/map-invert)
-       (map (juxt key (comp datalog/variable val)))
-       (into {})))
-
-(defn inputize
-  "Modifies the provided query plan such that all the symbols that are in the
-  default environment are provided as inputs."
-  [query-plan env]
-  (let [replaced-symbols (->> (select-keys (:query query-plan) [:find :where])
-                              (tree-seq coll? seq)
-                              (filter (set (keys default-environment)))
-                              (distinct))
-        input-names (zipmap (keys default-environment)
-                            (map input-symbols
-                                 (vals default-environment)))]
-    (-> query-plan
-        (update-in [:query] #(walk/postwalk-replace input-names %))
-        (update-in [:query :in] into (map input-names replaced-symbols))
-        (update-in [:inputs] into (map #(coll/safe-get env %) replaced-symbols))
-        (update-in [:query :where] #(walk/postwalk (fn [form]
-                                                     (cond-> form
-                                                       (and (coll? form)
-                                                            (= 'or-join (first form)))
-                                                       (datalog/add-free-variables)))
-                                                   %)))))
-
-;;; Core functions
-
-(def hierarchy
-  (-> (make-hierarchy)
-      (derive :probability-clause :pdf-clause)
-      (derive :density-clause :pdf-clause)))
-
-(defmulti datalog-clauses (fn [node _]
-                            (node/tag node))
-  :hierarchy #'hierarchy)
-
-(defmethod datalog-clauses :default
-  [node env]
-  (let [child-nodes (tree/child-nodes node)]
-    (if-not (= 1 (count child-nodes))
-      (throw (ex-info "Datalog clauses for node is not defined" {:node node}))
-      (datalog-clauses (first child-nodes) env))))
-
 ;;; Selections
 
 (defmethod eval/eval :event-list
@@ -105,7 +56,7 @@
     (fn [env]
       (merge m (select-keys env (ks env))))))
 
-(defmethod datalog-clauses :pdf-clause
+(defmethod plan/clauses :pdf-clause
   [node env]
   (let [key (or (some-> (eval/eval-child-in node env [:label-clause :name])
                         (name)
@@ -123,14 +74,14 @@
                             (coll/safe-get env default-model))]
                 (math/exp (gpm/logpdf model (target row) {}))))
         density-var (datalog/variable key)
-        pdf-clause `[(~pdf-var ~entity-var) ~density-var]]
+        pdf-clause `[(~pdf-var ~plan/entity-var) ~density-var]]
     {:find   [density-var]
      :keys   [key]
      :in     [pdf-var]
      :inputs [pdf]
      :where  [pdf-clause]}))
 
-(defmethod datalog-clauses :column-selection
+(defmethod plan/clauses :column-selection
   [node env]
   (let [column (eval/eval-child node env :column-expr)
         key (symbol (or (eval/eval-child-in node env [:label-clause :name])
@@ -138,30 +89,28 @@
         variable (datalog/genvar key)]
     {:find [variable]
      :keys [key]
-     :where `[[(~'get-else ~'$ ~eid-var ~column :iql/no-value) ~variable]]}))
+     :where `[[(~'get-else ~'$ ~plan/eid-var ~column :iql/no-value) ~variable]]}))
 
-(defmethod datalog-clauses :rowid-selection
+(defmethod plan/clauses :rowid-selection
   [_ _]
-  {:find [eid-var]
+  {:find [plan/eid-var]
    :keys '[rowid]
-   :where [[eid-var :iql/type :iql.type/row]]})
+   :where [[plan/eid-var :iql/type :iql.type/row]]})
 
-(defmethod datalog-clauses :select-clause
+(defmethod plan/clauses :select-clause
   [node env]
   (let [select-list (tree/get-node node :select-list)
         star-node (tree/get-node select-list :star)]
-    (datalog/merge {:where `[[~eid-var :iql/type :iql.type/row]
-                             [(d/entity ~'$ ~eid-var) ~entity-var]]}
+    (datalog/merge {:where `[[~plan/eid-var :iql/type :iql.type/row]
+                             [(d/entity ~'$ ~plan/eid-var) ~plan/entity-var]]}
                    (if star-node
-                     {:find `[[(~'pull ~eid-var [~'*]) ~'...]]}
+                     {:find `[[(~'pull ~plan/eid-var [~'*]) ~'...]]}
                      (->> (tree/child-nodes select-list)
-                          (map #(datalog-clauses % env))
-                          (apply datalog/merge {:find [eid-var]
+                          (map #(plan/clauses % env))
+                          (apply datalog/merge {:find [plan/eid-var]
                                                 :keys ['db/id]}))))))
 
-;;; Conditions
-
-(defmethod datalog-clauses :from-clause
+(defmethod plan/clauses :from-clause
   [node env]
   (let [data-source (eval/eval-child node env :table-expr)]
     {:in ['$]
@@ -191,74 +140,74 @@
 (defmethod eval/eval :update-expr
   [node env]
   (let [where-clauses (some-> (tree/get-node node :where-clause)
-                              (datalog-clauses env))
+                              (plan/clauses env))
         table (eval/eval-child node env :table-expr)
         f (set-function (tree/get-node node :set-clause)
                         env)]
     (if-not where-clauses
       (mapv f table)
-      (let [query (datalog/merge `{:find [[~eid-var ...]]
+      (let [query (datalog/merge `{:find [[~plan/eid-var ...]]
                                    :in [~'$]
-                                   :where [[~eid-var :iql/type :iql.type/row]]}
+                                   :where [[~plan/eid-var :iql/type :iql.type/row]]}
                                  where-clauses)
             db (datalog/db table)
-            {:keys [query inputs]} (inputize {:query query :inputs [db]}
-                                             env)
+            {:keys [query inputs]} (plan/inputize {:query query :inputs [db]}
+                                                  env)
             affected-eids (apply d/q query inputs)]
         (reduce (fn [table eid]
                   (update table (dec eid) f))
                 (vec table)
                 affected-eids)))))
 
-(defmethod datalog-clauses :where-clause
+(defmethod plan/clauses :where-clause
   [node env]
   (->> (tree/child-nodes node)
-       (map #(datalog-clauses % env))
+       (map #(plan/clauses % env))
        (apply datalog/merge)))
 
-(defmethod datalog-clauses :presence-condition
+(defmethod plan/clauses :presence-condition
   [node env]
-  (let [{[sym] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)]
+  (let [{[sym] :find :as selection-clauses} (plan/clauses (tree/get-node node :selection) env)]
     (datalog/merge (dissoc selection-clauses :find :keys)
                    {:where `[[(not= ~sym :iql/no-value)]]})))
 
-(defmethod datalog-clauses :absence-condition
+(defmethod plan/clauses :absence-condition
   [node env]
-  (let [{[sym] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)]
+  (let [{[sym] :find :as selection-clauses} (plan/clauses (tree/get-node node :selection) env)]
     (datalog/merge (dissoc selection-clauses :find :keys)
                    {:where `[[(= ~sym :iql/no-value)]]})))
 
-(defmethod datalog-clauses :and-condition
+(defmethod plan/clauses :and-condition
   [node env]
   (let [child-clauses (->> (tree/child-nodes node)
-                           (mapv #(datalog-clauses % env)))]
+                           (mapv #(plan/clauses % env)))]
     (apply datalog/merge child-clauses)))
 
-(defmethod datalog-clauses :equality-condition
+(defmethod plan/clauses :equality-condition
   [node env]
-  (let [{[variable] :find :as selection-clauses} (datalog-clauses (tree/get-node node :selection) env)
+  (let [{[variable] :find :as selection-clauses} (plan/clauses (tree/get-node node :selection) env)
         value (eval/eval-child node env :value)]
     (datalog/merge (dissoc selection-clauses :find :keys)
                    {:where `[[(= ~variable ~value)]]})))
 
-(defmethod datalog-clauses :or-condition
+(defmethod plan/clauses :or-condition
   [node env]
   (let [andify (fn [subclauses]
                  (if (= 1 (count subclauses))
                    (first subclauses)
                    `(~'and ~@subclauses)))
-        subclauses (map #(datalog-clauses % env)
+        subclauses (map #(plan/clauses % env)
                         (tree/child-nodes node))]
     (assert (every? #(= [:where] (keys %)) subclauses))
     (let [where-subclauses (->> subclauses
                                 (map :where)
                                 (map andify))]
-      {:where [`(~'or-join [~eid-var] ~@where-subclauses)]})))
+      {:where [`(~'or-join [~plan/eid-var] ~@where-subclauses)]})))
 
-(defmethod datalog-clauses :predicate-condition
+(defmethod plan/clauses :predicate-condition
   [node env]
   (let [lhs-node (tree/get-node node 0)
-        {[sym] :find :as selection-clauses} (datalog-clauses lhs-node env)
+        {[sym] :find :as selection-clauses} (plan/clauses lhs-node env)
         predicate (eval/eval-child node env :predicate-expr)
         value     (eval/eval-child node env :value)]
     (datalog/merge (dissoc selection-clauses :find :keys)
@@ -266,33 +215,6 @@
                              [(~predicate ~sym ~value)]]})))
 
 ;;; Query execution
-
-(defn plan
-  "Given a `:select-expr` node returns a query plan for the top-most query.
-  Subqueries will not be considered and are handled in a different step by the
-  interpreter. See `q` for details."
-  [node env]
-  (let [default-from-clause (parser/parse "FROM data" :start :from-clause)
-
-        sql-select-clause (tree/get-node node :select-clause)
-        sql-from-clause   (tree/get-node node :from-clause default-from-clause)
-        sql-where-clause  (tree/get-node node :where-clause)
-
-        datalog-select-clauses (datalog-clauses sql-select-clause env)
-        datalog-from-clauses   (datalog-clauses sql-from-clause env)
-
-        datalog-where-clauses  (if sql-where-clause
-                                 (datalog-clauses sql-where-clause env)
-                                 {})
-
-        all-clauses (datalog/merge datalog-from-clauses ; data source comes first
-                                   datalog-select-clauses
-                                   datalog-where-clauses)
-
-        inputs (get all-clauses :inputs)
-        query (dissoc all-clauses :inputs)]
-    {:query query
-     :inputs inputs}))
 
 (defmethod eval/eval :variable-list
   [node env]
@@ -394,7 +316,7 @@
 
 (defmethod eval/eval :select-expr
   [node env]
-  (let [{:keys [query inputs]} (inputize (plan node env) env)
+  (let [{:keys [query inputs]} (plan/inputize (plan/plan node env) env)
 
         order-by-clause (tree/get-node node :order-by-clause)
         limit-clause    (tree/get-node node :limit-clause)
