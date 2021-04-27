@@ -1,4 +1,4 @@
-(ns inferenceql.query.parse-tree
+(ns inferenceql.query.parser.tree
   (:require [clojure.string :as string]
             [inferenceql.query.node :as node]))
 

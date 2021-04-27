@@ -1,7 +1,7 @@
 (ns inferenceql.query.lang.condition
   (:require [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.lang.eval :as eval]
-            [inferenceql.query.parse-tree :as tree]
+            [inferenceql.query.parser.tree :as tree]
             [medley.core :as medley]))
 
 (defmethod eval/eval :conditioned-by-expr

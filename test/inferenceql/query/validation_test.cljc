@@ -1,12 +1,12 @@
 (ns inferenceql.query.validation-test
   (:require [clojure.test :refer [are deftest]]
-            [inferenceql.query :as query]
+            [inferenceql.query.parser :as parser]
             [inferenceql.query.validation :as validation]))
 
 (defn valid?
   "Returns `true` if query string `s` is valid, `false` otherwise. "
   [s]
-  (validation/valid? (query/parse s)))
+  (validation/valid? (parser/parse s)))
 
 (deftest select-witout-limit
   (are [valid query] (= valid (valid? query))

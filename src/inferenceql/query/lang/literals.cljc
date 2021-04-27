@@ -1,7 +1,7 @@
 (ns inferenceql.query.lang.literals
   (:require [clojure.edn :as edn]
             [inferenceql.query.lang.eval :as eval]
-            [inferenceql.query.parse-tree :as tree]))
+            [inferenceql.query.parser.tree :as tree]))
 
 (defmethod eval/eval :string
   [node _]

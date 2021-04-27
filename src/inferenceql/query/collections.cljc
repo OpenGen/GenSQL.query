@@ -1,4 +1,4 @@
-(ns inferenceql.query.coll)
+(ns inferenceql.query.collections)
 
 (defn safe-get
   "Like `clojure.core/get`, but throws and exception if k is not in coll."

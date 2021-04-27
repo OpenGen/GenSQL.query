@@ -2,25 +2,22 @@
   "This file defines functions for parsing, transforming, and executing IQL-SQL
   queries. The public API for this file is the functions are `q`, `pq`, and
   `query-plan`."
-  #?(:clj (:require [inferenceql.query.io :as io])
-     :cljs (:require-macros [inferenceql.query.io :as io]))
   (:require [clojure.set :as set]
-            [clojure.walk :as walk]
             [datascript.core :as d]
-            [instaparse.core :as insta]
-            [instaparse.combinators :as combinators]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.coll :as coll]
+            [inferenceql.query.collections :as coll]
             [inferenceql.query.datalog :as datalog]
             [inferenceql.query.gpm.subset :as subset]
+            [inferenceql.query.parser :as parser]
             [inferenceql.query.lang.eval :as eval]
             [inferenceql.query.lang.condition]
             [inferenceql.query.lang.constrain]
             [inferenceql.query.lang.literals]
             [inferenceql.query.math :as math]
             [inferenceql.query.node :as node]
-            [inferenceql.query.parse-tree :as tree]
+            [inferenceql.query.parser.tree :as tree]
             [inferenceql.inference.search.crosscat :as crosscat]
+            [instaparse.core :as insta]
             [net.cgrand.xforms :as xforms]))
 
 (def eid-var '?e)
@@ -72,25 +69,6 @@
                                                             (= 'or-join (first form)))
                                                        (datalog/add-free-variables)))
                                                    %)))))
-
-;;; Parsing
-
-(def bnf (io/inline-file "inferenceql/query/grammar.bnf"))
-
-(def parse
-  "An instaparse parser for IQL SQL queries. The grammar is inlined at macro
-  expansion time so that it can be used in the ClojureScript context where we
-  don't have access to file resources."
-  (insta/parser bnf))
-
-(def non-terminals (set (keys (combinators/ebnf bnf))))
-
-(def unparse-transformations (zipmap non-terminals (repeat str)))
-
-(defn unparse
-  "Returns a string that when parsed by `parse` will yield the provided parse tree."
-  [node]
-  (insta/transform unparse-transformations node))
 
 ;;; Core functions
 
@@ -294,7 +272,7 @@
   Subqueries will not be considered and are handled in a different step by the
   interpreter. See `q` for details."
   [node env]
-  (let [default-from-clause (parse "FROM data" :start :from-clause)
+  (let [default-from-clause (parser/parse "FROM data" :start :from-clause)
 
         sql-select-clause (tree/get-node node :select-clause)
         sql-from-clause   (tree/get-node node :from-clause default-from-clause)
@@ -447,7 +425,7 @@
   ([query rows]
    (q query rows {}))
   ([query rows models]
-   (let [node-or-failure (parse query)]
+   (let [node-or-failure (parser/parse query)]
      (if-not (insta/failure? node-or-failure)
        (let [rows (add-placeholders rows)
              env (merge default-environment models {default-table rows})]

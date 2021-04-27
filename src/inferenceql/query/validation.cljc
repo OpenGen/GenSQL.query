@@ -1,8 +1,8 @@
 (ns inferenceql.query.validation
   "Functions for validating queries."
   (:refer-clojure :exclude [ex-info])
-  (:require [inferenceql.query :as query]
-            [inferenceql.query.parse-tree :as tree]
+  (:require [inferenceql.query.parser :as parser]
+            [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.node :as node]))
 
 (def base-ex-info-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect})
@@ -20,8 +20,8 @@
   (when-let [generated-table-expr (tree/get-node-in node [:select-expr :from-clause :table-expr :generated-table-expr])]
     (when-not (tree/get-node-in node [:select-expr :limit-clause])
       (ex-info "Cannot SELECT from generated table without LIMIT"
-               {:select-expr (query/unparse node)
-                :generated-table-expr (query/unparse generated-table-expr)}))))
+               {:select-expr (parser/unparse node)
+                :generated-table-expr (parser/unparse generated-table-expr)}))))
 
 (defn non-data-table-ref
   "Returns an instance of `ExceptionInfo` if `node` selects from a table other
@@ -31,10 +31,10 @@
                              (tree-seq tree/branch? tree/children node))]
     (some (fn [select-expr]
             (when-let [ref (tree/get-node-in select-expr [:from-clause :table-expr :ref])]
-              (when-not (= "data" (query/unparse ref))
+              (when-not (= "data" (parser/unparse ref))
                 (ex-info "Cannot SELECT from table other than 'data'"
-                         {:select-expr (query/unparse select-expr)
-                          :table-expr (query/unparse ref)}))))
+                         {:select-expr (parser/unparse select-expr)
+                          :table-expr (parser/unparse ref)}))))
           select-exprs)))
 
 (def validators [select-without-limit non-data-table-ref])

@@ -10,8 +10,9 @@
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [instaparse.core :as insta]
             [inferenceql.query :as query]
+            [inferenceql.query.parser :as parser]
             [inferenceql.query.lang.eval :as eval]
-            [inferenceql.query.parse-tree :as tree]
+            [inferenceql.query.parser.tree :as tree]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]))
@@ -82,7 +83,7 @@
 
 (defn parse-and-eval
   [& args]
-  (-> (apply query/parse args)
+  (-> (apply parser/parse args)
       (eval/eval {})))
 
 (defspec nat-evaluation
@@ -105,13 +106,13 @@
   ;; `inferenceql.query/free-variables`.
   (testing "symbols can't begin with `inferenceql.query/genvar` prefix."
     (prop/for-all [s (gen/fmap #(str "G__" %) gen/string)]
-      (is (insta/failure? (query/parse s :start :simple-symbol))))))
+      (is (insta/failure? (parser/parse s :start :simple-symbol))))))
 
 ;;; Name
 
 (deftest name-parsing
   (testing "valid"
-    (are [s] (not (insta/failure? (query/parse s :start :name)))
+    (are [s] (not (insta/failure? (parser/parse s :start :name)))
       "a"
       "A"
       "a0"
@@ -120,7 +121,7 @@
       "a-a"
       "a?"))
   (testing "invalid"
-    (are [s] (insta/failure? (query/parse s :start :name))
+    (are [s] (insta/failure? (parser/parse s :start :name))
       "0a")))
 
 ;; Float parsing is a bit different in CLJS. Among other things, whole-numbered
@@ -134,11 +135,11 @@
 ;;; Query parsing success/failure
 
 (deftest parsing-success
-  (are [start query] (nil? (insta/get-failure (query/parse query :start start)))
+  (are [start query] (nil? (insta/get-failure (parser/parse query :start start)))
     :select-expr "SELECT * FROM data"))
 
 (deftest parsing-failure
-  (are [start query] (some? (insta/get-failure (query/parse query :start start)))
+  (are [start query] (some? (insta/get-failure (parser/parse query :start start)))
     :select-expr "123abc"))
 
 ;;; Basic selection
@@ -392,13 +393,13 @@
   (let [query "SELECT x, y, z FROM data;"]
     (is (= query
            (-> query
-               (query/parse)
-               (query/unparse))))
+               (parser/parse)
+               (parser/unparse))))
     (is (= "x, y, z"
            (-> query
-               (query/parse)
+               (parser/parse)
                (tree/get-node-in [:select-expr :select-clause :select-list])
-               (query/unparse))))))
+               (parser/unparse))))))
 
 ;;; Labels
 
@@ -598,7 +599,7 @@
                     (constrain [gpm event opts]
                       {:event event :opts opts}))
             model-expr (str "model CONSTRAINED BY " event-expr)
-            {:keys [event opts]} (eval/eval (query/parse model-expr :start :model-expr)
+            {:keys [event opts]} (eval/eval (parser/parse model-expr :start :model-expr)
                                             {:model model})]
         (= sexpr (event->sexpr event opts)))
     "x = 5"

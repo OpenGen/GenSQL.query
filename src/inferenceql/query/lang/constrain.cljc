@@ -2,7 +2,7 @@
   (:require [clojure.walk :as walk]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.lang.eval :as eval]
-            [inferenceql.query.parse-tree :as tree]))
+            [inferenceql.query.parser.tree :as tree]))
 
 (defn ^:private event->sexpr
   "Takes a :constrain-event-expr node and returns a s-expression with the same

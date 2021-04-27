@@ -12,13 +12,13 @@
 (defmulti eval (fn eval-dispatch [node _] (node/tag node)))
 
 (defn eval-child-in
-  "Like `inferenceql.query.parse-tree/get-node-in`, but evaluates the node."
+  "Like `inferenceql.query.parser.tree/get-node-in`, but evaluates the node."
   [node env tags]
   (when-let [child (tree/get-node-in node tags)]
     (eval child env)))
 
 (defn eval-child
-  "Like `inferenceql.query.parse-tree/get-node`, but evaluates the node."
+  "Like `inferenceql.query.parser.tree/get-node`, but evaluates the node."
   [node env tag]
   (eval-child-in node env [tag]))
 
