@@ -380,3 +380,17 @@ One can also compute the probability of an event under a model that is subject t
     {:p 0.0}
     {:p 0.0}]
 ```
+
+### JavaScript interface
+
+The library can be built into a stand-alone `.js` bundle with the following command:
+
+``` shell
+clojure -M:js-build
+```
+
+After loading the JavaScript bundle a query can be issued by calling the function `inferenceql.query.js.query`:
+
+``` javascript
+inferenceql.query.js.query("SELECT *", [{x: 0}, {x: 1}, {x: 2}], {model: ...})
+```
