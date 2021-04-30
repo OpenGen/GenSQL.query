@@ -17,6 +17,7 @@
             [inferenceql.query.lang.select.selections]
             [inferenceql.query.lang.select.where]
             [inferenceql.query.lang.table]
+            [inferenceql.query.lang.with-as]
             [inferenceql.query.math :as math]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.inference.search.crosscat :as crosscat]
@@ -193,21 +194,3 @@
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                      :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))
-
-(defmethod eval/eval :with-map-entry-expr
-  [node env]
-  (let [k (eval/eval-child node env :name)
-        v (eval/eval-child node env :with-map-value-expr)]
-    {k v}))
-
-(defmethod eval/eval :with-map-expr
-  [node env]
-  (reduce (fn [env node]
-            (merge env (eval/eval node env)))
-          env
-          (tree/child-nodes node)))
-
-(defmethod eval/eval :with-expr
-  [node env]
-  (let [bindings (eval/eval-child node env :with-map-expr)]
-    (eval/eval-child node (merge env bindings) :with-sub-expr)))
