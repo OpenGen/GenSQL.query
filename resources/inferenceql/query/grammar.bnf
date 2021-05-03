@@ -103,16 +103,16 @@ incorporate-into-clause ::= #'(?i)INTO' ws model-expr
 
 (* conditioned-by-expr *)
 
-conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED BY' ws conditioning-event-expr
+conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED BY' ws density-event-expr
 
-conditioning-event-expr ::= '(' ws? conditioning-event-expr ws? ')'
-                          | conditioning-conjunction-expr
-                          | equivalence-relation-expr
-                          | env-event-expr
+density-event-expr ::= '(' ws? density-event-expr ws? ')'
+                     | density-event-conjunction-expr
+                     | density-event-equivalence-relation-expr
+                     | env-event-expr
 
-conditioning-conjunction-expr ::= conditioning-event-expr (ws #'(?i)AND' ws conditioning-event-expr)+
+density-event-conjunction-expr ::= density-event-expr (ws #'(?i)AND' ws density-event-expr)+
 
-equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
+density-event-equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
 
 env-event-expr ::= nilable-ref
 

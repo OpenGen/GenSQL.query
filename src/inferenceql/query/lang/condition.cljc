@@ -10,11 +10,11 @@
                   (tree/get-node :model-expr)
                   (eval/eval env))
         conditions (-> node
-                       (tree/get-node :conditioning-event-expr)
+                       (tree/get-node :density-event-expr)
                        (eval/eval env))]
     (gpm/condition model conditions)))
 
-(defmethod eval/eval :conditioning-event-expr
+(defmethod eval/eval :density-event-expr
   [node env]
   (let [[child-node] (tree/children node)
         m (eval/eval child-node env)]
@@ -29,13 +29,13 @@
       {k v}
       {})))
 
-(defmethod eval/eval :conditioning-conjunction-expr
+(defmethod eval/eval :density-event-conjunction-expr
   [node env]
   (->> (tree/child-nodes node)
        (map #(eval/eval % env))
        (into {})))
 
-(defmethod eval/eval :equivalence-relation-expr
+(defmethod eval/eval :density-event-equivalence-relation-expr
   [node env]
   (let [[variable-expr value-expr] (tree/child-nodes node)
         variable (eval/eval variable-expr env)
