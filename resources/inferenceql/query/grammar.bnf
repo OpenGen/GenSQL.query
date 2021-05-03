@@ -118,20 +118,20 @@ env-event-expr ::= nilable-ref
 
 (* constrained-by-expr *)
 
-constrained-by-expr ::= model-expr ws #'(?i)CONSTRAINED BY' ws constrain-event-expr
+constrained-by-expr ::= model-expr ws #'(?i)CONSTRAINED BY' ws distribution-event-expr
 
-constrain-event-expr ::= '(' ws? constrain-event-expr ws? ')'
-                       | constrain-conjunction-expr
-                       | constrain-disjunction-expr
-                       | binary-relation-expr
-                       | env-event-expr
+distribution-event-expr ::= '(' ws? distribution-event-expr ws? ')'
+                          | distribution-event-conjunction-expr
+                          | distribution-event-disjunction-expr
+                          | distribution-event-binary-relation-expr
+                          | env-event-expr
 
-constrain-conjunction-expr ::= constrain-event-expr (ws #'(?i)AND' ws constrain-event-expr)+
-constrain-disjunction-expr ::= constrain-event-expr (ws #'(?i)OR'  ws constrain-event-expr)+
+distribution-event-conjunction-expr ::= distribution-event-expr (ws #'(?i)AND' ws distribution-event-expr)+
+distribution-event-disjunction-expr ::= distribution-event-expr (ws #'(?i)OR'  ws distribution-event-expr)+
 
-binary-relation-expr ::= variable-expr ws? binary-op ws? (value / ref)
+distribution-event-binary-relation-expr ::= variable-expr ws? distribution-event-binary-op ws? (value / ref)
 
-binary-op ::= #"=" | #"<" | #">" | #"<=" | #">="
+distribution-event-binary-op ::= #"=" | #"<" | #">" | #"<=" | #">="
 
 (* probability-clause *)
 
