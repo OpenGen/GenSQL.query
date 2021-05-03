@@ -22,11 +22,9 @@
 
 (defmethod eval/eval :event-variable-expr
   [node env]
-  (let [k (eval/eval-child-in node env [:nilable-ref :name])]
-    (if-let [
-             v (-> (tree/only-child node)
-                   (eval/eval env))]
-      {k v}
+  (let [variable (eval/eval-child node {} :variable-expr)]
+    (if-let [value (get env variable)]
+      {variable value}
       {})))
 
 (defmethod eval/eval :density-event-conjunction-expr

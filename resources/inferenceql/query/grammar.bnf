@@ -114,7 +114,7 @@ density-event-conjunction-expr ::= density-event-expr (ws #'(?i)AND' ws density-
 
 density-event-equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
 
-event-variable-expr ::= nilable-ref
+event-variable-expr ::= variable-expr
 
 (* constrained-by-expr *)
 
