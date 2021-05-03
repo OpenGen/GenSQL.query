@@ -13,14 +13,7 @@
 (def eid-var '?e)
 (def entity-var '?entity)
 
-(def hierarchy
-  (-> (make-hierarchy)
-      (derive :probability-clause :pdf-clause)
-      (derive :density-clause :pdf-clause)))
-
-(defmulti clauses (fn [node _]
-                    (node/tag node))
-  :hierarchy #'hierarchy)
+(defmulti clauses (fn [node _] (node/tag node)))
 
 (defmethod clauses :default
   [node env]

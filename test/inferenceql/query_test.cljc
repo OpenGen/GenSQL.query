@@ -272,7 +272,7 @@
 
 ;; Probabilities
 
-(deftest probability-of-missing
+(deftest density-of-missing
   (let [model (gpm/Multimixture
                {:vars {:x :categorical
                        :y :categorical}
@@ -283,39 +283,12 @@
                           :parameters  {:x {"yes" 0.0 "no" 1.0}
                                         :y {"yes" 0.0 "no" 1.0}}}]]})
         q1 (comp first vals first #(query/q %1 %2 %3))]
-    (is (= 0.5 (q1 "SELECT (PROBABILITY OF y=\"yes\" UNDER model CONDITIONED BY x) FROM data;"
+    (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF y=\"yes\" UNDER model CONDITIONED BY x) FROM data;"
                    [{}]
                    {:model model})))))
 
-(deftest probability-of-bindings
-  (let [rows [{}]
-        models {:model simple-model}
-        q1 (comp first vals first #(query/q % rows models))]
-    (is (= 0.25 (q1 "SELECT (PROBABILITY OF x=\"no\"  UNDER model)                          FROM data LIMIT 1")))
-    (is (= 0.75 (q1 "SELECT (PROBABILITY OF x=\"yes\" UNDER model)                          FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"yes\") FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY OF x=\"no\"  UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))
-    (is (= 0.0  (q1 "SELECT (PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))))
-
-(deftest probability-of-rows
-  (let [models {:model simple-model}
-        q1 (comp first vals first #(query/q %1 %2 models))]
-    (doseq [event #{"x" "*"}]
-      (are [expected x] (= expected
-                           (q1 (str "SELECT (PROBABILITY OF " event " UNDER model) FROM data")
-                               [{:x x}]))
-        0.25 "no"
-        0.75 "yes"))
-    (are [expected x y] (= expected
-                           (q1 "SELECT (PROBABILITY OF x UNDER model CONDITIONED BY y) FROM data"
-                               [{:x x :y y}]))
-      1.0 "yes" "yes"
-      1.0 "no"  "no"
-      0.0 "yes" "no"
-      0.0 "no"  "yes")))
-
 (deftest probability-of-generate
-  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" )) FROM data"
+  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" )) FROM data"
                            [{}]
                            {:model simple-model})
                   first
@@ -522,7 +495,7 @@
         data (mapv #(get incorporate-test-data %) row-order)
         model incorporate-test-xcat-model
         query "WITH (INCORPORATE COLUMN (1=true, 2=true) AS label INTO model) AS model:
-               SELECT (PROBABILITY OF label=true
+               SELECT (PROBABILITY DENSITY OF label=true
                        UNDER model
                        CONDITIONED BY color AND flip
                        AS prob)
@@ -557,12 +530,12 @@
                 (first)))]
     (testing "logpdf"
       (testing "condition present"
-        (is (= 0.0 (q "SELECT PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{:y "no"}]))))
+        (is (= 0.0 (q "SELECT PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{:y "no"}]))))
       (testing "condition missing"
         (testing "in select"
-          (is (= 0.75 (q "SELECT PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{}]))))
+          (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y" [{}]))))
         (testing "in with"
-          (is (= 0.75 (q "WITH model CONDITIONED BY y AS model: SELECT PROBABILITY OF x=\"yes\" UNDER model" [{:y "no"}]))))))))
+          (is (= 0.75 (q "WITH model CONDITIONED BY y AS model: SELECT PROBABILITY DENSITY OF x=\"yes\" UNDER model" [{:y "no"}]))))))))
 
 
 (defn almost-equal?

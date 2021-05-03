@@ -240,9 +240,9 @@ Conditions can be joined together with `AND` and `OR`.
     {:x 2}]
 ```
 
-### `PROBABILITY OF` and `PROBABILITY DENSITY OF`
+### `PROBABILITY DENSITY OF`
 
-In addition to columns, one can also select the probability of, or probability density of, a set of events occurring under an `inferenceql.inference` model. `PROBABILITY OF` will return the (normalized) likelihood of the events occurring under the model as a number between `0` and `1`. `PROBABILITY DENSITY OF` will return a number that expresses relative likelihood of the event occurring under the model. The behavior of `PROBABILITY OF` is only defined when it is used with categorical variables (variables that can take on one of a limited number of possible values).
+In addition to columns, one can also select the or probability density of a set of events occurring under an `inferenceql.inference` model. `PROBABILITY DENSITY OF` will return a number that expresses relative likelihood of the event occurring under the model. 
 
 To make models available for querying a map with model names as keys and models as values may be passed to `inferenceql.query/q` via an optional third argument.
 
@@ -261,10 +261,10 @@ To make models available for querying a map with model names as keys and models 
                             :y {"yes" 0.0 "no" 1.0}}}]]}))
 ```
 
-If a variable appears alone, then the probability of the variable with that name, taking on the value in the column with the same name, is returned.
+If a variable appears alone, then the probability density of the variable with that name, taking on the value in the column with the same name, is returned.
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x UNDER model AS p) FROM data"
+(query/q "SELECT (PROBABILITY DENSITY OF x UNDER model AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -279,7 +279,7 @@ If a variable appears alone, then the probability of the variable with that name
 #### `CONDITIONED BY`
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x UNDER model CONDITIONED BY y AS p) FROM data"
+(query/q "SELECT (PROBABILITY DENSITY OF x UNDER model CONDITIONED BY y AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -294,7 +294,7 @@ If a variable appears alone, then the probability of the variable with that name
 Literal events may also be provided.
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x=\"yes\" UNDER model CONDITIONED BY y AS p) FROM data"
+(query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -307,7 +307,7 @@ Literal events may also be provided.
 ```
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x UNDER model CONDITIONED BY y=\"yes\" AS p) FROM data"
+(query/q "SELECT (PROBABILITY DENSITY OF x UNDER model CONDITIONED BY y=\"yes\" AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}
@@ -317,21 +317,6 @@ Literal events may also be provided.
     {:p 1.0}
     {:p 0.0}
     {:p 0.0}]
-```
-
-Though their semantics differ, the only difference between the _syntax_ of `PROBABILITY DENSITY OF` and the syntax of `PROBABILITY OF` is the addition of the keyword `DENSITY`.
-
-```clojure
-(query/q "SELECT (PROBABILITY DENSITY OF x UNDER model CONDITIONED BY y AS p) FROM data"
-         [{:x "yes" :y "yes"}
-          {:x "yes" :y "no"}
-          {:x "no"  :y "yes"}
-          {:x "no"  :y "no"}]
-         {:model model})
-=> [{:p 1.0}
-    {:p 0.0}
-    {:p 0.0}
-    {:p 1.0}]
 ```
 
 ### `GENERATE`
@@ -366,10 +351,10 @@ One can also generate values that are subject to conditions.
     {:x "yes"}]
 ```
 
-One can also compute the probability of an event under a model that is subject to conditions.
+One can also compute the probability density of an event under a model that is subject to conditions.
 
 ```clojure
-(query/q "SELECT (PROBABILITY OF x UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" ) AS p) FROM data"
+(query/q "SELECT (PROBABILITY DENSITY OF x UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\") AS p) FROM data"
          [{:x "yes" :y "yes"}
           {:x "yes" :y "no"}
           {:x "no"  :y "yes"}

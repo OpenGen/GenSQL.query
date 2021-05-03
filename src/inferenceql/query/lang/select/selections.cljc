@@ -27,8 +27,7 @@
     (fn [env]
       (merge m (select-keys env (ks env))))))
 
-
-(defmethod plan/clauses :pdf-clause
+(defmethod plan/clauses :density-clause
   [node env]
   (let [key (or (some-> (eval/eval-child-in node env [:label-clause :name])
                         (name)
