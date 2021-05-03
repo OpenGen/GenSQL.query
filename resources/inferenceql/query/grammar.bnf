@@ -108,13 +108,13 @@ conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED BY' ws density-event-exp
 density-event-expr ::= '(' ws? density-event-expr ws? ')'
                      | density-event-conjunction-expr
                      | density-event-equivalence-relation-expr
-                     | env-event-expr
+                     | event-variable-expr
 
 density-event-conjunction-expr ::= density-event-expr (ws #'(?i)AND' ws density-event-expr)+
 
 density-event-equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
 
-env-event-expr ::= nilable-ref
+event-variable-expr ::= nilable-ref
 
 (* constrained-by-expr *)
 
@@ -124,7 +124,7 @@ distribution-event-expr ::= '(' ws? distribution-event-expr ws? ')'
                           | distribution-event-conjunction-expr
                           | distribution-event-disjunction-expr
                           | distribution-event-binary-relation-expr
-                          | env-event-expr
+                          | event-variable-expr
 
 distribution-event-conjunction-expr ::= distribution-event-expr (ws #'(?i)AND' ws distribution-event-expr)+
 distribution-event-disjunction-expr ::= distribution-event-expr (ws #'(?i)OR'  ws distribution-event-expr)+

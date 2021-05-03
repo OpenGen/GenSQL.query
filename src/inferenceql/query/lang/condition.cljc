@@ -20,7 +20,7 @@
         m (eval/eval child-node env)]
     (medley/remove-vals #{:iql/no-value} m)))
 
-(defmethod eval/eval :env-event-expr
+(defmethod eval/eval :event-variable-expr
   [node env]
   (let [k (eval/eval-child-in node env [:nilable-ref :name])]
     (if-let [
