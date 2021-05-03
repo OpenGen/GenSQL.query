@@ -4,6 +4,7 @@
   (:require [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.collections :as coll]
             [inferenceql.query.datalog :as datalog]
+            [inferenceql.query.lang.constrain :as constrain]
             [inferenceql.query.lang.eval :as eval]
             [inferenceql.query.lang.literals]
             [inferenceql.query.lang.select.plan :as plan]
@@ -27,13 +28,40 @@
     (fn [env]
       (merge m (select-keys env (ks env))))))
 
+(defmethod plan/clauses :probability-clause
+  [node env]
+  (let [key (or (some-> (eval/eval-child-in node env [:label-clause :name])
+                        (name)
+                        (symbol))
+                (gensym "probability"))
+        event (fn [env]
+                (-> (tree/get-node-in node [:probability-of-clause :distribution-event-expr])
+                    (constrain/event->sexpr env)))
+        prob-f-var (datalog/variable (str key "-function"))
+        prob (fn [row]
+               (let [env (-> env
+                             (merge row)
+                             (assoc ::row row))
+                     model (if-let [model (eval/eval-child-in node env [:under-clause :model-expr])]
+                             model
+                             (coll/safe-get env default-model))]
+                 (let [event (event row)]
+                   (math/exp (gpm/logprob model event)))))
+        prob-var (datalog/variable key)
+        pdf-clause `[(~prob-f-var ~plan/entity-var) ~prob-var]]
+    {:find   [prob-var]
+     :keys   [key]
+     :in     [prob-f-var]
+     :inputs [prob]
+     :where  [pdf-clause]}))
+
 (defmethod plan/clauses :density-clause
   [node env]
   (let [key (or (some-> (eval/eval-child-in node env [:label-clause :name])
                         (name)
                         (symbol))
                 (gensym "density"))
-        target (-> (tree/get-node-in node [:of-clause :event-list])
+        target (-> (tree/get-node-in node [:density-of-clause :event-list])
                    (eval/eval env))
         pdf-var (datalog/variable (str key "-function"))
         pdf (fn [row]

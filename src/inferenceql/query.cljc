@@ -24,6 +24,7 @@
    `d/entity d/entity
    `d/pull d/pull
    `gpm/logpdf gpm/logpdf
+   `gpm/logprob gpm/logprob
 
    `=  =
    `not= not=

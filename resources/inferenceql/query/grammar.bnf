@@ -129,23 +129,25 @@ distribution-event-expr ::= '(' ws? distribution-event-expr ws? ')'
 distribution-event-conjunction-expr ::= distribution-event-expr (ws #'(?i)AND' ws distribution-event-expr)+
 distribution-event-disjunction-expr ::= distribution-event-expr (ws #'(?i)OR'  ws distribution-event-expr)+
 
-distribution-event-binary-relation-expr ::= variable-expr ws? distribution-event-binary-op ws? (value / ref)
+distribution-event-binary-relation-expr ::= variable-expr ws? distribution-event-binary-op ws? (value / nilable-ref)
 
 distribution-event-binary-op ::= #"=" | #"<" | #">" | #"<=" | #">="
 
 (* probability-clause *)
 
 probability-clause ::= #'(?i)PROBABILITY'
-                       (ws of-clause)
+                       (ws probability-of-clause)
                        (ws under-clause)?
                        (ws label-clause)?
 
+probability-of-clause ::= #'(?i)OF' ws distribution-event-expr
+
 density-clause ::= #'(?i)PROBABILITY DENSITY'
-                   (ws of-clause)
+                   (ws density-of-clause)
                    (ws under-clause)?
                    (ws label-clause)?
 
-of-clause ::= #'(?i)OF' ws event-list
+density-of-clause ::= #'(?i)OF' ws event-list
 
 under-clause  ::= #'(?i)UNDER' ws model-expr
 
