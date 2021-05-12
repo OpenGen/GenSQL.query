@@ -5,6 +5,7 @@
             [inferenceql.query.collections :as coll]
             [inferenceql.query.datalog :as datalog]
             [inferenceql.query.lang.eval :as eval]
+            [inferenceql.query.lang.literals]
             [inferenceql.query.lang.select.plan :as plan]
             [inferenceql.query.math :as math]
             [inferenceql.query.parser.tree :as tree]))
@@ -67,3 +68,16 @@
   {:find [plan/eid-var]
    :keys '[rowid]
    :where [[plan/eid-var :iql/type :iql.type/row]]})
+
+(defmethod plan/clauses :value-selection
+  [node env]
+  (let [key (if-let [label (tree/get-node-in node [:label-clause :name])]
+              (-> (eval/eval label {})
+                  (symbol))
+              (gensym "value"))
+        binding (datalog/variable key)
+        value (eval/eval-child node env :value)]
+    {:find [binding]
+     :keys [key]
+     :in [binding]
+     :inputs [value]}))

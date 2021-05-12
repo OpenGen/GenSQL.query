@@ -17,12 +17,14 @@ select-list ::= star / selection (ws? ',' ws? selection)*
 star        ::= '*'
 selection   ::= '(' ws? selection ws? ')'
               / rowid-selection
+              / value-selection
               / column-selection
               / probability-clause
               / density-clause
 
 column-selection ::= column-expr (ws label-clause)?
 rowid-selection ::= 'rowid'
+value-selection ::= value (ws label-clause)?
 
 label-clause ::= #'(?i)AS' ws name
 
