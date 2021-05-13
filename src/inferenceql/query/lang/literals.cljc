@@ -9,7 +9,7 @@
 
 (defmethod eval/eval :simple-symbol
   [node _]
-  (edn/read-string (tree/only-child node)))
+  (symbol (tree/only-child node)))
 
 (defmethod eval/eval :nat
   [node _]
