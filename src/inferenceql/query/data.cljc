@@ -8,9 +8,8 @@
   compatible with the given statistical type."
   [stattype]
   (let [coerce (case stattype
-                  :binary (comp boolean edn/read-string)
-                  :categorical str
-                  :gaussian (comp double edn/read-string))]
+                  :nominal str
+                  :numerical (comp double edn/read-string))]
     (fn [value]
       (when-not (string/blank? value)
         (coerce value)))))

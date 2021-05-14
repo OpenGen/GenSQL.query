@@ -1,6 +1,7 @@
 (ns inferenceql.query.main
   (:refer-clojure :exclude [eval print])
   (:require [clojure.data.csv :as csv]
+            [clojure.edn :as edn]
             [clojure.main :as main]
             [clojure.pprint :as pprint]
             [clojure.repl :as repl]
@@ -16,6 +17,7 @@
 (def cli-options
   [["-d" "--data DATA" "data CSV path"]
    ["-m" "--model MODEL" "model EDN path"]
+   ["-s" "--schema SCHEMA" "schema EDN path"]
    ["-e" "--eval STRING" "evaluate query in STRING"]
    ["-o" "--output FORMAT" "output format"
     :validate [formats (str "Must be one of: " (string/join ", " formats))]]
@@ -115,7 +117,7 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {url :model, query :eval, :keys [data help output]} options
+        {url :model, query :eval, :keys [data schema help output]} options
         print (case output
                 "table" print-table
                 "csv" print-csv
@@ -126,13 +128,15 @@
 
           (or help
               (nil? url)
+              (nil? schema)
               (and (nil? data) ; reading from stdin
                    (nil? query)))
           (errorln summary)
 
           :else
           (let [models {:model (model url)}
-                coerce-vals (data/row-coercer (get-in models [:model :vars]))
+                schema (medley/map-keys keyword (edn/read-string (slurp schema)))
+                coerce-vals (data/row-coercer schema)
                 remove-nils #(medley/remove-vals nil? %)
                 data (mapv (comp remove-nils coerce-vals)
                            (slurp-csv (or data *in*)))]

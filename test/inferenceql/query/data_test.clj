@@ -2,26 +2,18 @@
   (:require [clojure.test :refer [deftest is]]
             [inferenceql.query.data :as data]))
 
-(deftest binary-coercer
-  (let [coerce (data/value-coercer :binary)]
-    (is (= true (coerce "true")))
-    (is (= false (coerce "false")))))
-
 (deftest gaussian-coercer
-  (let [coerce (data/value-coercer :gaussian)]
+  (let [coerce (data/value-coercer :numerical)]
     (is (= 1982.0 (coerce "1982")))))
 
 (deftest categorical-coercer
-  (let [coerce (data/value-coercer :categorical)]
+  (let [coerce (data/value-coercer :nominal)]
     (is (= "April" (coerce "April")))))
 
 (deftest map-coercion
-  (let [coerce (data/row-coercer {:programmer :binary
-                                  :month :categorical
-                                  :year :gaussian})]
-    (is (= {:programmer true
-            :month "April"
+  (let [coerce (data/row-coercer {:month :nominal
+                                  :year :numerical})]
+    (is (= {:month "April"
             :year 1982.0}
-           (coerce {:programmer "true"
-                    :month "April"
+           (coerce {:month "April"
                     :year "1982.0"})))))
