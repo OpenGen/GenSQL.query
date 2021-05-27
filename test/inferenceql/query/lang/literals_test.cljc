@@ -7,7 +7,6 @@
 (deftest evaluation
   (are [s tag expected] (let [actual (-> (parser/parse s :start tag)
                                          (eval/eval {}))]
-                          (prn "(type actual)" (type actual))
                           (= expected actual))
     "true"  :simple-symbol (symbol "true")
     "false" :simple-symbol (symbol "false")
