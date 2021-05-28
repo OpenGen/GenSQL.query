@@ -8,6 +8,7 @@
   compatible with the given statistical type."
   [stattype]
   (let [coerce (case stattype
+                  :ignore str
                   :nominal str
                   :numerical (comp double edn/read-string))]
     (fn [value]
