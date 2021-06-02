@@ -227,6 +227,15 @@
       (is (= (take n table)
              results)))))
 
+(deftest select-where-limit
+  (is (= [{:x 2}]
+         (query/q "SELECT * FROM data WHERE x > 0 ORDER BY x DESC LIMIT 1"
+                  [{:x 0}
+                   {:x 1}
+                   {:x 0}
+                   {:x 2}
+                   {:x 0}]))))
+
 ;; Conditions
 
 (defspec conditions-not-null

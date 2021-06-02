@@ -44,14 +44,16 @@
   "Returns a transducer that reorders `rows` based on the `:order-by-clause` node
   `node`. Will order by `:db/id` if `node` is `nil`."
   [node env]
-  (let [keyfn (or (eval/eval-child node env :name)
-                  default-keyfn)
-        compare (if-let [compare-node (tree/get-node node :compare-expr)]
-                  (case (tree/tag (tree/only-child-node compare-node))
-                    :ascending compare
-                    :descending #(compare %2 %1))
-                  default-compare)]
-    (xforms/sort-by keyfn compare)))
+  (if-not node
+    (map identity)
+    (let [keyfn (or (eval/eval-child node env :name)
+                    default-keyfn)
+          compare (if-let [compare-node (tree/get-node node :compare-expr)]
+                    (case (tree/tag (tree/only-child-node compare-node))
+                      :ascending compare
+                      :descending #(compare %2 %1))
+                    default-compare)]
+      (xforms/sort-by keyfn compare))))
 
 (defn add-placeholders
   "Ensures that every map in `coll` has the same keys by filling in missing cells
@@ -65,7 +67,7 @@
 
 (def remove-placeholders-xform
   "A transducer that removes keys whose values are null placeholders"
-  (map #(into {}
+  (map #(into (with-meta (empty %) (meta %))
               (remove (comp #{:iql/no-value} val))
               %)))
 
@@ -87,18 +89,28 @@
         order-xform  (order-xform order-by-clause env)
         limit-xform  (limit-xform limit-clause env)
 
-        inputs (update inputs 0 #(datalog/db (into [] limit-xform %)))
-        datalog-results (apply d/q query inputs)
-
-        rows (into []
-                   (comp remove-placeholders-xform
-                         order-xform
-                         limit-xform
-                         remove-private-attrs-xform)
-                   datalog-results)
+        rows
+        (into []
+              (comp (partition-all 100)
+                    (map datalog/db)
+                    (map #(apply d/q query % (rest inputs)))
+                    (map #(sort-by :db/id %))
+                    cat
+                    (map #(vary-meta % assoc :iql/columns (keys %)))
+                    remove-placeholders-xform
+                    order-xform
+                    limit-xform
+                    remove-private-attrs-xform)
+              (first inputs))
 
         all-keys (or (some->> (get query :keys)
                               (map keyword))
-                     (coll/all-keys datalog-results))
+                     (into []
+                           (comp (map meta)
+                                 (mapcat :iql/columns)
+                                 (distinct))
+                           rows))
+
         columns (remove private-attrs all-keys)]
+
     (vary-meta rows assoc :iql/columns columns)))
