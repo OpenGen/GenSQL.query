@@ -18,6 +18,13 @@
   (when (branch? node)
     (first node)))
 
+(defn tag-pred
+  "Returns a predicate that returns `true` if the tag for `node` is `t`."
+  [t]
+  (fn tag-predicate
+    [node]
+    (= t (tag node))))
+
 (defn whitespace?
   "Returns `true` if `node` is a whitespace node. `false` otherwise."
   [node]

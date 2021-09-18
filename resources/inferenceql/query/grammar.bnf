@@ -1,217 +1,97 @@
 (* Queries *)
 
-query-expr ::= select-expr | with-expr
-
 select-expr ::= select-clause
                 (ws from-clause)?
                 (ws where-clause)?
-                (ws order-by-clause)?
-                (ws limit-clause)?
                 ';'?
 
 (* select-clause *)
 
-select-clause   ::= #'(?i)SELECT' ws select-list
+select-clause ::= #'(?i)SELECT' ws select-list
 
 select-list ::= star / selection (ws? ',' ws? selection)*
-star        ::= '*'
-selection   ::= '(' ws? selection ws? ')'
-              / rowid-selection
-              / value-selection
-              / column-selection
-              / probability-clause
-              / density-clause
 
-column-selection ::= column-expr (ws label-clause)?
-rowid-selection ::= 'rowid'
-value-selection ::= value (ws label-clause)?
+star ::= '*'
 
-label-clause ::= #'(?i)AS' ws name
+selection ::= '(' selection ')' | scalar-expr (ws alias-clause)?
+
+alias-clause ::= #'(?i)AS' ws attribute-name
 
 (* from-clause *)
 
-from-clause ::= #'(?i)FROM' ws table-expr
-
-(* table expressions *)
-
-table-expr  ::= '(' ws? table-expr ws? ')'
-              | ref
-              | pseudo-column-expr
-              | select-expr
-              | generated-table-expr
-              | alter-expr
-              | insert-expr
-              | update-expr
-
-generated-table-expr ::= generate-expr
-
-alter-expr ::= #'(?i)ALTER' ws table-expr ws #'(?i)ADD' ws column-expr
-
-insert-expr          ::= #'(?i)INSERT'
-                         ws insert-into-clause
-                         ws values-clause
-insert-into-clause   ::= #'(?i)INTO' ws table-expr
-values-clause ::= #'(?i)VALUES' ws map-list
-map-list      ::= '(' ws? map-expr ws? ')' (ws? ',' ws? '(' map-expr ')')*
-
-update-expr ::= #'(?i)UPDATE' ws table-expr
-                ws set-clause
-                (ws where-clause)?
-set-clause ::= #'(?i)SET' ws map-expr
-
-pseudo-column-expr ::= 'rowid'
+from-clause ::= #'(?i)FROM' ws relation-expr
 
 (* where-clause *)
 
-(* 'AND' has higher operator precedence than 'OR'. *)
+where-clause ::= #'(?i)WHERE' ws scalar-expr
 
-where-clause        ::= #'(?i)WHERE' ws (or-condition / and-conditions)
-<and-conditions>    ::= condition (ws #'(?i)AND' ws condition)*
-condition           ::= '(' ws? condition ws? ')'
-                      | or-condition
-                      | presence-condition
-                      | absence-condition
-                      | equality-condition
-                      | predicate-condition
-and-condition       ::= '(' ws? and-condition ws? ')'
-                      | condition ws #'(?i)AND' ws condition
-or-condition        ::= '(' ws? or-condition ws? ')'
-                      | (condition | and-condition) ws #'(?i)OR' ws (condition | and-condition)
-presence-condition  ::= selection ws #'(?i)IS NOT NULL'
-absence-condition   ::= selection ws #'(?i)IS NULL'
-equality-condition  ::= selection ws? '=' ws? value
-predicate-condition ::= selection ws? predicate-expr ws? value
-predicate-expr      ::= #"<" | #">" | #"<=" | #">="
+scalar-expr ::= scalar-expr-0
+
+<scalar-expr-0> ::= scalar-expr-1 | expr-disjunction
+<scalar-expr-1> ::= scalar-expr-2 | expr-conjunction
+<scalar-expr-2> ::= scalar-expr-3 | expr-not
+<scalar-expr-3> ::= scalar-expr-4 | expr-gt | expr-geq | expr-eq | expr-leq | expr-lt
+<scalar-expr-4> ::= scalar-expr-5 | expr-addition | expr-subtraction
+<scalar-expr-5> ::= scalar-expr-6 | expr-multiplication | expr-division
+<scalar-expr-6> ::= scalar-expr-group | attribute-name | value
+
+expr-disjunction ::= scalar-expr-1 (ws #'(?i)OR' ws scalar-expr-1)+
+
+expr-conjunction ::= scalar-expr-2 (ws #'(?i)AND' ws scalar-expr-2)+
+
+expr-not ::= #'(?i)NOT' ws scalar-expr-3
+
+expr-gt  ::= scalar-expr-4 (ws '>'  ws scalar-expr-5)+
+expr-geq ::= scalar-expr-4 (ws '>=' ws scalar-expr-5)+
+expr-eq  ::= scalar-expr-4 (ws '='  ws scalar-expr-5)+
+expr-leq ::= scalar-expr-4 (ws '<=' ws scalar-expr-5)+
+expr-lt  ::= scalar-expr-4 (ws '<'  ws scalar-expr-5)+
+
+expr-addition    ::= scalar-expr-5 (ws? '+' ws? scalar-expr-5)+
+expr-subtraction ::= scalar-expr-5 (ws? '-' ws? scalar-expr-5)+
+
+expr-multiplication ::= scalar-expr-6 (ws? '*' ws? scalar-expr-6)+
+expr-division       ::= scalar-expr-6 (ws? '/' ws? scalar-expr-6)+
+
+scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 
 (* generate-expr *)
 
-generate-expr ::= #'(?i)GENERATE'
-                  (ws generate-variables-clause)
-                  (ws under-clause)?
+generate-expr ::= generate-clause (ws under-clause)?
 
-generate-variables-clause ::= star / variable-list
+generate-clause ::= #'(?i)GENERATE' ws generate-list
 
-(* incorporate-expr *)
-
-incorporate-expr        ::= #'(?i)INCORPORATE'
-                            ws row-or-column-clause
-                            ws incorporate-into-clause
-row-or-column-clause    ::= row-clause | column-clause
-row-clause              ::= #'(?i)ROW' ws map-expr
-column-clause           ::= #'(?i)COLUMN' ws map-expr ws label-clause
-incorporate-into-clause ::= #'(?i)INTO' ws model-expr
-
-(* conditioned-by-expr *)
-
-conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED BY' ws density-event-expr
-
-density-event-expr ::= '(' ws? density-event-expr ws? ')'
-                     | density-event-conjunction-expr
-                     | density-event-equivalence-relation-expr
-                     | event-variable-expr
-
-density-event-conjunction-expr ::= density-event-expr (ws #'(?i)AND' ws density-event-expr)+
-
-density-event-equivalence-relation-expr ::= variable-expr ws? '=' ws? (value / ref)
-
-event-variable-expr ::= variable-expr
-
-(* constrained-by-expr *)
-
-constrained-by-expr ::= model-expr ws #'(?i)CONSTRAINED BY' ws distribution-event-expr
-
-distribution-event-expr ::= '(' ws? distribution-event-expr ws? ')'
-                          | distribution-event-conjunction-expr
-                          | distribution-event-disjunction-expr
-                          | distribution-event-binary-relation-expr
-                          | event-variable-expr
-
-distribution-event-conjunction-expr ::= distribution-event-expr (ws #'(?i)AND' ws distribution-event-expr)+
-distribution-event-disjunction-expr ::= distribution-event-expr (ws #'(?i)OR'  ws distribution-event-expr)+
-
-distribution-event-binary-relation-expr ::= variable-expr ws? distribution-event-binary-op ws? (value / nilable-ref)
-
-distribution-event-binary-op ::= #"=" | #"<" | #">" | #"<=" | #">="
-
-(* probability-clause *)
-
-probability-clause ::= #'(?i)PROBABILITY'
-                       (ws probability-of-clause)
-                       (ws under-clause)?
-                       (ws label-clause)?
-
-probability-of-clause ::= #'(?i)OF' ws distribution-event-expr
-
-density-clause ::= #'(?i)PROBABILITY DENSITY'
-                   (ws density-of-clause)
-                   (ws under-clause)?
-                   (ws label-clause)?
-
-density-of-clause ::= #'(?i)OF' ws event-list
+generate-list ::= star / simple-symbol (ws? ',' ws? simple-symbol)*
 
 under-clause  ::= #'(?i)UNDER' ws model-expr
 
-event-list ::= star / event-expr (ws? ',' ws? event-expr)* (* like map-expr, but allows column events *)
-<event-expr> ::= map-entry-expr | column-expr
+(* relation-expr *)
+
+relation-expr ::= '(' ws? relation-expr ws? ')'
+                | simple-symbol
+                | select-expr
+                | generate-expr
+
+(* model-expr *)
+
+model-expr ::= '(' ws? model-expr ws? ')'
+             | simple-symbol
+
+(* names *)
+
+relation-name ::= simple-symbol
+
+attribute-name ::= simple-symbol
 
 (* literals *)
 
 value         ::= float | int | bool | string
+bool          ::= #'true|false'
 float         ::= #'-?\d+\.\d+(E-?\d+)?'
 int           ::= #'-?\d+'
 nat           ::= #'\d+'
-bool          ::= #'true|false'
-string        ::= #'\"([^\"]+)\"'
 simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?]*'
-
-key            ::= rowid | column-expr
-map-expr       ::= '(' ws? map-expr ws? ')'
-                 | map-entry-expr (ws? ',' ws? map-entry-expr)*
-map-entry-expr ::= key ws? '=' ws? value
-
-(* order-by-clause *)
-
-order-by-clause ::= #'(?i)ORDER BY' ws name (ws compare-expr)?
-compare-expr    ::= (ascending | descending)
-ascending       ::= #'(?i)ASC'
-descending      ::= #'(?i)DESC'
-
-(* limit-clause *)
-
-limit-clause ::= #'(?i)LIMIT' ws nat
-
-
-(* with-expr *)
-
-with-expr ::= #'(?i)WITH' ws with-map-expr ws? ':' ws? with-sub-expr
-with-map-expr ::= with-map-entry-expr (ws? ',' ws? with-map-entry-expr)*
-with-map-entry-expr ::= with-map-value-expr ws #'(?i)AS' ws name
-with-map-value-expr ::= '(' ws? with-map-value-expr ws? ')'
-                      | table-expr
-                      | model-expr
-                      | value
-with-sub-expr ::= query-expr
-
-
-(* literals *)
-
-ref ::= nilable-ref
-nilable-ref ::= name ('.' name)*
-
-model-expr ::= '(' ws? model-expr ws? ')'
-             | ref
-             | generate-expr
-             | incorporate-expr
-             | conditioned-by-expr
-             | constrained-by-expr
-
-variable-list ::= variable-expr (',' ws? variable-expr)*
-variable-expr ::= name
-
-column-expr ::= name
-rowid ::= nat
-
-name ::= simple-symbol | '"' simple-symbol '"'
+string        ::= #'\"([^\"]+)\"'
 
 (* whitespace *)
 
