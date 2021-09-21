@@ -1,12 +1,20 @@
 (ns inferenceql.query.relation
   (:refer-clojure :exclude [empty])
-  (:require [inferenceql.query.tuple :as tuple]))
+  (:require [inferenceql.query.tuple :as tuple]
+            [medley.core :as medley]))
 
 ;; These are not sequence functions, so the primary argument comes first.
 
 (defn relation
-  [coll attributes]
-  (with-meta coll {::attributes attributes}))
+  "Produces a relation from a sequence of maps."
+  ([coll]
+   (let [attributes (into []
+                          (comp (mapcat keys)
+                                (distinct))
+                          coll)]
+     (relation coll attributes)))
+  ([coll attributes]
+   (with-meta coll {::attributes attributes})))
 
 (defn empty
   "Returns an empty relation with the specified attributes."
@@ -28,27 +36,33 @@
 (defn tuples
   "Returns a sequence of tuples in relation `rel`."
   [rel]
-  (map #(with-meta % {::attributes (attributes rel)})
+  (map #(with-meta % {::tuple/attributes (attributes rel)})
        rel))
 
 (defn project
   [rel attrs]
-  (into (empty attrs)
-        (map #(tuple/select-attrs % attrs))
-        (tuples rel)))
+  (with-meta (sequence (map #(tuple/select-attrs % attrs))
+                       (tuples rel))
+    {::attributes attributes}))
 
 (defn extended-project
   [rel coll]
   (let [f (fn [tuple]
-            (zipmap (map second coll)
-                    (map #((first %) tuple)
-                         coll)))]
-    (into (empty (map second coll))
-          (map f)
-          (tuples rel))))
+            tuple
+            (meta tuple)
+            (->> (zipmap (map second coll)
+                         (map #((first %) tuple)
+                              coll))
+                 (medley/remove-vals nil?)))]
+    (with-meta (map f (tuples rel))
+      {::attributes (mapv second coll)})))
 
 (defn select
   [rel pred]
-  (into (empty (attributes rel))
-        (filter #(tuple/apply-pred % pred))
-        (tuples rel)))
+  (with-meta (filter pred (tuples rel))
+    (meta rel)))
+
+(defn limit
+  [rel n]
+  (with-meta (take n (tuples rel))
+    (meta rel)))

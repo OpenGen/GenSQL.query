@@ -16,14 +16,15 @@
     (medley/filter-keys (comp names name)
                         tup)))
 
-(defn apply-pred
-  [tup pred]
-  (pred (medley/map-keys symbol tup)))
-
 (defn ->map
   "Converts tuple `tup` to an immutable hash map."
   [tup]
   tup)
+
+(defn attributes
+  "Returns the attributes of a tuple."
+  [tup]
+  (-> tup meta ::attributes))
 
 (comment
 

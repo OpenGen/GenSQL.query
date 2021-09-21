@@ -2,36 +2,18 @@
   "This file defines functions for parsing, transforming, and executing IQL-SQL
   queries. The public API for this file is the functions are `q`, `pq`, and
   `query-plan`."
-  (:require [datascript.core :as d]
-            [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.parser :as parser]
-            [inferenceql.query.lang.eval :as eval]
-            [inferenceql.query.lang.condition]
+  (:require [inferenceql.query.lang.condition]
             [inferenceql.query.lang.constrain]
             [inferenceql.query.lang.literals]
-            [inferenceql.query.lang.select :as select]
             [inferenceql.query.lang.model]
-            [inferenceql.query.lang.table]
             [inferenceql.query.lang.with-as]
-            [inferenceql.query.math :as math]
-            [instaparse.core :as insta]))
+            [inferenceql.query.parser :as parser]
+            [inferenceql.query.plan :as plan]
+            [inferenceql.query.relation :as relation]
+            [instaparse.core :as insta]
+            [medley.core :as medley]))
 
-(def default-table :data)
-
-(def default-environment
-  {`math/exp math/exp
-   `merge merge
-   `d/entity d/entity
-   `d/pull d/pull
-   `gpm/logpdf gpm/logpdf
-   `gpm/logprob gpm/logprob
-
-   `=  =
-   `not= not=
-   `>  >
-   `>= >=
-   `<  <
-   `<= <=})
+(def default-table 'data)
 
 (defn q
   "Returns the result of executing a query on a set of rows. A registry
@@ -42,9 +24,18 @@
   ([query rows models]
    (let [node-or-failure (parser/parse query)]
      (if-not (insta/failure? node-or-failure)
-       (let [rows (select/add-placeholders rows)
-             env (merge default-environment models {default-table rows})]
-         (eval/eval node-or-failure env))
+       (let [plan (plan/plan node-or-failure)
+             tuples (map #(medley/map-keys symbol %) rows)
+             in-rel (if-let [columns (-> rows meta :iql/columns)]
+                      (relation/relation tuples (map symbol columns))
+                      (relation/relation tuples))
+             models (medley/map-keys symbol models)
+             env (merge models {(symbol default-table) in-rel})
+             out-rel (plan/eval plan env)
+             kw-rel (map #(medley/map-keys keyword %)
+                         out-rel)]
+         (with-meta kw-rel
+           {:iql/columns (map keyword (relation/attributes out-rel))}))
        (let [failure (insta/get-failure node-or-failure)
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                      :instaparse/failure failure}]
@@ -52,8 +43,12 @@
 
 (comment
 
- (require '[hashp.core])
- (require '[inferenceql.query.relation :as relation])
- (parser/parse "select * from data")
+ (relation/attributes rel)
+ (meta rel)
 
- )
+ (q "select x from data limit 2"
+    [{:x 0}
+     {:x 1}
+     {:x 2}])
+
+ ,)

@@ -4,13 +4,16 @@
             [clojure.string :as string]
             [hashp.core]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.gpm.proto :as proto]
             [inferenceql.query.environment :as env]
+            [inferenceql.query.math :as math]
             [inferenceql.query.model :as model]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
             [instaparse.core :as instaparse]
+            [malli.core :as malli]
             [sci.core :as sci]))
 
 ;;; parse tree
@@ -24,37 +27,13 @@
     :select-list (recur (first (tree/children node)))
     false))
 
-;;; eval-literal
-
-(defmulti eval-literal tree/tag)
-
-(defmethod eval-literal :bool
-  [node]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval-literal :float
-  [node]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval-literal :int
-  [node]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval-literal :nat
-  [node]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval-literal :simple-symbol
-  [node]
-  (symbol (tree/only-child node)))
-
-(defmethod eval-literal :string
-  [node]
-  (edn/read-string (tree/only-child node)))
-
-(defmethod eval-literal nil
-  [_]
-  nil)
+(defn eval-literal
+  ([node]
+   (when node
+     (edn/read-string (tree/only-child node))))
+  ([node tag]
+   (when node
+     (eval-literal (tree/get-node node tag)))))
 
 (def eval-literal-in (comp eval-literal tree/get-node-in))
 
@@ -62,78 +41,144 @@
 
 (def hierarchy
   (-> (make-hierarchy)
-      (derive :expr-disjunction    :expr-infix)
-      (derive :expr-conjunction    :expr-infix)
-      (derive :expr-gt             :expr-infix)
-      (derive :expr-geq            :expr-infix)
-      (derive :expr-eq             :expr-infix)
-      (derive :expr-leq            :expr-infix)
-      (derive :expr-lt             :expr-infix)
-      (derive :expr-addition       :expr-infix)
-      (derive :expr-subtraction    :expr-infix)
-      (derive :expr-multiplication :expr-infix)
-      (derive :expr-division       :expr-infix)
-      (derive :expr-not            :expr-prefix)))
+      (derive :expr-disjunction       :expr-infix)
+      (derive :expr-conjunction       :expr-infix)
+      (derive :expr-gt                :expr-infix)
+      (derive :expr-geq               :expr-infix)
+      (derive :expr-eq                :expr-infix)
+      (derive :expr-leq               :expr-infix)
+      (derive :expr-lt                :expr-infix)
+      (derive :expr-addition          :expr-infix)
+      (derive :expr-subtraction       :expr-infix)
+      (derive :expr-multiplication    :expr-infix)
+      (derive :expr-division          :expr-infix)
+      (derive :expr-not               :expr-prefix)
+      (derive :conditioned-by-expr    :expr-infix)
 
-(defn infix-sexpr-operator
+      (derive :expr-null              :expr-suffix)
+      (derive :expr-not-null          :expr-suffix)
+
+      (derive :distribution-event-and :event-infix)
+      (derive :distribution-event-or  :event-infix)
+      (derive :distribution-event-gt  :event-infix)
+      (derive :distribution-event-geq :event-infix)
+      (derive :distribution-event-eq  :event-infix)
+      (derive :distribution-event-leq :event-infix)
+      (derive :distribution-event-lt  :event-infix)))
+
+(defn infix-operator
   [node]
   (case (tree/tag node)
-    :expr-disjunction    'or
-    :expr-conjunction    'and
-    :expr-gt             '>
-    :expr-geq            '>=
-    :expr-eq             '=
-    :expr-leq            '<=
-    :expr-lt             '<
-    :expr-addition       '+
-    :expr-subtraction    '-
-    :expr-multiplication '*
-    :expr-division       '/
-    :expr-not            'not))
+    :expr-disjunction      'or
+    :expr-conjunction      'and
+    :expr-gt               '>
+    :expr-geq              '>=
+    :expr-eq               '=
+    :expr-leq              '<=
+    :expr-lt               '<
+    :expr-addition         '+
+    :expr-subtraction      '-
+    :expr-multiplication   '*
+    :expr-division         '/
+    :expr-not              'not
+    :distribution-event-gt '>
+    :conditioned-by-expr   'iql/condition))
 
-(defmulti scalar-expr->sexpr
-  "Converts an `:expr` parse tree node into an s-expression."
+(defmulti node->sexpr
+  "Converts a parse tree node into an s-expression."
   tree/tag
   :hierarchy #'hierarchy)
 
-(defmethod scalar-expr->sexpr :scalar-expr
+(defmethod node->sexpr :default
   [node]
-  (scalar-expr->sexpr (tree/only-child node)))
+  (node->sexpr (tree/only-child-node node)))
 
-(defmethod scalar-expr->sexpr :scalar-expr-group
+(defmethod node->sexpr :expr-prefix
   [node]
-  (scalar-expr->sexpr (tree/only-child-node node)))
+  ;; FIXME
+  `(~'not ~(node->sexpr (tree/only-child-node node))))
 
-(defmethod scalar-expr->sexpr :expr-prefix
+(defmethod node->sexpr :expr-infix
   [node]
-  `(~'not ~(scalar-expr->sexpr (tree/only-child-node node))))
+  (let [child-nodes (tree/child-nodes node)
+        operator (infix-operator node)]
+    `(~operator ~@(map node->sexpr child-nodes))))
 
-(defmethod scalar-expr->sexpr :expr-infix
+(defmethod node->sexpr :expr-suffix
   [node]
-  (let [cs (tree/child-nodes node)
-        operator (infix-sexpr-operator node)]
-    `(~operator ~@(map scalar-expr->sexpr cs))))
+  (let [sym (case (tree/tag node)
+              :expr-null 'nil?
+              :expr-not-null 'some?)]
+    `(~sym ~(node->sexpr (tree/only-child-node node)))))
 
-(defmethod scalar-expr->sexpr :attribute-name
+(defmethod node->sexpr :event-infix
   [node]
-  (eval-literal-in node [:simple-symbol]))
+  (let [child-nodes (tree/child-nodes node)
+        operator (infix-operator node)]
+    `(list (quote ~operator) ~@(map node->sexpr child-nodes))))
 
-(defmethod scalar-expr->sexpr :value
+(defmethod node->sexpr :simple-symbol
+  [node]
+  (eval-literal node))
+
+(defmethod node->sexpr :qualified-symbol
+  [node]
+  (apply symbol (map (comp name eval-literal) (tree/child-nodes node))))
+
+(defmethod node->sexpr :value
   [node]
   (eval-literal (tree/only-child-node node)))
 
-(defn sexpr->pred
+(defn condition
+  [model conditions]
+  (cond-> model
+    (every? some? (vals conditions))
+    (gpm/condition conditions)))
+
+(def namespaces
+  {'inferenceql.inference.gpm {}
+   'clojure.core {'not not
+                  '> >
+                  '>= >=
+                  '= =
+                  '<= <=
+                  '< <
+                  '+ +
+                  '- -
+                  '* *
+                  '/ /}
+   'iql {'prob (comp math/exp gpm/logprob)
+         'pdf (comp math/exp gpm/logpdf)
+         'condition condition}})
+
+(defn sexpr->fn
   [sexpr env]
   (fn [tuple]
-    (let [m (merge (env/->map env) (tuple/->map tuple))]
-      (try (sci/eval-string (pr-str sexpr) {:bindings m})
+    (let [bindings (merge (zipmap (tuple/attributes tuple)
+                                  (repeat nil))
+                          (tuple/->map tuple)
+                          env)
+          ;; FIXME write a function to produce this automatically
+          ;; from `env`
+          opts {:namespaces namespaces
+                :bindings bindings}]
+      (try (sci/eval-string (pr-str sexpr) opts)
            (catch clojure.lang.ExceptionInfo ex
-             (if-let [[_ sym] (re-find #"Could not resolve symbol: (.*)$"
+             (def tuple tuple)
+             (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
                                        (ex-message ex))]
-               (throw (ex-info (str "Column does not exist: " sym)
-                               {:column sym
-                                :tuple tuple}))
+               (let [sym (symbol sym)]
+                 (if (contains? (set (tuple/attributes tuple))
+                                sym)
+                   nil
+                   (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
+                                   {:symbol sym
+                                    :env bindings}))))
                (throw ex)))))))
+
+(defmethod node->sexpr :variable-expr
+  [node]
+  (keyword (eval-literal (tree/only-child-node node))))
 
 ;;; operation
 
@@ -163,6 +208,12 @@
    :operation/operation op
    :operation/variables variables})
 
+(defn limit-op
+  [op limit]
+  {:operation/type :operation.type/limit
+   :operation/limit limit
+   :operation/operation op})
+
 ;;; plan
 
 (defmulti plan
@@ -173,40 +224,43 @@
     ([node] (tree/tag node))
     ([node _op] (tree/tag node))))
 
+(defmethod plan :default
+  ([node]
+   (plan (tree/only-child-node node)))
+  ([node op]
+   (plan (tree/only-child-node node) op)))
+
 (defmethod plan nil
   [_ op]
   op)
 
-(defmethod plan :from-clause
+(defmethod plan :simple-symbol
   [node]
-  (if-not node
-    (lookup-op 'data)
-    (loop [node (tree/only-child-node node)]
-      (case (tree/tag node)
-        :relation-expr (recur (tree/only-child-node node))
-        :simple-symbol (let [table-sym (eval-literal node)]
-                         (lookup-op table-sym))
-        :select-expr (plan node)
-        :generate-expr (let [sym (or (eval-literal-in node [:under-clause 0 0])
-                                     'model)
-                             op (model/lookup-op sym)
-                             variables (let [generate-list-nodes (tree/child-nodes (tree/get-node-in node [:generate-clause :generate-list]))]
-                                         (if (star? (first generate-list-nodes))
-                                           '*
-                                           (map eval-literal generate-list-nodes)))]
-                         (generate-op op variables))))))
+  (let [sym (eval-literal node)]
+    (lookup-op sym)))
+
+(defmethod plan :generate-expr
+  [node]
+  (let [sym (or (eval-literal-in node [:model-expr 0])
+                'model)
+        op (model/lookup-op sym)
+        variables (let [generate-list-nodes (tree/child-nodes (tree/get-node-in node [:generate-clause :generate-list]))]
+                    (if (star? (first generate-list-nodes))
+                      '*
+                      (map eval-literal generate-list-nodes)))]
+    (generate-op op variables)))
 
 (defmethod plan :where-clause
   [node op]
   (let [sexpr (-> (tree/get-node node :scalar-expr)
-                  (scalar-expr->sexpr))]
+                  (node->sexpr))]
     (select-op op sexpr)))
 
 (defn output-attribute
   [node]
   (assert (= :selection (tree/tag node)))
   (if-let [expr (tree/get-node node :scalar-expr)]
-    (or (eval-literal-in node [:alias-clause :attribute-name :simple-symbol])
+    (or (eval-literal-in node [:alias-clause :simple-symbol])
         (-> (parser/unparse expr)
             (string/replace #"\s" "")
             (symbol)))
@@ -217,20 +271,26 @@
   (let [selection->pair (fn [node]
                           (assert (= :selection (tree/tag node)))
                           (if-let [expr (tree/get-node node :scalar-expr)]
-                            (let [sexpr (scalar-expr->sexpr expr)
+                            (let [sexpr (node->sexpr expr)
                                   output-attribute (output-attribute node)]
                               [sexpr output-attribute])
-                            (recur (tree/only-child node))))]
+                            (recur (tree/only-child-node node))))]
     (if (star? node)
       op
       (let [projections (map selection->pair (tree/child-nodes (tree/get-node node :select-list)))]
         (extended-project-op op projections)))))
 
+(defmethod plan :limit-clause
+  [node op]
+  (let [limit (eval-literal-in node [:int])]
+    (limit-op op limit)))
+
 (defmethod plan :select-expr
   [node]
   (->> (plan (tree/get-node node :from-clause))
        (plan (tree/get-node node :where-clause))
-       (plan (tree/get-node node :select-clause))))
+       (plan (tree/get-node node :select-clause))
+       (plan (tree/get-node node :limit-clause))))
 
 ;;; eval
 
@@ -251,15 +311,21 @@
   [op env]
   (let [{:operation/keys [sexpr operation]} op
         rel (eval operation env)
-        pred (sexpr->pred sexpr env)]
+        pred (sexpr->fn sexpr env)]
     (relation/select rel pred)))
 
 (defmethod eval :operation.type/extended-project
   [op env]
   (let [{:operation/keys [terms operation]} op
-        coll (map (juxt (comp #(sexpr->pred % env) :term/sexpr) :term/attribute) terms)
+        coll (map (juxt (comp #(sexpr->fn % env) :term/sexpr) :term/attribute) terms)
         rel (eval operation env)]
     (relation/extended-project rel coll)))
+
+(defmethod eval :operation.type/limit
+  [op env]
+  (let [{:operation/keys [limit operation]} op
+        rel (eval operation env)]
+    (relation/limit rel limit)))
 
 (defmethod eval :operation.type/generate
   [op env]
@@ -271,34 +337,59 @@
         samples (repeatedly #(gpm/simulate model variables {}))]
     (relation/relation samples variables)))
 
-(defn q
-  [query env]
-  (let [node-or-failure (parser/parse query)]
-    (if (instaparse/failure? node-or-failure)
-      node-or-failure
-      (let [plan (plan node-or-failure)]
-        (eval plan env)))))
+(defmethod node->sexpr :probability-expr
+  [node]
+  (let [target (-> node (tree/get-node :distribution-event) (node->sexpr))
+        model (or (some-> node (tree/get-node :model-expr) (node->sexpr))
+                  'model)]
+    `(~'iql/prob ~model ~target)))
+
+(defmethod node->sexpr :density-expr
+  [node]
+  (let [target (-> node (tree/get-node :density-event) (node->sexpr))
+        model (or (some-> node (tree/get-node :model-expr) (node->sexpr))
+                  'model)]
+    `(~'iql/pdf ~model ~target {})))
+
+(defmethod node->sexpr :density-event-and
+  [node]
+  (into {}
+        (map node->sexpr)
+        (tree/child-nodes node)))
+
+(defmethod node->sexpr :density-event-eq
+  [node]
+  (let [k (node->sexpr (tree/get-node node :variable-expr))
+        v (node->sexpr (tree/get-node node :scalar-expr))]
+    {k v}))
 
 (comment
 
- (parser/parse "x = 0" :start :expr)
+ (require '[inferenceql.query.parser :as parser] :reload)
 
- #_
- (require '[inferenceql.query.parser] :reload)
+ (node->sexpr
+  (parser/parse "model CONDITIONED BY (VAR x=0 AND VAR y=1 AND VAR z=2 * a)" :start :model-expr)
+  )
 
- (def query "select * from data where x <= 2;")
- (def query "select x, y as z from data where x < 2;")
- (def query "select x from data;")
+ (node->sexpr
+  (parser/parse "7 * PROBABILITY DENSITY OF VAR x = 3 UNDER model CONDITIONED BY (VAR x=0 AND VAR y=1 AND VAR z=2 * a)" :start :scalar-expr)
+  )
 
- (def parse-tree (parser/parse query))
- (def query-plan (plan parse-tree))
- (def env {'data '[{x 0 y 3 z true}
-                   {x 1 y 2 z false}
-                   {x 2 y 1 z true}
-                   {x 3 y 0 z false}]})
+ (plan (parser/parse "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model) FROM data"))
 
- (q query env)
- (q "select * from data where x < 2" env)
- (q "select x from (select x from data) where 1 + x = 3" env)
+ (node->sexpr (parser/parse "1 + (PROBABILITY OF VAR x > 3 + y UNDER model)" :start :scalar-expr))
+ (node->sexpr (parser/parse "PROBABILITY OF VAR x > 3 + y UNDER model" :start :scalar-expr))
 
- ,)
+ (node->sexpr (parser/parse "x is not null" :start :scalar-expr))
+
+ (parser/parse "PROBABILITY OF VAR x > 3 * 4 + 7 UNDER model" :start :probability-expr)
+ (parser/parse "PROBABILITY OF 3 * 4 + 7 > VAR x UNDER model" :start :probability-expr)
+ (parser/parse "PROBABILITY OF VAR x > VAR y UNDER model" :start :probability-expr)
+ (parser/parse "PROBABILITY OF VAR x > 7 UNDER model" :start :probability-expr)
+ (parser/parse "PROBABILITY OF VAR x = 0 AND VAR y = 0 OR VAR z = 0 UNDER model" :start :probability-expr)
+ (parser/parse "PROBABILITY OF VAR x = 0 OR VAR y = 0 AND VAR z = 0 UNDER model" :start :probability-expr)
+ (plan (parser/parse "SELECT * FROM data WHERE x IS NOT NULL"))
+
+ (plan (parser/parse "select * from data limit 10"))
+
+ )

@@ -8,14 +8,16 @@
             [clojure.test.check.properties :as prop]
             [clojure.walk :as walk]
             [com.gfredericks.test.chuck.generators :as chuck.gen]
-            [instaparse.core :as insta]
-            [inferenceql.query :as query]
-            [inferenceql.query.parser :as parser]
-            [inferenceql.query.lang.eval :as eval]
-            [inferenceql.query.parser.tree :as tree]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]
             [inferenceql.inference.gpm.proto :as gpm.proto]
-            [inferenceql.inference.gpm.crosscat :refer [construct-xcat-from-latents]]))
+            [inferenceql.query :as query]
+            [inferenceql.query.lang.eval :as eval]
+            [inferenceql.query.parser :as parser]
+            [inferenceql.query.parser.tree :as tree]
+            [inferenceql.query.relation :as relation]
+            [instaparse.core :as insta]
+            [medley.core :as medley]))
 
 (def simple-mmix
   {:vars {:x :categorical
@@ -110,9 +112,9 @@
 
 ;;; Name
 
-(deftest name-parsing
+(deftest simple-symbol-parsing
   (testing "valid"
-    (are [s] (not (insta/failure? (parser/parse s :start :name)))
+    (are [s] (not (insta/failure? (parser/parse s :start :simple-symbol)))
       "a"
       "A"
       "a0"
@@ -121,7 +123,7 @@
       "a-a"
       "a?"))
   (testing "invalid"
-    (are [s] (insta/failure? (parser/parse s :start :name))
+    (are [s] (insta/failure? (parser/parse s :start :simple-symbol))
       "0a")))
 
 ;; Float parsing is a bit different in CLJS. Among other things, whole-numbered
@@ -149,9 +151,7 @@
               {:x 1}
               {:x 2}]]
     (testing "with source"
-      (is (= rows (query/q "SELECT x FROM data" rows))))
-    (testing "without source"
-      (is (= rows (query/q "SELECT x" rows))))))
+      (is (= rows (query/q "SELECT x FROM data" rows))))))
 
 (defspec select-star
   (prop/for-all [table gen-table]
@@ -162,23 +162,25 @@
   (prop/for-all [[table ks] gen-table-col-subset]
     (let [cols (->> ks (map name) (string/join ", "))
           results (query/q (str "SELECT " cols " FROM data") table)]
-      (is (= results (map #(select-keys % ks)
-                          table))))))
+      (is (= (map #(select-keys % ks)
+                  table)
+             results)))))
 
 ;;; Metadata
 
 (deftest select-response-metadata
   (are [query data in-c out-c] (= out-c
-                                  (-> (query/q query (with-meta
-                                                       data
-                                                       {:iql/columns in-c}))
-                                      (meta)
-                                      (:iql/columns)))
-    "SELECT *" [{:x 0}]      [:x]    [:x]
-    "SELECT *" [{:x 0}]      []      [:x]
-    "SELECT *" [{:x 0 :y 1}] [:x]    [:x :y]
-    "SELECT *" [{:x 0}]      [:x :y] [:x :y]
-    "SELECT x" [{}]          [:x]    [:x]))
+                                  (-> (query/q query (cond-> data
+                                                       in-c (with-meta {:iql/columns in-c})))
+                                      meta
+                                      :iql/columns))
+    "SELECT * FROM data;" [{:x 0}]      [:x]    [:x]
+    "SELECT * FROM data;" [{:x 0}]      nil     [:x]
+    "SELECT * FROM data;" [{:x 0 :y 1}] [:x]    [:x :y]
+    "SELECT * FROM data;" [{:x 0}]      [:x :y] [:x :y]
+    "SELECT x FROM data;" [{}]          [:x]    [:x]))
+
+;; FIXME here
 
 ;;; Order by
 
@@ -244,6 +246,8 @@
       (is (= (remove (comp nil? k) table)
              results)))))
 
+;; FIXME here
+
 (deftest conditions-null-example
   (is (= [{}]
          (query/q "SELECT * FROM data WHERE x IS NULL"
@@ -281,6 +285,8 @@
 
 ;; Probabilities
 
+;; FIXME here
+
 (deftest density-of-missing
   (let [model (gpm/Multimixture
                {:vars {:x :categorical
@@ -292,52 +298,36 @@
                           :parameters  {:x {"yes" 0.0 "no" 1.0}
                                         :y {"yes" 0.0 "no" 1.0}}}]]})
         q1 (comp first vals first #(query/q %1 %2 %3))]
-    (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF y=\"yes\" UNDER model CONDITIONED BY x) FROM data;"
-                   [{}]
+    (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = \"yes\" UNDER model CONDITIONED BY VAR x = x) FROM data;"
+                   (with-meta [{}] {:iql/columns [:x :y]})
                    {:model model})))))
 
-(deftest probability-of-generate
-  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" )) FROM data"
-                           [{}]
-                           {:model simple-model})
-                  first
-                  vals
-                  first))))
-
-(deftest density-of-bindings
+(deftest density-of-bindings ; FIXME
   (let [rows [{}]
         models {:model simple-model}
         q1 (comp first vals first #(query/q % rows models))]
-    (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"  UNDER model)                          FROM data LIMIT 1")))
-    (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model)                          FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"yes\") FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"no\"  UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))
-    (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))))
+    (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"no\"  UNDER model)                          FROM data LIMIT 1")))
+    (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model)                          FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model CONDITIONED BY y=\"yes\") FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"no\"  UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))
+    (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model CONDITIONED BY y=\"no\")  FROM data LIMIT 1")))))
 
 (deftest density-of-rows
   (let [models {:model simple-model}
         q1 (comp first vals first #(query/q %1 %2 models))]
     (are [expected x] (= expected
-                         (q1 "SELECT (PROBABILITY DENSITY OF x UNDER model) FROM data"
+                         (q1 "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model) FROM data"
                              [{:x x}]))
       0.25 "no"
       0.75 "yes")
 
     (are [expected x y] (= expected
-                           (q1 "SELECT (PROBABILITY DENSITY OF x UNDER model CONDITIONED BY y) FROM data"
+                           (q1 "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model CONDITIONED BY VAR y = y) FROM data"
                                [{:x x :y y}]))
       1.0 "yes" "yes"
       1.0 "no"  "no"
       0.0 "yes" "no"
       0.0 "no"  "yes")))
-
-(deftest density-of-generate
-  (is (= 1.0 (->> (query/q "SELECT (PROBABILITY DENSITY OF x=\"yes\" UNDER (GENERATE x UNDER model CONDITIONED BY y=\"yes\" )) FROM data"
-                           [{}]
-                           {:model simple-model})
-                  first
-                  vals
-                  first))))
 
 ;;; Generate
 
