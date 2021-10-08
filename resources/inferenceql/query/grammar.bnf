@@ -1,18 +1,25 @@
 (* Queries *)
 
-query ::= relation-expr ';'?
+query ::= (relation-expr | with-expr) ';'?
 
 relation-expr ::= '(' ws? relation-expr ws? ')'
                 | simple-symbol
                 | select-expr
                 | generate-expr
 
+(* with-expr *)
+
+with-expr ::= #'(?i)WITH' ws binding (ws? ',' ws? binding)* ws? ':' ws? relation-expr
+binding ::= expr ws alias-clause
+<expr> ::= relation-expr | model-expr | scalar-expr
+
+(* select *)
+
 select-expr ::= select-clause
                 ws from-clause
                 (ws where-clause)?
+                (ws order-by-clause)?
                 (ws limit-clause)?
-
-(* select-clause *)
 
 select-clause ::= #'(?i)SELECT' ws select-list
 
@@ -20,13 +27,18 @@ select-list ::= star / selection (ws? ',' ws? selection)*
 
 star ::= '*'
 
-selection ::= '(' selection ')' | scalar-expr (ws alias-clause)?
+selection ::= '(' ws? selection ws? ')' | scalar-expr (ws alias-clause)?
 
 alias-clause ::= #'(?i)AS' ws simple-symbol
 
 from-clause ::= #'(?i)FROM' ws relation-expr
 
 where-clause ::= #'(?i)WHERE' ws scalar-expr
+
+order-by-clause ::= #'(?i)ORDER' ws #'(?i)BY' ws simple-symbol (ws (asc | desc))?
+
+asc  ::= #'(?i)ASC'
+desc ::= #'(?i)DESC'
 
 limit-clause ::= #'(?i)LIMIT' ws int
 
@@ -38,7 +50,7 @@ scalar-expr ::= scalar-expr-0
 <scalar-expr-1> ::= scalar-expr-2 | expr-disjunction
 <scalar-expr-2> ::= scalar-expr-3 | expr-conjunction
 <scalar-expr-3> ::= scalar-expr-4 | expr-not
-<scalar-expr-4> ::= scalar-expr-5 | expr-gt | expr-geq | expr-eq | expr-leq | expr-lt | expr-null | expr-not-null
+<scalar-expr-4> ::= scalar-expr-5 | expr-binop
 <scalar-expr-5> ::= scalar-expr-6 | expr-addition | expr-subtraction
 <scalar-expr-6> ::= scalar-expr-7 | expr-multiplication | expr-division
 <scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr
@@ -48,14 +60,7 @@ expr-conjunction ::= scalar-expr-3 (ws #'(?i)AND' ws scalar-expr-3)+
 
 expr-not ::= #'(?i)NOT' ws scalar-expr-4
 
-expr-gt  ::= scalar-expr-4 (ws? '>'  ws? scalar-expr-5)+
-expr-geq ::= scalar-expr-4 (ws? '>=' ws? scalar-expr-5)+
-expr-eq  ::= scalar-expr-4 (ws? '='  ws? scalar-expr-5)+
-expr-leq ::= scalar-expr-4 (ws? '<=' ws? scalar-expr-5)+
-expr-lt  ::= scalar-expr-4 (ws? '<'  ws? scalar-expr-5)+
-
-expr-null     ::= scalar-expr-4 ws #"(?i)IS" ws #"(?i)NULL"
-expr-not-null ::= scalar-expr-4 ws #"(?i)IS" ws #"(?i)NOT" ws #"(?i)NULL"
+expr-binop ::= scalar-expr-4 (ws? binop ws? scalar-expr-5)+
 
 expr-addition    ::= scalar-expr-5 (ws? '+' ws? scalar-expr-6)+
 expr-subtraction ::= scalar-expr-5 (ws? '-' ws? scalar-expr-6)+
@@ -67,13 +72,11 @@ scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 
 (* generate-expr *)
 
-generate-expr ::= generate-clause (ws under-clause)?
+generate-expr ::= generate-clause ws #'(?i)UNDER' ws model-expr
 
 generate-clause ::= #'(?i)GENERATE' ws generate-list
 
-generate-list ::= star / simple-symbol (ws? ',' ws? simple-symbol)*
-
-under-clause  ::= #'(?i)UNDER' ws model-expr
+generate-list ::= star / variable (ws? ',' ws? variable)*
 
 (* conditioning, constraining, and events *)
 
@@ -85,19 +88,19 @@ distribution-event ::= distribution-event-0
 
 <distribution-event-0> ::= distribution-event-1 | distribution-event-or
 <distribution-event-1> ::= distribution-event-2 | distribution-event-and
-<distribution-event-2> ::= distribution-event-3 | distribution-event-gt | distribution-event-geq | distribution-event-eq | distribution-event-leq | distribution-event-lt
+<distribution-event-2> ::= distribution-event-3 | distribution-event-binop
 <distribution-event-3> ::= distribution-event-group
 
 distribution-event-or  ::= distribution-event-1 (ws #'(?i)OR'  ws distribution-event-1)+
 distribution-event-and ::= distribution-event-2 (ws #'(?i)AND' ws distribution-event-2)+
 
-distribution-event-gt  ::= variable-expr ws? '>'  ws? scalar-expr | scalar-expr ws? '>'  ws? variable-expr
-distribution-event-geq ::= variable-expr ws? '>=' ws? scalar-expr | scalar-expr ws? '>=' ws? variable-expr
-distribution-event-eq  ::= variable-expr ws? '='  ws? scalar-expr | scalar-expr ws? '='  ws? variable-expr
-distribution-event-leq ::= variable-expr ws? '<=' ws? scalar-expr | scalar-expr ws? '<=' ws? variable-expr
-distribution-event-lt  ::= variable-expr ws? '<'  ws? scalar-expr | scalar-expr ws? '<'  ws? variable-expr
+distribution-event-binop ::= variable ws? binop ws? scalar-expr | scalar-expr ws? binop ws? variable
 
 distribution-event-group ::= '(' ws? distribution-event ws? ')'
+
+constrained-by-expr ::= model-expr
+                        ws #'(?i)CONSTRAINED' ws #'(?i)BY'
+                        ws distribution-event
 
 density-expr ::= #'(?i)PROBABILITY' ws #'(?i)DENSITY' ws #'(?i)OF'
                  ws density-event
@@ -111,7 +114,7 @@ density-event ::= density-event-0
 
 density-event-and ::= density-event-1 (ws #'(?i)AND' ws density-event-1)+
 
-density-event-eq ::= variable-expr ws? '=' ws? scalar-expr | scalar-expr ws? '=' ws? variable-expr
+density-event-eq ::= variable ws? '=' ws? scalar-expr | scalar-expr ws? '=' ws? variable
 
 density-event-group ::= '(' ws? density-event ws? ')'
 
@@ -119,24 +122,31 @@ conditioned-by-expr ::= model-expr
                         ws #'(?i)CONDITIONED' ws #'(?i)BY'
                         ws density-event
 
-variable-expr ::= #'(?i)VAR' ws simple-symbol
+variable ::= #'(?i)VAR' ws simple-symbol
 
 (* model-expr *)
 
 model-expr ::= '(' ws? model-expr ws? ')'
              | conditioned-by-expr
-             | generate-expr
+             | constrained-by-expr
              | simple-symbol
+
+(* binop *)
+
+binop ::= '>' | '>=' | '=' | '<=' | '<' | is | is-not
+is ::= #'(?i)IS'
+is-not ::= #'(?i)IS' ws #'(?i)NOT'
 
 (* literals *)
 
-value            ::= float | int | bool | string
-bool             ::= #'true|false'
-float            ::= #'-?\d+\.\d+(E-?\d+)?'
-int              ::= #'-?\d+'
-nat              ::= #'\d+'
-simple-symbol    ::= #'(?!G__)[^0-9\s][\w\-\_\?]*'
-string           ::= #'\"([^\"]+)\"'
+value         ::= float | int | bool | string | null
+bool          ::= #'true|false'
+float         ::= #'-?\d+\.\d+(E-?\d+)?'
+int           ::= #'-?\d+'
+nat           ::= #'\d+'
+simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?]*'
+string        ::= #'\"([^\"]+)\"'
+null          ::= #'(?i)NULL'
 
 (* whitespace *)
 

@@ -1,6 +1,8 @@
 (ns inferenceql.query.relation
-  (:refer-clojure :exclude [empty])
-  (:require [inferenceql.query.tuple :as tuple]
+  "Functions for creating and manipulating relations."
+  (:refer-clojure :exclude [empty sort])
+  (:require [clojure.spec.alpha :as s]
+            [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]))
 
 ;; These are not sequence functions, so the primary argument comes first.
@@ -66,3 +68,15 @@
   [rel n]
   (with-meta (take n (tuples rel))
     (meta rel)))
+
+(defn sort
+  [rel attr order]
+  (with-meta (->> (tuples rel)
+                  (sort-by #(tuple/get % attr)
+                           (case order
+                             :ascending compare
+                             :descending #(compare %2 %1))))
+    (meta rel)))
+
+(s/def ::attribute symbol?)
+(s/def ::relation relation?)

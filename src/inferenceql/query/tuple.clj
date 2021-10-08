@@ -1,16 +1,20 @@
 (ns inferenceql.query.tuple
+  "Functions for creating and manipulating tuples."
+  (:refer-clojure :exclude [get])
   (:require [medley.core :as medley]))
 
 (defn tuple?
+  "Returns `true` if `x` is a tuple, otherwise returns `false`."
   [x]
   (map? x))
 
-(defn attr=
-  [attr1 attr2]
-  (= (name attr1)
-     (name attr2)))
+(defn get
+  "Retrieves the value for attribute `attr` from tuple `tup`."
+  [tup attr]
+  (clojure.core/get tup attr))
 
 (defn select-attrs
+  "Retrives tuple `tup` with only the attributes in `attrs`."
   [tup attrs]
   (let [names (into #{} (map name) attrs)]
     (medley/filter-keys (comp names name)
@@ -25,11 +29,3 @@
   "Returns the attributes of a tuple."
   [tup]
   (-> tup meta ::attributes))
-
-(comment
-
- (select-attrs {:x 0 :y 1} [:x])
- (select-attrs {:x 0 :y 1} ['x])
- (select-attrs {:x 0 :y 1} ["x"])
-
- ,)

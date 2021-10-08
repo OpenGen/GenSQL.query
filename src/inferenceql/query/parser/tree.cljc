@@ -1,22 +1,23 @@
 (ns inferenceql.query.parser.tree
-  (:require [clojure.string :as string]
-            [inferenceql.query.node :as node]))
+  (:refer-clojure :exclude [alias])
+  (:require [clojure.core.match :as match]
+            [clojure.string :as string]))
 
 (defn branch?
   "Returns true if `node` could have children (but may not)."
   [node]
   (vector? node))
 
-(defn node
-  "Creates a new node."
-  [tag children]
-  (into [tag] children))
-
 (defn tag
   "Returns the tag, or node type, of `node`."
   [node]
   (when (branch? node)
     (first node)))
+
+(defn node
+  "Creates a new node."
+  [node children]
+  (into [(tag node)] children))
 
 (defn tag-pred
   "Returns a predicate that returns `true` if the tag for `node` is `t`."
@@ -72,10 +73,12 @@
   ([node k not-found]
    (when (branch? node)
      (let [children (child-nodes node)]
-       (cond (keyword? k) (nth (filter #(node/has-tag? % k) children)
+       (cond (keyword? k) (nth (filter (tag-pred k) children)
                                0
                                not-found)
-             (nat-int? k) (nth (child-nodes node) k not-found))))))
+             (nat-int? k) (nth (child-nodes node)
+                               k
+                               not-found))))))
 
 (defn get-node-in
   "Like `get-in`, but descends via `get-node` instead of `get`. Will skip multiple
@@ -96,3 +99,17 @@
                not-found
                (recur sentinel child ks)))
            (recur sentinel child (next ks))))))))
+
+(defn alias
+  [node]
+  (match/match node
+    [:alias-clause _as _ws [:simple-symbol s]] (symbol s)
+    :else (recur (get-node node :alias-clause))))
+
+(defn star?
+  "Returns `true` if `node` is a `:star` node or has a `:star` node as a
+  descendant."
+  [node]
+  (boolean
+   (some (tag-pred :star)
+         (tree-seq branch? child-nodes node))))
