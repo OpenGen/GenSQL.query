@@ -14,6 +14,7 @@
             [inferenceql.query.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.plan :as plan]
+            ;; [inferenceql.query.relation :as relation]
             [instaparse.core :as insta]))
 
 (def simple-mmix
@@ -335,8 +336,6 @@
       (testing "with multiple variables"
         (doseq [result (q "SELECT * FROM (GENERATE VAR x, VAR y UNDER model) LIMIT 10")]
           (is (= #{:x :y} (set (keys result))))))
-      ;; FIXME
-      #_
       (testing "expressions can have a subset of columns selected from them"
         (doseq [result (q "SELECT y FROM (GENERATE VAR x, VAR y UNDER model) LIMIT 10")]
           (is (= [:y] (keys result))))))))
@@ -376,19 +375,15 @@
 
 ;;; Insert
 
-;; FIXME
-#_
 (deftest insert-into
   (let [data [{:x 0}]
-        result (query/q "SELECT * FROM (INSERT INTO data VALUES (x=1), (x=2))"
+        result (query/q "SELECT * FROM (INSERT INTO data (x) VALUES (1), (2))"
                         data)]
     (is (= [{:x 0} {:x 1} {:x 2}]
            result))))
 
 ;;; Update
 
-;; FIXME
-#_
 (deftest update-set
   (let [data [{:x 0} {:x 1} {:x 2}]
         result (query/q "SELECT * FROM (UPDATE data SET x=-1)"
@@ -396,8 +391,6 @@
     (is (= [{:x -1} {:x -1} {:x -1}]
            result))))
 
-;; FIXME
-#_
 (deftest update-set-where
   (let [data [{:x 0} {:x 1} {:x 2}]
         result (query/q "SELECT * FROM (UPDATE data SET x=-1 WHERE x>0)"
@@ -429,24 +422,20 @@
 
 ;; With
 
-;; FIXME
-#_
 (deftest with
-  (let [data []
-        result (query/q "WITH (INSERT INTO data VALUES (x=1), (x=2), (x=3)) AS data: SELECT * FROM data;"
+  (let [data (with-meta [] {:iql/columns [:x]})
+        result (query/q "WITH (INSERT INTO data (x) VALUES (1), (2), (3)) AS data: SELECT * FROM data;"
                         data)]
     (is (= [{:x 1}
             {:x 2}
             {:x 3}]
            result))))
 
-;; FIXME
-#_
 (deftest with-rebind
   (let [data []
-        result (query/q "WITH (INSERT INTO data VALUES (x=1)) AS data,
-                              (INSERT INTO data VALUES (x=2)) AS data,
-                              (INSERT INTO data VALUES (x=3)) AS data:
+        result (query/q "WITH (INSERT INTO data (x) VALUES (1)) AS data,
+                              (INSERT INTO data (x) VALUES (2)) AS data,
+                              (INSERT INTO data (x) VALUES (3)) AS data:
                          SELECT * FROM data;"
                         data)]
     (is (= [{:x 1}
@@ -548,17 +537,3 @@
                            {:iql/columns [:x :y]})))))
         (testing "in with"
           (is (= 0.0 (q "WITH model CONDITIONED BY VAR y = \"no\" AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data" [{:x "yes"}]))))))))
-
-(comment
- (set! *print-length* 10)
- (query/q "generate var x under model conditioned by var x = \"yes\"" [] {:model simple-model})
-
-
- (query/q "SELECT PROBABILITY DENSITY OF VAR x = \"yes\" UNDER model CONDITIONED BY VAR y = y FROM data"
-          [{:y "no"}]
-          {:model simple-model})
-
- (plan/plan (parser/parse "generate var x under model"))
- (plan/plan (parser/parse "SELECT * FROM (GENERATE VAR x UNDER model CONSTRAINED BY VAR x > PROBABILITY OF VAR y = y UNDER model) LIMIT 10"))
- (plan/plan (parser/parse  "SELECT PROBABILITY DENSITY OF VAR x = \"yes\" UNDER model CONDITIONED BY VAR y = y FROM data"))
- )

@@ -1,6 +1,6 @@
 (ns inferenceql.query.relation
   "Functions for creating and manipulating relations."
-  (:refer-clojure :exclude [empty sort])
+  (:refer-clojure :exclude [empty sort transduce])
   (:require [clojure.spec.alpha :as s]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]))
@@ -77,6 +77,21 @@
                              :ascending compare
                              :descending #(compare %2 %1))))
     (meta rel)))
+
+(defn transduce
+  [rel xf]
+  (with-meta (into (empty rel)
+                   xf
+                   rel)
+    (meta rel)))
+
+(defn add-attribute
+  [rel attr]
+  (let [attributes (into []
+                         (distinct)
+                         (conj (attributes rel)
+                               attr))]
+    (relation rel attributes)))
 
 (s/def ::attribute symbol?)
 (s/def ::relation relation?)

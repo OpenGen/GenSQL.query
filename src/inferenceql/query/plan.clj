@@ -1,11 +1,12 @@
 (ns inferenceql.query.plan
-  (:refer-clojure :exclude [eval sort])
+  (:refer-clojure :exclude [eval sort update])
   (:require [clojure.core.match :as match]
             [clojure.edn :as edn]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.environment :as env]
+            [inferenceql.query.literal :as literal]
             [inferenceql.query.model :as model]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
@@ -17,9 +18,13 @@
 
 (s/def ::plan (s/multi-spec plan-spec ::type))
 
+(s/def ::plan-to ::plan)
+(s/def ::plan-from ::plan)
+
 (s/def ::sexpr any?)
 (s/def ::limit pos-int?)
 (s/def ::variables (s/coll-of ::model/variable))
+(s/def ::settings (s/map-of ::relation/attribute ::sexpr))
 
 (defmethod plan-spec :inferenceql.query.plan.type/lookup
   [_]
@@ -41,6 +46,22 @@
   [_]
   (s/keys :req [::sexpr ::variables]))
 
+(defmethod plan-spec :inferenceql.query.plan.type/insert
+  [_]
+  (s/keys :req [::plan-to ::plan-from]))
+
+(defmethod plan-spec :inferenceql.query.plan.type/value
+  [_]
+  (s/keys :req [::relation/relation]))
+
+(defmethod plan-spec :inferenceql.query.plan.type/update
+  [_]
+  (s/keys :req [::settings]))
+
+(defmethod plan-spec :inferenceql.query.plan.type/alter
+  [_]
+  (s/keys :req [::plan ::relation/attribute]))
+
 (defn plan?
   [x]
   (s/valid? ::plan x))
@@ -52,6 +73,7 @@
    (match/match node
      nil nil
      [:null _] nil
+     [:value child] (recur child)
      [_ s] (edn/read-string s)))
   ([node tag]
    (when node
@@ -67,9 +89,9 @@
    ::env/name sym})
 
 (defn select
-  [op attrs]
+  [op sexpr]
   {::type :inferenceql.query.plan.type/select
-   ::sexpr attrs
+   ::sexpr sexpr
    ::plan op})
 
 (defn extended-project
@@ -100,6 +122,32 @@
    ::order order
    ::plan op})
 
+(defn insert
+  [op1 op2]
+  {::type :inferenceql.query.plan.type/insert
+   ::plan-to op1
+   ::plan-from op2})
+
+(defn value
+  [rel]
+  {::type :inferenceql.query.plan.type/value
+   ::relation/relation rel})
+
+(defn update
+  ([op settings]
+   {::type :inferenceql.query.plan.type/update
+    ::plan op
+    ::settings settings})
+  ([op settings sexpr]
+   (assoc (update op settings)
+          ::sexpr sexpr)))
+
+(defn alter
+  [op attr]
+  {::type :inferenceql.query.plan.type/alter
+   ::plan op
+   ::relation/attribute attr})
+
 ;;; plan
 
 (defmulti plan
@@ -110,18 +158,13 @@
     ([node] (tree/tag node))
     ([node _op] (tree/tag node))))
 
-(comment
+(defmethod plan :query
+  [node]
+  (plan (tree/only-child-node node)))
 
- (parser/parse "SELECT * FROM data WHERE x=0 AND (x=1 OR x=1)")
- (plan (parser/parse "SELECT * FROM data WHERE x=0 AND (x=1 OR x=1)"))
-
- ,)
-
-(defmethod plan :default
-  ([node]
-   (plan (tree/only-child-node node)))
-  ([node op]
-   (plan (tree/only-child-node node) op)))
+(defmethod plan :relation-expr
+  [node]
+  (plan (tree/only-child-node node)))
 
 (defmethod plan nil
   [_ op]
@@ -175,6 +218,10 @@
           projections (map selection->pair (tree/child-nodes (tree/get-node node :select-list)))]
       (extended-project op projections))))
 
+(defmethod plan :from-clause
+  [node]
+  (plan (tree/only-child-node node)))
+
 (defmethod plan :limit-clause
   [node op]
   (let [n (eval-literal-in node [:int])]
@@ -194,6 +241,39 @@
        (plan (tree/get-node node :select-clause))
        (plan (tree/get-node node :order-by-clause))
        (plan (tree/get-node node :limit-clause))))
+
+(defmethod plan :insert-expr
+  [node]
+  (let [[node1 node2] (tree/child-nodes node)]
+    (insert (plan node1) (plan node2))))
+
+(defmethod plan :update-expr
+  [node]
+  (let [settings->map (fn [node]
+                        (match/match node
+                          [:update-setting symbol-node _= scalar-node]
+                          (let [sym (literal/read symbol-node)
+                                plan (scalar/plan scalar-node)]
+                            {sym plan})))
+        [rel-node settings-node where-node] (tree/child-nodes node)
+        rel-plan (plan rel-node)
+        settings (into {} (map settings->map (tree/child-nodes settings-node)))]
+    (if where-node
+      (let [where-plan (scalar/plan where-node)]
+        (update rel-plan settings where-plan))
+      (update rel-plan settings))))
+
+(defmethod plan :alter-expr
+  [node]
+  (let [[rel-node attr-node] (tree/child-nodes node)
+        rel-plan (plan rel-node)
+        attr (literal/read attr-node)]
+    (alter rel-plan attr)))
+
+(defmethod plan :relation-value
+  [node]
+  (let [rel (literal/read node)]
+    (value rel )))
 
 ;;; eval
 
@@ -225,12 +305,6 @@
         rel (eval plan env)]
     (relation/extended-project rel coll)))
 
-(comment
-
- (plan (parser/parse "SELECT x FROM data"))
-
- ,)
-
 (defmethod eval :inferenceql.query.plan.type/limit
   [plan env]
   (let [{::keys [limit plan]} plan
@@ -254,3 +328,38 @@
         samples (map #(medley/map-keys symbol %)
                      (repeatedly #(gpm/simulate model variables {})))]
     (relation/relation samples variables)))
+
+(defmethod eval :inferenceql.query.plan.type/insert
+  [plan env]
+  (let [plan-to (::plan-to plan)
+        plan-from (::plan-from plan)
+        rel-to (eval plan-to env)
+        rel-from (eval plan-from env)]
+    (relation/relation (into (vec rel-to) rel-from) (relation/attributes rel-to))))
+
+(defn ^:private setting->f
+  [[attr sexpr] where-sexpr env]
+  (fn [tuple]
+    (cond-> tuple
+      (scalar/eval where-sexpr env tuple)
+      (assoc attr (scalar/eval sexpr env tuple)))))
+
+(defmethod eval :inferenceql.query.plan.type/update
+  [plan env]
+  (let [{::keys [plan settings sexpr]} plan
+        sexpr (or sexpr true)
+        rel (eval plan env)
+        f (reduce comp (map #(setting->f % sexpr env)
+                            settings))
+        xf (map f)]
+    (relation/transduce rel xf)))
+
+(defmethod eval :inferenceql.query.plan.type/alter
+  [plan env]
+  (let [{::keys [plan] ::relation/keys [attribute]} plan
+        rel (eval plan env)]
+    (relation/add-attribute rel attribute)))
+
+(defmethod eval :inferenceql.query.plan.type/value
+  [plan _]
+  (::relation/relation plan))

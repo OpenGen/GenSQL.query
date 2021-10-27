@@ -6,6 +6,10 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | simple-symbol
                 | select-expr
                 | generate-expr
+                | insert-expr
+                | relation-value
+                | update-expr
+                | alter-expr
 
 (* with-expr *)
 
@@ -69,6 +73,27 @@ expr-multiplication ::= scalar-expr-6 (ws? '*' ws? scalar-expr-7)+
 expr-division       ::= scalar-expr-6 (ws? '/' ws? scalar-expr-7)+
 
 scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
+
+(* insert-expr *)
+
+insert-expr ::= #'(?i)INSERT' ws #'(?i)INTO' ws relation-expr ws relation-expr
+
+relation-value ::= simple-symbol-list ws #'(?i)VALUES' ws value-lists
+simple-symbol-list ::= '(' ws? simple-symbol (ws? ',' ws simple-symbol)* ws? ')'
+value-list ::= '(' ws? value (ws? ',' ws? value)* ws? ')'
+value-lists ::= value-list (ws? ',' ws? value-list)*
+
+(* update-expr *)
+
+update-expr ::= #'(?i)UPDATE' ws relation-expr
+                ws #'(?i)SET' ws update-settings
+                (ws #'(?i)WHERE' ws scalar-expr)?
+update-settings ::= update-setting (ws? ',' ws? update-setting)*
+update-setting ::= simple-symbol ws? '=' ws? scalar-expr
+
+(* alter-expr *)
+
+alter-expr ::= #'(?i)ALTER' ws relation-expr ws #'(?i)ADD' ws simple-symbol
 
 (* generate-expr *)
 

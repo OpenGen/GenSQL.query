@@ -58,19 +58,13 @@
                      :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))
 
-
 (comment
- (require '[inferenceql.query.parser :as parser] :reload)
 
- (eval (plan
-        (parser/parse "with select x, y from data as data2: select x + 1, y - 1 from data2;")
-        )
-       '{data [{x 0 y 1 z 2}
-               {x 1 y 2 z 3}
-               {x 2 y 3 z 4}]})
+ (q "insert into data (x, y) values (3, 3), (4, 4)"
+    [{:x 0 :y 0}
+     {:x 1 :y 1}
+     {:x 2 :y 2}])
 
- (plan
-  (parser/parse "with model conditioned by var x = 3 as model: select probability of var x = 3 under model from data;")
-  )
+ (parser/parse "insert into data (x, y) values (3, 3), (4, 4)")
 
  ,)

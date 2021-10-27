@@ -12,7 +12,11 @@
             [medley.core :as medley]
             [sci.core :as sci]))
 
-(s/def ::plan any?) ; FIXME
+(s/def ::plan
+  (s/or :scalar (s/or :number number? :string string? :keyword keyword? :symbol symbol?)
+        :map (s/map-of keyword? ::plan)
+        :vector (s/and vector? (s/coll-of ::plan))
+        :function-application (s/and (some-fn seq? list?) (s/cat :function symbol? :args (s/* ::plan)))))
 
 (defn plan
   [node]

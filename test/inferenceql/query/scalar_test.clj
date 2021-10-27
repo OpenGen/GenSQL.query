@@ -29,7 +29,25 @@
   (are [x s env] (= x (-> (parser/parse s :start :scalar-expr)
                           (scalar/plan)
                           (scalar/eval env)))
-    nil   "NULL"             '{}
+    false "NOT true"         '{}
+    true  "NOT false"        '{}
+
+    true  "0 IS 0"           '{}
+    false "0 IS 1"           '{}
+    false "1 IS 0"           '{}
+    true  "x IS 0"           '{x 0}
+    false "x IS 0"           '{x 1}
+    true  "0 IS x"           '{x 0}
+    false "0 IS x"           '{x 1}
+
+    false "0 IS NOT 0"       '{}
+    true  "0 IS NOT 1"       '{}
+    true  "1 IS NOT 0"       '{}
+    false "x IS NOT 0"       '{x 0}
+    true  "x IS NOT 0"       '{x 1}
+    false "0 IS NOT x"       '{x 0}
+    true  "0 IS NOT x"       '{x 1}
+
     true  "NULL IS NULL"     '{}
     false "NULL IS NOT NULL" '{}
     false "0 IS NULL"        '{}
@@ -38,15 +56,3 @@
     false "x IS NOT NULL"    '{x nil}
     false "x IS NULL"        '{x 0}
     true  "x IS NOT NULL"    '{x 0}))
-
-(comment
- (require '[inferenceql.query.parser :as parser] :reload)
-
- (-> "not false is not true"
-     (parser/parse :start :scalar-expr)
-     (scalar/plan)
-     ;; (scalar/eval env)
-     )
-
- (scalar/eval (scalar/plan [:value [:null "null"]]) {})
- ,)
