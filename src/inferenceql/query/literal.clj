@@ -5,21 +5,12 @@
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]))
 
-(declare read)
-
-(defn ^:private read-relation
-  [node]
-  (let [[symbol-list-node value-list-nodes] (tree/child-nodes node)
-        attributes (map read (tree/child-nodes symbol-list-node))
-        values (map #(map read (tree/child-nodes %)) (tree/child-nodes value-list-nodes))
-        m (map #(zipmap attributes %)
-               values)]
-    (relation/relation m attributes)))
-
 (defn read
   [node]
-  (match/match [node]
-    [[:value child]] (recur child)
+  (match/match [(into (empty node)
+                      (remove tree/whitespace?)
+                      node)]
+    [[:value child]] (read child)
 
     [[:bool s]]          (edn/read-string s)
     [[:float s]]         (edn/read-string s)
@@ -31,6 +22,47 @@
     [[:null _]] nil
     [nil] nil
 
-    [[:relation-expr child]] (recur child)
+    [[:relation-expr child]] (read child)
+    [[:value-lists child]] (read child)
 
-    [(node :guard (tree/tag-pred :relation-value))] (read-relation node)))
+    [[:simple-symbol-list & children]]
+    (map read (filter tree/branch? children))
+
+    [[:value-lists-full & children]]
+    (map read (filter tree/branch? children))
+
+    [[:value-lists-sparse & children]]
+    (let [pairs (->> children
+                     (filter tree/branch?)
+                     (map read)
+                     (partition 2))
+          n (inc (apply max (map first pairs)))]
+      (reduce #(apply assoc %1 %2)
+              (vec (repeat n ()))
+              pairs))
+
+    [[:value-list & children]]
+    (map read (filter tree/branch? children))
+
+    [[:relation-value syms _values vals]]
+    (let [attrs (read syms)
+          ms (map #(zipmap attrs %)
+                  (read vals))]
+      (relation/relation ms attrs))))
+
+(comment
+
+ (require '[inferenceql.query.parser :as parser] :reload)
+
+ (-> (parser/parse "... 6: (3), 7: (8) ..." :start :value-lists)
+     (tree/only-child-node)
+     (tree/child-nodes))
+
+ (read (parser/parse "(3, 4, 5)" :start :value-list))
+ (read (parser/parse "... 0: (3), 8: (7) ..." :start :value-lists))
+ (read (parser/parse "(x) VALUES ... 10: (3), 20: (4) ..." :start :relation-value))
+
+
+
+
+ ,)

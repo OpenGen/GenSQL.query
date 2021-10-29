@@ -3,6 +3,10 @@
   (:refer-clojure :exclude [get])
   (:require [medley.core :as medley]))
 
+(defn tuple
+  [m attrs]
+  (with-meta m {::attributes attrs}))
+
 (defn tuple?
   "Returns `true` if `x` is a tuple, otherwise returns `false`."
   [x]
@@ -29,3 +33,14 @@
   "Returns the attributes of a tuple."
   [tup]
   (-> tup meta ::attributes))
+
+(defn ->vector
+  "Converts tuple `tup` to a vector.`"
+  [tup]
+  (map #(get tup %) (attributes tup)))
+
+(comment
+
+ (->vector (tuple '{y 1 x 0} '[x y]))
+
+ )

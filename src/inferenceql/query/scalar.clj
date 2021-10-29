@@ -2,12 +2,15 @@
   (:refer-clojure :exclude [eval])
   (:require [clojure.core.match :as match]
             [clojure.edn :as edn]
+            [clojure.set :as set]
             [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
             [hashp.core]
+            [inferenceql.inference.search.crosscat :as crosscat]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.math :as math]
             [inferenceql.query.parser.tree :as tree]
+            [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]
             [sci.core :as sci]))
@@ -106,22 +109,60 @@
                       :operator first
                       :variable? symbol?}))))
 
+(defn incorporate
+  [model rel]
+  (let [new-columns (fn [model rel]
+                      (set/difference (set (relation/attributes rel))
+                                      (set (gpm/variables model))))
+        incorporate-column (fn [model rel col]
+                             (let [column-map (into {}
+                                                    (map-indexed (fn [i tup]
+                                                                   (when-some [v (tuple/get tup col)]
+                                                                     [i v])))
+                                                    rel)]))]
+    (if-let [new-columns (seq (new-columns model rel))]
+      (reduce #(crosscat/incorporate-labels )
+              model
+              new-columns)
+      (reduce gpm/incorporate
+              model
+              (relation/tuples rel)))))
+
+(defn unbox
+  "Returns the first value of relation `rel`."
+  [rel]
+  (->> rel
+       (relation/tuples)
+       (first)
+       (tuple/->vector)
+       (first)))
+
+(defn auto-unbox
+  "Wraps `f` with a function that calls `unbox` on any arguments that are
+  relations."
+  [f]
+  (fn [& args]
+    (->> args
+         (map #(cond-> % (relation/relation? %) (unbox)))
+         (apply f))))
+
 (def namespaces
   {'inferenceql.inference.gpm {}
    'clojure.core {'not not
-                  '> >
-                  '>= >=
-                  '= =
-                  '<= <=
-                  '< <
-                  '+ +
-                  '- -
-                  '* *
-                  '/ /}
+                  '> (auto-unbox >)
+                  '>= (auto-unbox >=)
+                  '= (auto-unbox =)
+                  '<= (auto-unbox <=)
+                  '< (auto-unbox <)
+                  '+ (auto-unbox +)
+                  '- (auto-unbox -)
+                  '* (auto-unbox *)
+                  '/ (auto-unbox /)}
    'iql {'prob prob
          'pdf pdf
          'condition condition
-         'constrain constrain}})
+         'constrain constrain
+         'incorporate incorporate}})
 
 (defn eval
   ([sexpr env]

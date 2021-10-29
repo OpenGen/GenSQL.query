@@ -1,6 +1,7 @@
 (ns inferenceql.query.plan
-  (:refer-clojure :exclude [eval sort update])
-  (:require [clojure.core.match :as match]
+  (:refer-clojure :exclude [alias alter eval sort type update])
+  (:require [clojure.core :as core]
+            [clojure.core.match :as match]
             [clojure.edn :as edn]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
@@ -12,7 +13,10 @@
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]
-            [medley.core :as medley]))
+            [inferenceql.query.tuple :as tuple]
+            [inferenceql.query.xforms :as query.xforms]
+            [medley.core :as medley]
+            [net.cgrand.xforms :as xforms]))
 
 (defmulti plan-spec ::type)
 
@@ -48,7 +52,7 @@
 
 (defmethod plan-spec :inferenceql.query.plan.type/insert
   [_]
-  (s/keys :req [::plan-to ::plan-from]))
+  (s/keys :req [::plan ::plan-from]))
 
 (defmethod plan-spec :inferenceql.query.plan.type/value
   [_]
@@ -61,6 +65,14 @@
 (defmethod plan-spec :inferenceql.query.plan.type/alter
   [_]
   (s/keys :req [::plan ::relation/attribute]))
+
+(comment
+ (declare lookup grouping)
+
+ (s/explain ::plan (grouping (lookup 'data) '[[max x]]))
+ (s/explain ::plan (grouping (lookup 'data) '[[max x]] '[x]))
+
+ ,)
 
 (defn plan?
   [x]
@@ -79,7 +91,18 @@
    (when node
      (eval-literal (tree/get-node node tag)))))
 
+(defn type
+  [node]
+  (get node ::type))
+
 (def eval-literal-in (comp eval-literal tree/get-node-in))
+
+(defn children
+  [node]
+  (let [{::keys [sexpr plan plan-from terms variables]} node]
+    (remove nil? (into [plan plan-from sexpr]
+                       (concat (map ::sexpr terms)
+                               variables)))))
 
 ;;; plan
 
@@ -125,7 +148,7 @@
 (defn insert
   [op1 op2]
   {::type :inferenceql.query.plan.type/insert
-   ::plan-to op1
+   ::plan op1
    ::plan-from op2})
 
 (defn value
@@ -148,29 +171,64 @@
    ::plan op
    ::relation/attribute attr})
 
+(s/def ::output-attribute ::relation/attribute)
+(s/def ::input-attribute ::relation/attribute)
+(s/def ::aggregator ::env/sym)
+
+(s/def ::groups (s/coll-of ::sexpr))
+(s/def ::aggregation (s/keys :req [::aggregator ::input-attr ::output-attr]))
+(s/def ::aggregations (s/coll-of ::aggregation))
+
+(defmethod plan-spec :inferenceql.query.plan.type/group
+  [_]
+  (s/keys :req [::plan ::aggregations] :opt [::groups]))
+
+(defn grouping
+  ([op aggregations]
+   (grouping op aggregations '()))
+  ([op aggregations groups]
+   (cond-> {::type :inferenceql.query.plan.type/group
+            ::aggregations aggregations
+            ::plan op}
+     (seq groups) (assoc ::groups groups))))
+
 ;;; plan
 
-(defmulti plan
+(defmulti plan-impl
   "Returns a query plan for the provided parse tree node. The 2-arity version is
   used when the plan that provides the input relation is generated from a node
-  elsewhere in the parse tree, as is the case with `\"SELECT\"` subclauses."
+  elsewhere in the parse tree, as is the case with \"SELECT\" subclauses."
   (fn
     ([node] (tree/tag node))
     ([node _op] (tree/tag node))))
 
-(defmethod plan :query
+(defn plan
+  ([node]
+   (with-meta (plan-impl node)
+     {::parser/node node}))
+  ([node op]
+   (if (some? node)
+     (with-meta (plan-impl node op)
+       {::parser/node node})
+     op)))
+
+(defn node
+  [plan]
+  (get (meta plan) ::parser/node))
+
+(defmethod plan-impl :query
   [node]
   (plan (tree/only-child-node node)))
 
-(defmethod plan :relation-expr
+(defmethod plan-impl :relation-expr
   [node]
   (plan (tree/only-child-node node)))
 
-(defmethod plan nil
+(defmethod plan-impl nil
   [_ op]
   op)
 
-(defmethod plan :simple-symbol
+(defmethod plan-impl :simple-symbol
   [node]
   (let [sym (eval-literal node)]
     (lookup sym)))
@@ -179,7 +237,7 @@
   [node]
   (-> node tree/only-child-node eval-literal))
 
-(defmethod plan :generate-expr
+(defmethod plan-impl :generate-expr
   [node]
   (let [sexpr (scalar/plan (tree/get-node node :model-expr))
         variables (let [generate-list-nodes (tree/child-nodes (tree/get-node-in node [:generate-clause :generate-list]))]
@@ -188,66 +246,158 @@
                       (map variable-node->symbol generate-list-nodes)))]
     (generate variables sexpr)))
 
-(defmethod plan :where-clause
+(defmethod plan-impl :where-clause
   [node op]
   (let [sexpr (-> (tree/get-node node :scalar-expr)
                   (scalar/plan))]
     (select op sexpr)))
 
-(defn output-attribute
+(defn input-attr
   [node]
-  (assert (= :selection (tree/tag node)))
-  (if-let [expr (tree/get-node node :scalar-expr)]
-    (or (eval-literal-in node [:alias-clause :simple-symbol])
-        (-> (parser/unparse expr)
-            (string/replace #"\s" "")
-            (symbol)))
-    (recur (tree/get-node node :selection))))
+  (tree/match [node]
+    [[:selection child & _]] (recur child)
+    [[:selection-group "(" child ")"]] (recur child)
+    [[:aggregation _aggregator "(" child ")"]] (eval-literal child)))
 
-(defmethod plan :select-clause
+(comment
+
+ (parser/parse "max(x)" :start :selection)
+
+ (input-attr (parser/parse "max(x)" :start :selection))
+ (input-attr (parser/parse "(max(x))" :start :selection))
+
+ ,)
+
+(defn output-attr
+  "For a selection returns the attribute for that selection in the output
+  relation."
+  [node]
+  (tree/match [node]
+    [[:selection "(" child ")"]] (recur child)
+    [[:selection _ [:alias-clause _as sym-node]]] (eval-literal sym-node)
+    [[:selection child]] (-> (parser/unparse child)
+                             (string/replace #"\s" "")
+                             (symbol))))
+
+(comment
+
+ (plan (parser/parse "select max(x) from data"))
+
+ ,)
+
+(defn ^:private selection-plan
   [node op]
-  (if (tree/star? node)
-    op
-    (let [selection->pair (fn [node]
-                            (assert (= :selection (tree/tag node)))
-                            (if-let [expr (tree/get-node node :scalar-expr)]
-                              (let [sexpr (scalar/plan expr)
-                                    output-attribute (output-attribute node)]
-                                [sexpr output-attribute])
-                              (recur (tree/only-child-node node))))
-          projections (map selection->pair (tree/child-nodes (tree/get-node node :select-list)))]
-      (extended-project op projections))))
+  (let [selection->pair (fn [node]
+                          (assert (= :selection (tree/tag node)))
+                          (if-let [expr (tree/get-node node :scalar-expr)]
+                            (let [sexpr (scalar/plan expr)
+                                  attr (output-attr node)]
+                              [sexpr attr])
+                            (recur (tree/only-child-node node))))
+        projections (map selection->pair (tree/child-nodes (tree/get-node node :select-list)))]
+    (extended-project op projections)))
 
-(defmethod plan :from-clause
+(defn aggregator
+  [node]
+  (tree/match [node]
+    [[:selection child & _]] (recur child)
+    [[:aggregation aggregation-fn & _]] (recur aggregation-fn)
+    [[:aggregation-fn [tag & _]]] (symbol tag)))
+
+(defn selections
+  [node]
+  (case (tree/tag node)
+    :select-expr (tree/get-child-nodes-in node [:select-clause :select-list])
+    :select-clause (tree/get-child-nodes-in node [:select-list])
+    :select-list (tree/child-nodes node)))
+
+(comment
+
+ ,)
+
+(defn ^:private aggregation
+  [node]
+  (let [output-attr (output-attr node)]
+    (merge {::aggregator (aggregator node)
+            ::input-attr (input-attr node)}
+           (when output-attr
+             {::output-attr output-attr}))))
+
+(defn ^:private aggregation-plan
+  [selection-node group-by-node op]
+  (let [selections (selections selection-node)]
+    (grouping op
+              (map aggregation selections)
+              (map scalar/plan (tree/child-nodes group-by-node)))))
+
+(defn aggregation?
+  [node]
+  (tree/match [node]
+    [[:selection child & _]] (recur child)
+    [[:aggregation & _]] true
+    :else false))
+
+(defn scalar-expr?
+  [node]
+  (match/match [node]
+    [[:selection child]] (recur child)
+    [[:scalar-expr & _]] true
+    :else false))
+
+(defn select-plan
+  [select-node group-by-node op]
+  (assert (= :select-clause (tree/tag select-node)))
+  (assert (or (nil? group-by-node) (= :group-by-clause (tree/tag group-by-node))))
+  (let [selections (selections select-node)]
+    (cond (tree/star? select-node) op
+          (every? scalar-expr? selections) (selection-plan select-node op)
+          (every? aggregation? selections) (aggregation-plan select-node group-by-node op)
+          :else (throw (ex-info "Selections that mix scalar expressions and aggregations are not yet supported."
+                                {:selections selections})))))
+
+(comment
+
+ (require '[inferenceql.query.parser :as parser] :reload)
+ (plan (parser/parse "select min(x), max(y) from data group by y"))
+
+ [{:inferenceql.query.environment/name   [:inferenceql.query.plan/aggregator min]
+   :inferenceql.query.relation/attribute [:inferenceql.query.plan/input-attr min]}
+  {:inferenceql.query.environment/name   [:inferenceql.query.plan/aggregator max]
+   :inferenceql.query.relation/attribute [:inferenceql.query.plan/input-attr max]}]
+
+ )
+
+(defmethod plan-impl :from-clause
   [node]
   (plan (tree/only-child-node node)))
 
-(defmethod plan :limit-clause
+(defmethod plan-impl :limit-clause
   [node op]
   (let [n (eval-literal-in node [:int])]
     (limit op n)))
 
-(defmethod plan :order-by-clause
+(defmethod plan-impl :order-by-clause
   [node op]
   (match/match (vec (tree/child-nodes node))
     [[:simple-symbol s]]           (sort op (symbol s) :ascending)
     [[:simple-symbol s] [:asc  _]] (sort op (symbol s) :ascending)
     [[:simple-symbol s] [:desc _]] (sort op (symbol s) :descending)))
 
-(defmethod plan :select-expr
+(defmethod plan-impl :select-expr
   [node]
   (->> (plan (tree/get-node node :from-clause))
        (plan (tree/get-node node :where-clause))
-       (plan (tree/get-node node :select-clause))
+       (select-plan (tree/get-node node :select-clause)
+                    (tree/get-node node :group-by-clause))
        (plan (tree/get-node node :order-by-clause))
        (plan (tree/get-node node :limit-clause))))
 
-(defmethod plan :insert-expr
+(defmethod plan-impl :insert-expr
   [node]
   (let [[node1 node2] (tree/child-nodes node)]
     (insert (plan node1) (plan node2))))
 
-(defmethod plan :update-expr
+(defmethod plan-impl :update-expr
   [node]
   (let [settings->map (fn [node]
                         (match/match node
@@ -263,14 +413,14 @@
         (update rel-plan settings where-plan))
       (update rel-plan settings))))
 
-(defmethod plan :alter-expr
+(defmethod plan-impl :alter-expr
   [node]
   (let [[rel-node attr-node] (tree/child-nodes node)
         rel-plan (plan rel-node)
         attr (literal/read attr-node)]
     (alter rel-plan attr)))
 
-(defmethod plan :relation-value
+(defmethod plan-impl :relation-value
   [node]
   (let [rel (literal/read node)]
     (value rel )))
@@ -280,7 +430,10 @@
 (defmulti eval
   "Evaluates a relational query plan in the context of an environment. Returns a
   relation."
-  (fn [plan _env] (::type plan)))
+  (fn [plan _env]
+    (when (nil? plan)
+      (throw (ex-info "Query plan is nil" {})))
+    (::type plan)))
 
 (defmethod eval :inferenceql.query.plan.type/lookup
   [plan env]
@@ -331,11 +484,68 @@
 
 (defmethod eval :inferenceql.query.plan.type/insert
   [plan env]
-  (let [plan-to (::plan-to plan)
+  (let [plan-to (::plan plan)
         plan-from (::plan-from plan)
         rel-to (eval plan-to env)
-        rel-from (eval plan-from env)]
-    (relation/relation (into (vec rel-to) rel-from) (relation/attributes rel-to))))
+        rel-from (eval plan-from env)
+        attributes (relation/attributes rel-to)
+        rel (into (vec rel-to) rel-from)]
+    (relation/relation rel attributes)))
+
+(def ^:private agg-f
+  (->> {'count xforms/count
+        'avg xforms/avg
+        'median query.xforms/median
+        'std xforms/sd
+        'max xforms/max
+        'min xforms/min}
+       (medley/map-vals #(comp (remove nil?) %))))
+
+(defn ^:private aggregation-name
+  [{::env/keys [name] ::relation/keys [attribute]}]
+  (symbol (str name "-" attribute)))
+
+(defn ^:private aggregate
+  "Performs an aggregation on the provided groups, returning a sequence of rows asmaps."
+  [aggregations group]
+  (zipmap (map ::output-attr aggregations)
+          (xforms/transjuxt (map (fn [{::keys [aggregator input-attr] :as aggregation}]
+                                   (comp (map input-attr) (agg-f aggregator)))
+                                 aggregations)
+                            group)))
+
+(defmethod eval :inferenceql.query.plan.type/group
+  [plan env]
+  (let [{::keys [plan groups aggregations]} plan
+        grouping-f (if (seq groups)
+                     #(select-keys (tuple/->map %) groups)
+                     (constantly (Object.)))
+        rel (eval plan env)
+        groups (relation/group-by rel grouping-f)]
+    (relation/relation (map #(aggregate aggregations %)
+                            groups)
+                       (map ::output-attr aggregations))))
+
+(comment
+
+ (plan (parser/parse "SELECT x FROM data GROUP BY y"))
+
+ (plan (parser/parse "SELECT avg(x) FROM data GROUP BY y"))
+ '#:inferenceql.query.plan{:type :inferenceql.query.plan.type/group,
+                           :aggregations (#:inferenceql.query.plan{:aggregator avg,
+                                                                   :input-attr avg,})
+                           :plan
+                           {:inferenceql.query.plan/type
+                            :inferenceql.query.plan.type/lookup,
+                            :inferenceql.query.environment/name data},
+                           :groups (y)}
+ (s/explain ::plan (plan (parser/parse "SELECT avg(x) FROM data GROUP BY y")))
+
+ (relation/attributes
+  (eval (plan (parser/parse "SELECT avg(x) as avg FROM data GROUP BY y"))
+        '{data [{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}]}))
+
+ ,)
 
 (defn ^:private setting->f
   [[attr sexpr] where-sexpr env]
@@ -363,3 +573,9 @@
 (defmethod eval :inferenceql.query.plan.type/value
   [plan _]
   (::relation/relation plan))
+
+(comment
+
+ (parser/parse "select max(x) as max from data")
+
+ ,)

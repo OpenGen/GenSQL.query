@@ -22,16 +22,23 @@ binding ::= expr ws alias-clause
 select-expr ::= select-clause
                 ws from-clause
                 (ws where-clause)?
+                (ws group-by-clause)?
                 (ws order-by-clause)?
                 (ws limit-clause)?
 
 select-clause ::= #'(?i)SELECT' ws select-list
 
-select-list ::= star / selection (ws? ',' ws? selection)*
+select-list ::= star
+              / selection (ws? ',' ws? selection)*
+              / aggregation (ws? ',' ws? aggregation)*
 
 star ::= '*'
 
-selection ::= '(' ws? selection ws? ')' | scalar-expr (ws alias-clause)?
+selection ::= selection-0 (ws alias-clause)?
+<selection-0> ::= selection-1 | scalar-expr | aggregation
+<selection-1> ::= selection-group
+
+selection-group ::= '(' ws? selection-0 ws? ')'
 
 alias-clause ::= #'(?i)AS' ws simple-symbol
 
@@ -39,12 +46,26 @@ from-clause ::= #'(?i)FROM' ws relation-expr
 
 where-clause ::= #'(?i)WHERE' ws scalar-expr
 
+group-by-clause ::= #'(?i)GROUP' ws #'(?i)BY' ws simple-symbol (ws? "," ws? simple-symbol)*
+
 order-by-clause ::= #'(?i)ORDER' ws #'(?i)BY' ws simple-symbol (ws (asc | desc))?
 
 asc  ::= #'(?i)ASC'
 desc ::= #'(?i)DESC'
 
 limit-clause ::= #'(?i)LIMIT' ws int
+
+(* aggregation *)
+
+aggregation ::= aggregation-fn ws? '(' ws? simple-symbol ws? ')' (ws alias-clause)?
+aggregation-fn ::= count | avg | median | std | max | min
+
+count  ::= "count"
+avg    ::= "avg"
+std    ::= "std"
+median ::= "median"
+max    ::= "max"
+min    ::= "min"
 
 (* scalar-expr *)
 
@@ -79,9 +100,12 @@ scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 insert-expr ::= #'(?i)INSERT' ws #'(?i)INTO' ws relation-expr ws relation-expr
 
 relation-value ::= simple-symbol-list ws #'(?i)VALUES' ws value-lists
+
 simple-symbol-list ::= '(' ws? simple-symbol (ws? ',' ws simple-symbol)* ws? ')'
 value-list ::= '(' ws? value (ws? ',' ws? value)* ws? ')'
-value-lists ::= value-list (ws? ',' ws? value-list)*
+value-lists ::= value-lists-full | value-lists-sparse
+value-lists-full ::= value-list (ws? ',' ws? value-list)*
+value-lists-sparse ::= '...' ws? nat ws? ':' ws? value-list (ws? ',' ws? nat ws? ':' ws? value-list)* ws? '...'
 
 (* update-expr *)
 
@@ -143,9 +167,9 @@ density-event-eq ::= variable ws? '=' ws? scalar-expr | scalar-expr ws? '=' ws? 
 
 density-event-group ::= '(' ws? density-event ws? ')'
 
-conditioned-by-expr ::= model-expr
-                        ws #'(?i)CONDITIONED' ws #'(?i)BY'
-                        ws density-event
+conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED' ws #'(?i)BY' ws density-event
+
+incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model-expr
 
 variable ::= #'(?i)VAR' ws simple-symbol
 

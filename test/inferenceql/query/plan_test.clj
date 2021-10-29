@@ -3,7 +3,8 @@
   (:require [clojure.test :refer [are deftest is]]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.plan :as plan]
-            [inferenceql.query.relation :as relation]))
+            [inferenceql.query.relation :as relation]
+            [inferenceql.query.tuple :as tuple]))
 
 (defn eval
   [query env]
@@ -49,3 +50,22 @@
     "ALTER data ADD x" '[x]   '[x]
     "ALTER data ADD y" '[x]   '[x y]
     "ALTER data ADD z" '[x y] '[x y z]))
+
+(deftest aggregation
+  (are [query in out] (= out (->> (eval query {'data in})
+                                  (relation/tuples)
+                                  (map tuple/->vector)))
+    "SELECT max(x) FROM data"            '[{x 0} {x 1}]                             '[[1]]
+    "SELECT max(x) FROM data"            '[{x 1} {x 0}]                             '[[1]]
+    "SELECT max(x) FROM data"            '[{x 0} {x 1} {x 2}]                       '[[2]]
+    "SELECT max(x) FROM data"            '[{x 0} {x 2} {x 1}]                       '[[2]]
+    "SELECT max(x) FROM data"            '[{x 2} {x 1} {x 0}]                       '[[2]]
+    "SELECT max(x), min(x) FROM data"    '[{x 0} {x 1}]                             '[[1 0]]
+    "SELECT max(x), max(y) FROM data"    '[{x 0 y 1} {x 1 y 0}]                     '[[1 1]]
+    "SELECT max(x) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}] '[[2] [3]]))
+
+(comment
+
+ (eval "SELECT max(x) FROM data" {'data '[{x 0} {x 2} {x 1}]})
+
+ ,)

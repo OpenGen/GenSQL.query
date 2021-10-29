@@ -4,7 +4,6 @@
             [instaparse.core :as insta]))
 
 (deftest parse
-  (require '[inferenceql.query.parser :as parser] :reload)
   (are [succeeds s] (= succeeds (not (insta/failure? (parser/parse s))))
     false ""
     false "SELECT *"
@@ -17,4 +16,5 @@
     true "UPDATE data SET x=0 WHERE y=1"
     true "UPDATE data SET x = 0 WHERE y = 1"
     true "UPDATE data SET x=0, y=1 WHERE z=1"
-    true "UPDATE data SET x = 0, y = 1 WHERE z = 1"))
+    true "UPDATE data SET x = 0, y = 1 WHERE z = 1"
+    true "SELECT avg(x) FROM data"))

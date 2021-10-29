@@ -10,9 +10,11 @@
 
 ```bash
 % clj -M -m inferenceql.query.main --help
-  -d, --data DATA    data CSV path
-  -m, --model MODEL  model EDN path
-  -e, --eval QUERY   QUERY to evaluate
+  -d, --data DATA      data CSV path
+  -m, --model MODEL    model EDN path
+  -s, --schema SCHEMA  schema EDN path
+  -e, --eval STRING    evaluate query in STRING
+  -o, --output FORMAT  output format
   -h, --help
 ```
 

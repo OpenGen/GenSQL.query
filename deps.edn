@@ -11,6 +11,7 @@
         metosin/malli {:mvn/version "0.6.2"}
         metosin/muuntaja {:mvn/version "0.6.8"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
+        rhizome/rhizome {:mvn/version "0.2.9"}
         ring/ring-core {:mvn/version "1.9.2"}
         ring/ring-jetty-adapter {:mvn/version "1.9.2"}
         ring-cors/ring-cors {:mvn/version "0.1.13"}

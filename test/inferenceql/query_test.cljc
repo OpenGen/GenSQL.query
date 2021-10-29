@@ -409,8 +409,6 @@
 
 ;;; Alter
 
-;; FIXME
-#_
 (deftest alter
   (let [data [{:x 0}
               {:x 1}

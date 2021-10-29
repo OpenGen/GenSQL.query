@@ -1,6 +1,6 @@
 (ns inferenceql.query.relation
   "Functions for creating and manipulating relations."
-  (:refer-clojure :exclude [empty sort transduce])
+  (:refer-clojure :exclude [empty group-by sort transduce])
   (:require [clojure.spec.alpha :as s]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]))
@@ -48,6 +48,10 @@
     {::attributes attributes}))
 
 (defn extended-project
+  "Takes a relation and a collection of function / attribute pairs. Returns a
+  new relation with the attributes from the collection. Attribute values are
+  produced by applying the functions from coll to each tuple in the relation
+  argument."
   [rel coll]
   (let [f (fn [tuple]
             tuple
@@ -56,8 +60,8 @@
                          (map #((first %) tuple)
                               coll))
                  (medley/remove-vals nil?)))]
-    (with-meta (map f (tuples rel))
-      {::attributes (mapv second coll)})))
+    (relation (map f (tuples rel))
+              (mapv second coll))))
 
 (defn select
   [rel pred]
@@ -71,12 +75,12 @@
 
 (defn sort
   [rel attr order]
-  (with-meta (->> (tuples rel)
+  (relation (->> (tuples rel)
                   (sort-by #(tuple/get % attr)
                            (case order
                              :ascending compare
                              :descending #(compare %2 %1))))
-    (meta rel)))
+            (attributes rel)))
 
 (defn transduce
   [rel xf]
@@ -92,6 +96,21 @@
                          (conj (attributes rel)
                                attr))]
     (relation rel attributes)))
+
+(defn group-by
+  [rel f]
+  (->> (tuples rel)
+       (clojure.core/group-by f)
+       (vals)
+       (map #(relation % (attributes rel)))))
+
+(defn aggregate
+  [rel coll]
+  (relation (->> (tuples rel)
+                 (map (fn [tuple]
+                        (zipmap (map second coll)
+                                (map  coll)))))
+            (mapv second coll)))
 
 (s/def ::attribute symbol?)
 (s/def ::relation relation?)

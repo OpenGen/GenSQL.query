@@ -1,7 +1,9 @@
 (ns inferenceql.query.parser.tree
-  (:refer-clojure :exclude [alias])
-  (:require [clojure.core.match :as match]
-            [clojure.string :as string]))
+  (:refer-clojure :exclude [alias remove])
+  (:require [clojure.core :as clojure]
+            [clojure.core.match :as match]
+            [clojure.string :as string]
+            [clojure.walk :as walk]))
 
 (defn branch?
   "Returns true if `node` could have children (but may not)."
@@ -14,7 +16,7 @@
   (when (branch? node)
     (first node)))
 
-(defn node
+(defn make-node
   "Creates a new node."
   [node children]
   (into [(tag node)] children))
@@ -38,7 +40,7 @@
   "Returns `node`'s children."
   [node]
   (into []
-        (remove whitespace?)
+        (clojure/remove whitespace?)
         (rest node)))
 
 (defn child-nodes
@@ -100,6 +102,8 @@
                (recur sentinel child ks)))
            (recur sentinel child (next ks))))))))
 
+(def get-child-nodes-in (comp child-nodes get-node-in))
+
 (defn alias
   [node]
   (match/match node
@@ -113,3 +117,16 @@
   (boolean
    (some (tag-pred :star)
          (tree-seq branch? child-nodes node))))
+
+(defn remove
+  [node pred?]
+  (let [remove-ws (fn [node]
+                    (if-not (branch? node)
+                      node
+                      (let [children (clojure/remove pred? (children node))]
+                        (make-node node children))))]
+    (walk/postwalk remove-ws node)))
+
+(defmacro match
+  [vars & clauses]
+  `(match/match (remove ~vars whitespace?) ~@clauses))

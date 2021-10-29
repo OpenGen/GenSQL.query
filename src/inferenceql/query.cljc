@@ -60,11 +60,6 @@
 
 (comment
 
- (q "insert into data (x, y) values (3, 3), (4, 4)"
-    [{:x 0 :y 0}
-     {:x 1 :y 1}
-     {:x 2 :y 2}])
-
- (parser/parse "insert into data (x, y) values (3, 3), (4, 4)")
+ (require '[inferenceql.query.parser :as parser] :reload)
 
  ,)

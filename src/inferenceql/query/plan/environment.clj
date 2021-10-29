@@ -39,7 +39,6 @@
 
 (defn eval-init
   [plan env]
-  (def plann plan)
   (match/match (s/conform ::init-plan plan)
     [:relation _] (plan/eval plan env)
     [:scalar _] (scalar/eval plan env {})))
