@@ -146,18 +146,26 @@
          (map #(cond-> % (relation/relation? %) (unbox)))
          (apply f))))
 
+(defn nil-safe
+  "Wraps `f` with a function that reutnrs `nil` if any of its arguments are
+  `nil`."
+  [f]
+  (fn [& args]
+    (when-not (some nil? args)
+      (apply f args))))
+
 (def namespaces
   {'inferenceql.inference.gpm {}
    'clojure.core {'not not
-                  '> (auto-unbox >)
-                  '>= (auto-unbox >=)
+                  '> (nil-safe (auto-unbox >))
+                  '>= (nil-safe (auto-unbox >=))
                   '= (auto-unbox =)
-                  '<= (auto-unbox <=)
-                  '< (auto-unbox <)
-                  '+ (auto-unbox +)
-                  '- (auto-unbox -)
-                  '* (auto-unbox *)
-                  '/ (auto-unbox /)}
+                  '<= (nil-safe (auto-unbox <=))
+                  '< (nil-safe (auto-unbox <))
+                  '+ (nil-safe (auto-unbox +))
+                  '- (nil-safe (auto-unbox -))
+                  '* (nil-safe (auto-unbox *))
+                  '/ (nil-safe (auto-unbox /))}
    'iql {'prob prob
          'pdf pdf
          'condition condition
