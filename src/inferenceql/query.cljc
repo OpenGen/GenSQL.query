@@ -57,9 +57,3 @@
              ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                      :instaparse/failure failure}]
          (throw (ex-info "Parsing failure" ex-map)))))))
-
-(comment
-
- (require '[inferenceql.query.parser :as parser] :reload)
-
- ,)

@@ -67,12 +67,12 @@
   (s/keys :req [::plan ::relation/attribute]))
 
 (comment
- (declare lookup grouping)
+  (declare lookup grouping)
 
- (s/explain ::plan (grouping (lookup 'data) '[[max x]]))
- (s/explain ::plan (grouping (lookup 'data) '[[max x]] '[x]))
+  (s/explain ::plan (grouping (lookup 'data) '[[max x]]))
+  (s/explain ::plan (grouping (lookup 'data) '[[max x]] '[x]))
 
- ,)
+  ,)
 
 (defn plan?
   [x]
@@ -257,16 +257,17 @@
   (tree/match [node]
     [[:selection child & _]] (recur child)
     [[:selection-group "(" child ")"]] (recur child)
-    [[:aggregation _aggregator "(" child ")"]] (eval-literal child)))
+    [[:aggregation _aggregator "(" child ")"]] (eval-literal child)
+    [[:scalar-expr child]] (eval-literal child)))
 
 (comment
 
- (parser/parse "max(x)" :start :selection)
+  (parser/parse "max(x)" :start :selection)
 
- (input-attr (parser/parse "max(x)" :start :selection))
- (input-attr (parser/parse "(max(x))" :start :selection))
+  (input-attr (parser/parse "max(x)" :start :selection))
+  (input-attr (parser/parse "(max(x))" :start :selection))
 
- ,)
+  ,)
 
 (defn output-attr
   "For a selection returns the attribute for that selection in the output
@@ -281,9 +282,9 @@
 
 (comment
 
- (plan (parser/parse "select max(x) from data"))
+  (plan (parser/parse "select max(x) from data"))
 
- ,)
+  ,)
 
 (defn ^:private selection-plan
   [node op]
@@ -302,7 +303,8 @@
   (tree/match [node]
     [[:selection child & _]] (recur child)
     [[:aggregation aggregation-fn & _]] (recur aggregation-fn)
-    [[:aggregation-fn [tag & _]]] (symbol tag)))
+    [[:aggregation-fn [tag & _]]] (symbol tag)
+    [[:scalar-expr _]] nil))
 
 (defn selections
   [node]
@@ -311,17 +313,13 @@
     :select-clause (tree/get-child-nodes-in node [:select-list])
     :select-list (tree/child-nodes node)))
 
-(comment
-
- ,)
-
 (defn ^:private aggregation
   [node]
-  (let [output-attr (output-attr node)]
-    (merge {::aggregator (aggregator node)
-            ::input-attr (input-attr node)}
-           (when output-attr
-             {::output-attr output-attr}))))
+  (let [output-attr (output-attr node)
+        aggregator (aggregator node)]
+    (cond-> {::input-attr (input-attr node)}
+      output-attr (assoc ::output-attr output-attr)
+      aggregator (assoc ::aggregator aggregator))))
 
 (defn ^:private aggregation-plan
   [selection-node group-by-node op]
@@ -350,22 +348,20 @@
   (assert (or (nil? group-by-node) (= :group-by-clause (tree/tag group-by-node))))
   (let [selections (selections select-node)]
     (cond (tree/star? select-node) op
-          (every? scalar-expr? selections) (selection-plan select-node op)
-          (every? aggregation? selections) (aggregation-plan select-node group-by-node op)
-          :else (throw (ex-info "Selections that mix scalar expressions and aggregations are not yet supported."
-                                {:selections selections})))))
+          (some aggregation? selections) (aggregation-plan select-node group-by-node op)
+          (every? scalar-expr? selections) (selection-plan select-node op))))
 
 (comment
 
- (require '[inferenceql.query.parser :as parser] :reload)
- (plan (parser/parse "select min(x), max(y) from data group by y"))
+  (require '[inferenceql.query.parser :as parser] :reload)
+  (plan (parser/parse "select min(x), max(y) from data group by y"))
 
- [{:inferenceql.query.environment/name   [:inferenceql.query.plan/aggregator min]
-   :inferenceql.query.relation/attribute [:inferenceql.query.plan/input-attr min]}
-  {:inferenceql.query.environment/name   [:inferenceql.query.plan/aggregator max]
-   :inferenceql.query.relation/attribute [:inferenceql.query.plan/input-attr max]}]
+  [{:inferenceql.query.environment/name   [:inferenceql.query.plan/aggregator min]
+    :inferenceql.query.relation/attribute [:inferenceql.query.plan/input-attr min]}
+   {:inferenceql.query.environment/name   [:inferenceql.query.plan/aggregator max]
+    :inferenceql.query.relation/attribute [:inferenceql.query.plan/input-attr max]}]
 
- )
+  )
 
 (defmethod plan-impl :from-clause
   [node]
@@ -501,16 +497,15 @@
         'min xforms/min}
        (medley/map-vals #(comp (remove nil?) %))))
 
-(defn ^:private aggregation-name
-  [{::env/keys [name] ::relation/keys [attribute]}]
-  (symbol (str name "-" attribute)))
-
 (defn ^:private aggregate
   "Performs an aggregation on the provided groups, returning a sequence of rows asmaps."
   [aggregations group]
   (zipmap (map ::output-attr aggregations)
           (xforms/transjuxt (map (fn [{::keys [aggregator input-attr] :as aggregation}]
-                                   (comp (map input-attr) (agg-f aggregator)))
+                                   (comp (map input-attr)
+                                         (if aggregator
+                                           (agg-f aggregator)
+                                           xforms/last)))
                                  aggregations)
                             group)))
 
@@ -528,24 +523,24 @@
 
 (comment
 
- (plan (parser/parse "SELECT x FROM data GROUP BY y"))
+  (plan (parser/parse "SELECT x FROM data GROUP BY y"))
 
- (plan (parser/parse "SELECT avg(x) FROM data GROUP BY y"))
- '#:inferenceql.query.plan{:type :inferenceql.query.plan.type/group,
-                           :aggregations (#:inferenceql.query.plan{:aggregator avg,
-                                                                   :input-attr avg,})
-                           :plan
-                           {:inferenceql.query.plan/type
-                            :inferenceql.query.plan.type/lookup,
-                            :inferenceql.query.environment/name data},
-                           :groups (y)}
- (s/explain ::plan (plan (parser/parse "SELECT avg(x) FROM data GROUP BY y")))
+  (plan (parser/parse "SELECT avg(x) FROM data GROUP BY y"))
+  '#:inferenceql.query.plan{:type :inferenceql.query.plan.type/group,
+                            :aggregations (#:inferenceql.query.plan{:aggregator avg,
+                                                                    :input-attr avg,})
+                            :plan
+                            {:inferenceql.query.plan/type
+                             :inferenceql.query.plan.type/lookup,
+                             :inferenceql.query.environment/name data},
+                            :groups (y)}
+  (s/explain ::plan (plan (parser/parse "SELECT avg(x) FROM data GROUP BY y")))
 
- (relation/attributes
-  (eval (plan (parser/parse "SELECT avg(x) as avg FROM data GROUP BY y"))
-        '{data [{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}]}))
+  (relation/attributes
+   (eval (plan (parser/parse "SELECT avg(x) as avg FROM data GROUP BY y"))
+         '{data [{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}]}))
 
- ,)
+  ,)
 
 (defn ^:private setting->f
   [[attr sexpr] where-sexpr env]
@@ -576,6 +571,6 @@
 
 (comment
 
- (parser/parse "select max(x) as max from data")
+  (plan (parser/parse "select x, max(x) as max from data"))
 
- ,)
+  ,)
