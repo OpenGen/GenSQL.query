@@ -1,5 +1,5 @@
 (ns inferenceql.query.plan
-  (:refer-clojure :exclude [alias alter eval sort type update])
+  (:refer-clojure :exclude [alias alter distinct eval sort type update])
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.edn :as edn]
@@ -128,6 +128,11 @@
   [op limit]
   {::type :inferenceql.query.plan.type/limit
    ::limit limit
+   ::plan op})
+
+(defn distinct
+  [op]
+  {::type :inferenceql.query.plan.type/distinct
    ::plan op})
 
 (defn sort
@@ -323,10 +328,12 @@
   [select-node group-by-node op]
   (assert (= :select-clause (tree/tag select-node)))
   (assert (or (nil? group-by-node) (= :group-by-clause (tree/tag group-by-node))))
-  (let [selections (selections select-node)]
-    (cond (tree/star? select-node) op
-          (some aggregation? selections) (aggregation-plan select-node group-by-node op)
-          (every? scalar-expr? selections) (selection-plan select-node op))))
+  (let [selections (selections select-node)
+        distinct-clause (tree/get-node select-node :distinct-clause)
+        plan (cond (tree/star? select-node) op
+                   (some aggregation? selections) (aggregation-plan select-node group-by-node op)
+                   (every? scalar-expr? selections) (selection-plan select-node op))]
+    (cond-> plan distinct-clause (distinct))))
 
 (defmethod plan-impl :from-clause
   [node]
@@ -336,6 +343,10 @@
   [node op]
   (let [n (eval-literal-in node [:int])]
     (limit op n)))
+
+(defmethod plan-impl :distinct-clause
+  [_ op]
+  (distinct op))
 
 (defmethod plan-impl :order-by-clause
   [node op]
@@ -349,7 +360,7 @@
   (->> (plan-impl (tree/get-node node :from-clause))
        (plan-impl (tree/get-node node :where-clause))
        (select-plan (tree/get-node node :select-clause)
-                       (tree/get-node node :group-by-clause))
+                    (tree/get-node node :group-by-clause))
        (plan-impl (tree/get-node node :order-by-clause))
        (plan-impl (tree/get-node node :limit-clause))))
 
@@ -384,7 +395,7 @@
 (defmethod plan-impl :relation-value
   [node]
   (let [rel (literal/read node)]
-    (value rel )))
+    (value rel)))
 
 ;;; eval
 
@@ -424,6 +435,12 @@
   (let [{::keys [limit plan]} plan
         rel (eval plan env)]
     (relation/limit rel limit)))
+
+(defmethod eval :inferenceql.query.plan.type/distinct
+  [plan env]
+  (let [{::keys [plan]} plan
+        rel (eval plan env)]
+    (relation/distinct rel)))
 
 (defmethod eval :inferenceql.query.plan.type/sort
   [plan env]
@@ -512,3 +529,11 @@
 (defmethod eval :inferenceql.query.plan.type/value
   [plan _]
   (::relation/relation plan))
+
+
+(comment
+
+  (require '[inferenceql.query.parser :as parser] :reload)
+  (plan (parser/parse "select distinct x from data;"))
+
+  ,)

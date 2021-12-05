@@ -24,9 +24,12 @@ select-expr ::= select-clause
                 (ws where-clause)?
                 (ws group-by-clause)?
                 (ws order-by-clause)?
+                (ws distinct-clause)?
                 (ws limit-clause)?
 
-select-clause ::= #'(?i)SELECT' ws select-list
+distinct-clause ::= #'(?i)DISTINCT'
+
+select-clause ::= #'(?i)SELECT' (ws distinct-clause)? ws select-list
 
 select-list ::= star
               / selection (ws? ',' ws? selection)*

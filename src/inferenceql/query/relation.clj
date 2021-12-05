@@ -1,7 +1,8 @@
 (ns inferenceql.query.relation
   "Functions for creating and manipulating relations."
-  (:refer-clojure :exclude [empty group-by sort transduce])
-  (:require [clojure.spec.alpha :as s]
+  (:refer-clojure :exclude [distinct empty group-by sort transduce])
+  (:require [clojure.core :as clojure]
+            [clojure.spec.alpha :as s]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]))
 
@@ -12,7 +13,7 @@
   ([coll]
    (let [attributes (into []
                           (comp (mapcat keys)
-                                (distinct))
+                                (clojure/distinct))
                           coll)]
      (relation coll attributes)))
   ([coll attributes]
@@ -73,13 +74,18 @@
   (with-meta (take n (tuples rel))
     (meta rel)))
 
+(defn distinct
+  [rel]
+  (with-meta (clojure/distinct (tuples rel))
+    (meta rel)))
+
 (defn sort
   [rel attr order]
   (relation (->> (tuples rel)
-                  (sort-by #(tuple/get % attr)
-                           (case order
-                             :ascending compare
-                             :descending #(compare %2 %1))))
+                 (sort-by #(tuple/get % attr)
+                          (case order
+                            :ascending compare
+                            :descending #(compare %2 %1))))
             (attributes rel)))
 
 (defn transduce
