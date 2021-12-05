@@ -12,9 +12,3 @@
       ([acc input]
        (vswap! coll conj input)
        acc))))
-
-(comment
-
- (into [] median (range 10))
-
- ,)

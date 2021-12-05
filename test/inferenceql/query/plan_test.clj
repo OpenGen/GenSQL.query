@@ -63,9 +63,3 @@
     "SELECT max(x), min(x) FROM data"    '[{x 0} {x 1}]                             '[[1 0]]
     "SELECT max(x), max(y) FROM data"    '[{x 0 y 1} {x 1 y 0}]                     '[[1 1]]
     "SELECT max(x) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}] '[[2] [3]]))
-
-(comment
-
- (eval "SELECT max(x) FROM data" {'data '[{x 0} {x 2} {x 1}]})
-
- ,)

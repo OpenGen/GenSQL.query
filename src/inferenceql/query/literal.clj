@@ -62,7 +62,4 @@
  (read (parser/parse "... 0: (3), 8: (7) ..." :start :value-lists))
  (read (parser/parse "(x) VALUES ... 10: (3), 20: (4) ..." :start :relation-value))
 
-
-
-
  ,)

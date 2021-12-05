@@ -38,9 +38,3 @@
   "Converts tuple `tup` to a vector.`"
   [tup]
   (map #(get tup %) (attributes tup)))
-
-(comment
-
- (->vector (tuple '{y 1 x 0} '[x y]))
-
- )
