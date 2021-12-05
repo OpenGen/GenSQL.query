@@ -98,7 +98,7 @@
 (defn add-attribute
   [rel attr]
   (let [attributes (into []
-                         (distinct)
+                         (clojure/distinct)
                          (conj (attributes rel)
                                attr))]
     (relation rel attributes)))
