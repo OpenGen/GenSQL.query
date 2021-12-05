@@ -1,6 +1,6 @@
 (ns inferenceql.query.plan-test
-  (:refer-clojure :exclude [alter eval])
-  (:require [clojure.test :refer [are deftest is]]
+  (:refer-clojure :exclude [alter count distinct eval])
+  (:require [clojure.test :refer [are deftest is testing]]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
@@ -55,6 +55,7 @@
   (are [query in out] (= out (->> (eval query {'data in})
                                   (relation/tuples)
                                   (map tuple/->vector)))
+    "SELECT max(x) FROM data"            '[]                                        '[[nil]]
     "SELECT max(x) FROM data"            '[{x 0} {x 1}]                             '[[1]]
     "SELECT max(x) FROM data"            '[{x 1} {x 0}]                             '[[1]]
     "SELECT max(x) FROM data"            '[{x 0} {x 1} {x 2}]                       '[[2]]
@@ -63,3 +64,46 @@
     "SELECT max(x), min(x) FROM data"    '[{x 0} {x 1}]                             '[[1 0]]
     "SELECT max(x), max(y) FROM data"    '[{x 0 y 1} {x 1 y 0}]                     '[[1 1]]
     "SELECT max(x) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}] '[[2] [3]]))
+
+(deftest count
+  (testing "count(x)"
+    (are [query in out] (= out (->> (eval query {'data in})
+                                    (relation/tuples)
+                                    (map tuple/->vector)
+                                    (ffirst)))
+      "SELECT count(x) FROM data" '[] 0
+      "SELECT count(x) FROM data" '[{x 0}] 1
+      "SELECT count(x) FROM data" '[{x 0} {x 1}] 2
+      "SELECT count(x) FROM data" '[{x 0} {} {x 1}] 2
+      "SELECT count(x) FROM data" '[{x 0} {} {x 1}] 2
+      "SELECT count(x) FROM data" '[{} {x 0} {} {x 1} {}] 2))
+
+  (testing "count(*)"
+    (are [query in out] (= out (->> (eval query {'data in})
+                                    (relation/tuples)
+                                    (map tuple/->vector)
+                                    (ffirst)))
+      "SELECT count(*) FROM data" '[] 0
+      "SELECT count(*) FROM data" '[{}] 1
+      "SELECT count(*) FROM data" '[{} {}] 2
+      "SELECT count(*) FROM data" '[{} {} {}] 3)))
+
+(deftest distinct
+  (testing "DISTINCT"
+    (are [query in out] (= out (eval query {'data in}))
+      "SELECT DISTINCT x FROM data" '[] '[]
+      "SELECT DISTINCT x FROM data" '[{x 0}] '[{x 0}]
+      "SELECT DISTINCT x FROM data" '[{x 0} {x 0}] '[{x 0}]
+      "SELECT DISTINCT x FROM data" '[{x 0} {x 1}] '[{x 0} {x 1}]
+      "SELECT DISTINCT x FROM data" '[{x 0} {x 1} {x 0}] '[{x 0} {x 1}]
+      "SELECT DISTINCT x FROM data" '[{x 0} {x 1} {x 1} {x 0}] '[{x 0} {x 1}]))
+
+  (testing "aggregate DISTINCT"
+    (are [query in out] (= out (->> (eval query {'data in})
+                                    (relation/tuples)
+                                    (map tuple/->vector)
+                                    (ffirst)))
+      "SELECT avg(DISTINCT x) FROM data" '[{x 0}] 0.0
+      "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 1}] 0.5
+      "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 0} {x 1}] 0.5
+      "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 1} {x 1}] 0.5)))

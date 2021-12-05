@@ -521,22 +521,29 @@
         'min xforms/min}
        (medley/map-vals #(comp (remove nil?) %))))
 
+(defn ^:private aggregation->xform
+  [{::keys [aggregator distinct input-attr]}]
+  (comp (if input-attr
+          (map input-attr)
+          (map identity))
+        (if distinct
+          (core/distinct)
+          (map identity))
+        (if aggregator
+          (agg-f aggregator)
+          xforms/last)))
+
+(defn ^:private default-aggregation
+  [aggregations]
+  [(map #(when (= 'count (::aggregator %))
+           0)
+        aggregations)])
+
 (defn ^:private aggregate
-  "Performs an aggregation on the provided groups, returning a sequence of rows asmaps."
+  "Performs an aggregation on a group."
   [aggregations group]
-  (zipmap (map ::output-attr aggregations)
-          (xforms/transjuxt (map (fn [{::keys [aggregator distinct input-attr]}]
-                                   (comp (if input-attr
-                                           (map input-attr)
-                                           (map identity))
-                                         (if distinct
-                                           (core/distinct)
-                                           (map identity))
-                                         (if aggregator
-                                           (agg-f aggregator)
-                                           xforms/last)))
-                                 aggregations)
-                            group)))
+  (xforms/transjuxt (map aggregation->xform aggregations)
+                    group))
 
 (defmethod eval :inferenceql.query.plan.type/group
   [plan env]
@@ -545,10 +552,13 @@
                      #(select-keys (tuple/->map %) groups)
                      (constantly (Object.)))
         rel (eval plan env)
-        groups (relation/group-by rel grouping-f)]
-    (relation/relation (map #(aggregate aggregations %)
-                            groups)
-                       (map ::output-attr aggregations))))
+        groups (relation/group-by rel grouping-f)
+        attributes (map ::output-attr aggregations)]
+    (relation/relation (map #(zipmap attributes %)
+                            (if (seq groups)
+                              (map #(aggregate aggregations %) groups)
+                              (default-aggregation aggregations)))
+                       attributes)))
 
 (defn ^:private setting->f
   [[attr sexpr] where-sexpr env]
@@ -585,11 +595,9 @@
 
   (input-attr [:selection [:aggregation [:aggregation-fn [:count "count"]] "(" [:star "*"] ")"]])
 
-  (inferenceql.query/q "select count(distinct x) from data;"
-                       [{:x 0}
-                        {:x 1}
-                        {:x 1}
-                        {:x 2}])
+  (require '[inferenceql.query :as query])
+  (query/q "select count(*) from data;"
+           [])
 
   ((apply comp [inc nil]) 0)
 
