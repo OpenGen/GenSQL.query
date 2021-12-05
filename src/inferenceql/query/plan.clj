@@ -1,5 +1,5 @@
 (ns inferenceql.query.plan
-  (:refer-clojure :exclude [alias alter distinct eval sort type update])
+  (:refer-clojure :exclude [alias alter distinct distinct? eval sort type update])
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.edn :as edn]
@@ -252,9 +252,10 @@
 (defn input-attr
   [node]
   (tree/match [node]
-    [[:selection child & _]] (recur child)
-    [[:selection-group "(" child ")"]] (recur child)
+    [[:selection child & _]] (input-attr child)
+    [[:selection-group "(" child ")"]] (input-attr child)
     [[:aggregation _aggregator "(" child ")"]] (eval-literal child)
+    [[:aggregation _aggregator "(" _distinct child ")"]] (eval-literal child)
     [[:scalar-expr child]] (eval-literal child)))
 
 (defn output-attr
@@ -284,7 +285,8 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (recur child)
-    [[:aggregation aggregation-fn & _]] (recur aggregation-fn)
+    [[:aggregation aggregation-fn _op _sym _cp]] (recur aggregation-fn)
+    [[:aggregation aggregation-fn _op _distinct _sym _cp]] (recur aggregation-fn)
     [[:aggregation-fn [tag & _]]] (symbol tag)
     [[:scalar-expr _]] nil))
 
@@ -295,20 +297,22 @@
     :select-clause (tree/get-child-nodes-in node [:select-list])
     :select-list (tree/child-nodes node)))
 
+(defn distinct?
+  [node]
+  (tree/match [node]
+    [[:selection child & _]] (recur child)
+    [[:aggregation _fn _o-paren _sym _c-paren]] false
+    [[:aggregation _fn _o-paren _distinct _sym _c-paren]] true
+    :else false))
+
 (defn ^:private aggregation
   [node]
   (let [output-attr (output-attr node)
         aggregator (aggregator node)]
     (cond-> {::input-attr (input-attr node)}
       output-attr (assoc ::output-attr output-attr)
-      aggregator (assoc ::aggregator aggregator))))
-
-(defn ^:private aggregation-plan
-  [selection-node group-by-node op]
-  (let [selections (selections selection-node)]
-    (grouping op
-              (map aggregation selections)
-              (map scalar/plan (tree/child-nodes group-by-node)))))
+      aggregator (assoc ::aggregator aggregator)
+      (distinct? node) (assoc ::distinct true))))
 
 (defn aggregation?
   [node]
@@ -316,6 +320,22 @@
     [[:selection child & _]] (recur child)
     [[:aggregation & _]] true
     :else false))
+
+(defn column-selection?
+  [node]
+  (tree/match [node]
+    [[:selection child & _]] (recur child)
+    [[:scalar-expr [:simple-symbol _]]] true
+    :else false))
+
+(defn ^:private aggregation-plan
+  [selection-node group-by-node op]
+  (let [selections (selections selection-node)]
+    (assert (every? (some-fn aggregation? column-selection?)
+                    selections))
+    (grouping op
+              (map aggregation selections)
+              (map scalar/plan (tree/child-nodes group-by-node)))))
 
 (defn scalar-expr?
   [node]
@@ -330,9 +350,14 @@
   (assert (or (nil? group-by-node) (= :group-by-clause (tree/tag group-by-node))))
   (let [selections (selections select-node)
         distinct-clause (tree/get-node select-node :distinct-clause)
-        plan (cond (tree/star? select-node) op
-                   (some aggregation? selections) (aggregation-plan select-node group-by-node op)
-                   (every? scalar-expr? selections) (selection-plan select-node op))]
+        plan (cond (tree/star? select-node)
+                   op
+
+                   (or group-by-node (some aggregation? selections))
+                   (aggregation-plan select-node group-by-node op)
+
+                   (every? scalar-expr? selections)
+                   (selection-plan select-node op))]
     (cond-> plan distinct-clause (distinct))))
 
 (defmethod plan-impl :from-clause
@@ -483,8 +508,11 @@
   "Performs an aggregation on the provided groups, returning a sequence of rows asmaps."
   [aggregations group]
   (zipmap (map ::output-attr aggregations)
-          (xforms/transjuxt (map (fn [{::keys [aggregator input-attr] :as aggregation}]
+          (xforms/transjuxt (map (fn [{::keys [aggregator distinct input-attr]}]
                                    (comp (map input-attr)
+                                         (if distinct
+                                           (core/distinct)
+                                           (map identity))
                                          (if aggregator
                                            (agg-f aggregator)
                                            xforms/last)))
@@ -534,6 +562,14 @@
 (comment
 
   (require '[inferenceql.query.parser :as parser] :reload)
-  (plan (parser/parse "select distinct x from data;"))
+  (plan (parser/parse "select x + 1 from data group by y;"))
+
+  (inferenceql.query/q "select count(distinct x) from data;"
+                       [{:x 0}
+                        {:x 1}
+                        {:x 1}
+                        {:x 2}])
+
+  ((apply comp [inc nil]) 0)
 
   ,)

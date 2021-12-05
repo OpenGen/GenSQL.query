@@ -60,15 +60,15 @@ limit-clause ::= #'(?i)LIMIT' ws int
 
 (* aggregation *)
 
-aggregation ::= aggregation-fn ws? '(' ws? simple-symbol ws? ')' (ws alias-clause)?
+aggregation ::= aggregation-fn ws? '(' (distinct-clause ws)? ws? simple-symbol ws? ')' (ws alias-clause)?
 aggregation-fn ::= count | avg | median | std | max | min
 
-count  ::= "count"
-avg    ::= "avg"
-std    ::= "std"
-median ::= "median"
-max    ::= "max"
-min    ::= "min"
+count  ::= #'(?i)COUNT'
+avg    ::= #'(?i)AVG'
+std    ::= #'(?i)STD'
+median ::= #'(?i)MEDIAN'
+max    ::= #'(?i)MAX'
+min    ::= #'(?i)MIN'
 
 (* scalar-expr *)
 
