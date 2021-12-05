@@ -96,6 +96,13 @@
                        (concat (map ::sexpr terms)
                                variables)))))
 
+(defn star?
+  [node]
+  (tree/match [node]
+    [[:selection child]] (recur child)
+    [[:star & _]] true
+    :else false))
+
 ;;; plan
 
 (defn lookup
@@ -238,7 +245,7 @@
   [node]
   (let [sexpr (scalar/plan (tree/get-node node :model-expr))
         variables (let [generate-list-nodes (tree/child-nodes (tree/get-node-in node [:generate-clause :generate-list]))]
-                    (if (tree/star? (first generate-list-nodes))
+                    (if (star? (first generate-list-nodes))
                       '*
                       (map variable-node->symbol generate-list-nodes)))]
     (generate variables sexpr)))
@@ -254,6 +261,8 @@
   (tree/match [node]
     [[:selection child & _]] (input-attr child)
     [[:selection-group "(" child ")"]] (input-attr child)
+    [[:aggregation _aggregator "(" [:star & _] ")"]] nil
+    [[:aggregation _aggregator "(" _distinct [:star & _] ")"]] nil
     [[:aggregation _aggregator "(" child ")"]] (eval-literal child)
     [[:aggregation _aggregator "(" _distinct child ")"]] (eval-literal child)
     [[:scalar-expr child]] (eval-literal child)))
@@ -285,8 +294,8 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (recur child)
-    [[:aggregation aggregation-fn _op _sym _cp]] (recur aggregation-fn)
-    [[:aggregation aggregation-fn _op _distinct _sym _cp]] (recur aggregation-fn)
+    [[:aggregation aggregation-fn "(" _sym ")"]] (recur aggregation-fn)
+    [[:aggregation aggregation-fn "(" _distinct _sym ")"]] (recur aggregation-fn)
     [[:aggregation-fn [tag & _]]] (symbol tag)
     [[:scalar-expr _]] nil))
 
@@ -307,9 +316,11 @@
 
 (defn ^:private aggregation
   [node]
-  (let [output-attr (output-attr node)
+  (let [input-attr (input-attr node)
+        output-attr (output-attr node)
         aggregator (aggregator node)]
-    (cond-> {::input-attr (input-attr node)}
+    (cond-> {}
+      input-attr (assoc ::input-attr input-attr)
       output-attr (assoc ::output-attr output-attr)
       aggregator (assoc ::aggregator aggregator)
       (distinct? node) (assoc ::distinct true))))
@@ -350,14 +361,20 @@
   (assert (or (nil? group-by-node) (= :group-by-clause (tree/tag group-by-node))))
   (let [selections (selections select-node)
         distinct-clause (tree/get-node select-node :distinct-clause)
-        plan (cond (tree/star? select-node)
+        plan (cond (and (= 1 (count selections))
+                        (star? (first selections)))
                    op
 
                    (or group-by-node (some aggregation? selections))
                    (aggregation-plan select-node group-by-node op)
 
                    (every? scalar-expr? selections)
-                   (selection-plan select-node op))]
+                   (selection-plan select-node op)
+
+                   :else
+                   (throw (ex-info "Can't generate selection plan"
+                                   {:select-node select-node
+                                    :group-by-node group-by-node})))]
     (cond-> plan distinct-clause (distinct))))
 
 (defmethod plan-impl :from-clause
@@ -509,7 +526,9 @@
   [aggregations group]
   (zipmap (map ::output-attr aggregations)
           (xforms/transjuxt (map (fn [{::keys [aggregator distinct input-attr]}]
-                                   (comp (map input-attr)
+                                   (comp (if input-attr
+                                           (map input-attr)
+                                           (map identity))
                                          (if distinct
                                            (core/distinct)
                                            (map identity))
@@ -562,7 +581,9 @@
 (comment
 
   (require '[inferenceql.query.parser :as parser] :reload)
-  (plan (parser/parse "select x + 1 from data group by y;"))
+  (plan (parser/parse "select count(*) from data;"))
+
+  (input-attr [:selection [:aggregation [:aggregation-fn [:count "count"]] "(" [:star "*"] ")"]])
 
   (inferenceql.query/q "select count(distinct x) from data;"
                        [{:x 0}

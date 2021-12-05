@@ -110,14 +110,6 @@
     [:alias-clause _as _ws [:simple-symbol s]] (symbol s)
     :else (recur (get-node node :alias-clause))))
 
-(defn star?
-  "Returns `true` if `node` is a `:star` node or has a `:star` node as a
-  descendant."
-  [node]
-  (boolean
-   (some (tag-pred :star)
-         (tree-seq branch? child-nodes node))))
-
 (defn remove
   [node pred?]
   (let [remove-ws (fn [node]
