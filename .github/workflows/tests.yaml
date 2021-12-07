@@ -33,7 +33,7 @@ jobs:
           path: ~/.gitlibs
           key: gitlibs-${{ hashFiles('deps.edn') }}
       - name: Prepare dependencies
-        run: clojure -M:readme:test -P
+        run: clojure -M:test:clj-test:cljs-test:readme-test -P
       - name: Run README tests
         run: clojure -M:test:readme-test
       - name: Run Clojure tests
