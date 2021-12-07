@@ -26,8 +26,8 @@
   (match/match (into (empty node)
                      (remove tree/whitespace?)
                      node)
-    [:scalar-expr child]           (plan child)
-    [:scalar-expr-group _ child _] (plan child)
+    [:scalar-expr child]               (plan child)
+    [:scalar-expr-group "(" child ")"] (plan child)
 
     [:expr-not _not child] `(~'not ~(plan child))
 
@@ -63,6 +63,7 @@
     [:density-expr     _probability _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
 
     [:model-expr child] (plan child)
+    [:model-expr "(" child ")"] (plan child)
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
@@ -187,7 +188,7 @@
          opts {:namespaces namespaces
                :bindings bindings}]
      (try (sci/eval-string (pr-str sexpr) opts)
-          (catch clojure.lang.ExceptionInfo ex
+          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
             (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
                                       (ex-message ex))]
               (let [sym (symbol sym)]
