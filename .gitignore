@@ -16,3 +16,4 @@ pom.xml.asc
 /node_modules/
 /out/
 package-lock.json
+/cljs-test-runner-out/
