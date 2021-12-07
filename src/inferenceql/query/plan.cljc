@@ -586,18 +586,3 @@
 (defmethod eval :inferenceql.query.plan.type/value
   [plan _]
   (::relation/relation plan))
-
-(comment
-
-  (require '[inferenceql.query.parser :as parser] :reload)
-  (plan (parser/parse "select count(*) from data;"))
-
-  (input-attr [:selection [:aggregation [:aggregation-fn [:count "count"]] "(" [:star "*"] ")"]])
-
-  (require '[inferenceql.query :as query])
-  (query/q "select count(*) from data;"
-           [])
-
-  ((apply comp [inc nil]) 0)
-
-  ,)

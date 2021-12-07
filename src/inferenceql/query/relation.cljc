@@ -110,13 +110,5 @@
        (vals)
        (map #(relation % (attributes rel)))))
 
-(defn aggregate
-  [rel coll]
-  (relation (->> (tuples rel)
-                 (map (fn [tuple]
-                        (zipmap (map second coll)
-                                (map  coll)))))
-            (mapv second coll)))
-
 (s/def ::attribute symbol?)
 (s/def ::relation relation?)
