@@ -34,9 +34,9 @@ jobs:
           key: gitlibs-${{ hashFiles('deps.edn') }}
       - name: Prepare dependencies
         run: clojure -M:test:clj-test:cljs-test:readme-test -P
-      - name: Run README tests
-        run: clojure -M:test:readme-test
       - name: Run Clojure tests
         run: clojure -X:test:clj-test
       - name: Run ClojureScript tests
         run: clojure -M:test:cljs-test
+      - name: Run README tests
+        run: clojure -M:test:readme-test
