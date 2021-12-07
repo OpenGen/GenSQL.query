@@ -99,7 +99,7 @@
 (defn star?
   [node]
   (tree/match [node]
-    [[:selection child]] (recur child)
+    [[:selection child]] (star? child)
     [[:star & _]] true
     :else false))
 
@@ -272,7 +272,7 @@
   relation."
   [node]
   (tree/match [node]
-    [[:selection "(" child ")"]] (recur child)
+    [[:selection "(" child ")"]] (output-attr child)
     [[:selection _ [:alias-clause _as sym-node]]] (eval-literal sym-node)
     [[:selection child]] (-> (parser/unparse child)
                              (string/replace #"\s" "")
@@ -293,9 +293,9 @@
 (defn aggregator
   [node]
   (tree/match [node]
-    [[:selection child & _]] (recur child)
-    [[:aggregation aggregation-fn "(" _sym ")"]] (recur aggregation-fn)
-    [[:aggregation aggregation-fn "(" _distinct _sym ")"]] (recur aggregation-fn)
+    [[:selection child & _]] (aggregator child)
+    [[:aggregation aggregation-fn "(" _sym ")"]] (aggregator aggregation-fn)
+    [[:aggregation aggregation-fn "(" _distinct _sym ")"]] (aggregator aggregation-fn)
     [[:aggregation-fn [tag & _]]] (symbol tag)
     [[:scalar-expr _]] nil))
 
@@ -309,7 +309,7 @@
 (defn distinct?
   [node]
   (tree/match [node]
-    [[:selection child & _]] (recur child)
+    [[:selection child & _]] (distinct? child)
     [[:aggregation _fn _o-paren _sym _c-paren]] false
     [[:aggregation _fn _o-paren _distinct _sym _c-paren]] true
     :else false))
@@ -328,14 +328,14 @@
 (defn aggregation?
   [node]
   (tree/match [node]
-    [[:selection child & _]] (recur child)
+    [[:selection child & _]] (aggregation? child)
     [[:aggregation & _]] true
     :else false))
 
 (defn column-selection?
   [node]
   (tree/match [node]
-    [[:selection child & _]] (recur child)
+    [[:selection child & _]] (column-selection? child)
     [[:scalar-expr [:simple-symbol _]]] true
     :else false))
 
@@ -550,7 +550,7 @@
   (let [{::keys [plan groups aggregations]} plan
         grouping-f (if (seq groups)
                      #(select-keys (tuple/->map %) groups)
-                     (constantly (Object.)))
+                     (constantly nil))
         rel (eval plan env)
         groups (relation/group-by rel grouping-f)
         attributes (map ::output-attr aggregations)]
@@ -586,7 +586,6 @@
 (defmethod eval :inferenceql.query.plan.type/value
   [plan _]
   (::relation/relation plan))
-
 
 (comment
 

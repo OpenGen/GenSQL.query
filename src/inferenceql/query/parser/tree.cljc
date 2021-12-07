@@ -1,5 +1,6 @@
 (ns inferenceql.query.parser.tree
   (:refer-clojure :exclude [alias remove])
+  #?(:cljs (:require-macros [inferenceql.query.parser.tree]))
   (:require [clojure.core :as clojure]
             [clojure.core.match :as match]
             [clojure.string :as string]

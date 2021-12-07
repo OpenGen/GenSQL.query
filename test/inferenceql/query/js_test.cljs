@@ -18,6 +18,6 @@
                 :views [[{:probability 1
                           :parameters {:x {"a" 1}}}]]})]
     (is (= [{:x "a"}]
-           (bean/->clj (query.js/query "SELECT * FROM GENERATE * LIMIT 1"
+           (bean/->clj (query.js/query "SELECT * FROM GENERATE * UNDER model LIMIT 1"
                                        #js[]
                                        #js{:model model}))))))

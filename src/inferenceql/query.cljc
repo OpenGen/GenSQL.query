@@ -19,7 +19,7 @@
 
 (s/def ::plan (s/keys :req [::plan/plan ::env/plan]))
 
-(defn plan
+(defn query-plan
   [node]
   (case (tree/tag node)
     :query (recur (tree/only-child-node node))
@@ -41,7 +41,7 @@
   ([query rows models]
    (let [node-or-failure (parser/parse query)]
      (if-not (insta/failure? node-or-failure)
-       (let [plan (plan node-or-failure)
+       (let [plan (query-plan node-or-failure)
              tuples (map #(medley/map-keys symbol %) rows)
              in-rel (if-let [columns (-> rows meta :iql/columns)]
                       (relation/relation tuples (map symbol columns))

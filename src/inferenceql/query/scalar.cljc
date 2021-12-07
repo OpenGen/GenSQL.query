@@ -109,6 +109,7 @@
                       :operator first
                       :variable? symbol?}))))
 
+#_
 (defn incorporate
   [model rel]
   (let [new-columns (fn [model rel]
@@ -170,7 +171,8 @@
          'pdf pdf
          'condition condition
          'constrain constrain
-         'incorporate incorporate}})
+         ;; 'incorporate incorporate
+         }})
 
 (defn eval
   ([sexpr env]
