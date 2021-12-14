@@ -196,7 +196,7 @@ bool          ::= #'true|false'
 float         ::= #'-?\d+\.\d+(E-?\d+)?'
 int           ::= #'-?\d+'
 nat           ::= #'\d+'
-simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?]*'
+simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?\.]*'
 string        ::= #'\"([^\"]+)\"'
 null          ::= #'(?i)NULL'
 

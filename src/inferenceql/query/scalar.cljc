@@ -180,6 +180,10 @@
   ([sexpr env tuple]
    (let [bindings (merge (zipmap (tuple/attributes tuple)
                                  (repeat nil))
+                         (when-let [tuple-name (tuple/name tuple)]
+                           (zipmap (map #(symbol (str tuple-name "." %))
+                                        (tuple/attributes tuple))
+                                   (repeat nil)))
                          (tuple/->map tuple)
                          env)
          ;; FIXME write a function to produce this automatically

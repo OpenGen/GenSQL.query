@@ -26,12 +26,27 @@
     "x * (y + z)"    '(* x (+ y z))
     "(x + y) * z"    '(* (+ x y) z)))
 
-(deftest eval
-  (are [x s env tuple attrs] (= x (try (-> (parser/parse s :start :scalar-expr)
-                                           (scalar/plan)
-                                           (scalar/eval env (tuple/tuple tuple attrs)))
-                                       (catch Exception _
-                                         :error)))
+(defn eval
+  ([s env tuple]
+   (-> (parser/parse s :start :scalar-expr)
+       (scalar/plan)
+       (scalar/eval env tuple))))
+
+(deftest symbols
+  (are [expected s env m attrs name] (= expected
+                                        (eval s env (tuple/tuple m :name name :attrs attrs)))
+    nil "x"      '{}    '{}    '[x] 'data
+    nil "data.x" '{}    '{}    '[x] 'data
+    0   "x"      '{x 0} '{}    '[x] 'data
+    0   "x"      '{}    '{x 0} '[x] 'data
+    0   "data.x" '{}    '{x 0} '[x] 'data))
+
+(deftest evaluation
+  (are [expected s env m attrs] (= expected
+                                   (let [tuple (tuple/tuple m :attrs attrs)]
+                                     (try (eval s env tuple)
+                                          (catch Exception _
+                                            :error))))
     false   "NOT true"         '{}      '{}      '[]
     true    "NOT false"        '{}      '{}      '[]
 

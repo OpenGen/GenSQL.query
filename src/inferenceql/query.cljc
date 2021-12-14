@@ -44,7 +44,7 @@
        (let [plan (query-plan node-or-failure)
              tuples (map #(medley/map-keys symbol %) rows)
              in-rel (if-let [columns (-> rows meta :iql/columns)]
-                      (relation/relation tuples (map symbol columns))
+                      (relation/relation tuples :attrs (map symbol columns))
                       (relation/relation tuples))
              models (medley/map-keys symbol models)
              env (merge models {(symbol default-table) in-rel})

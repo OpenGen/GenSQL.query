@@ -451,8 +451,9 @@
 
 (defmethod eval :inferenceql.query.plan.type/lookup
   [plan env]
-  (let [{::env/keys [name]} plan]
-    (env/get env name)))
+  (let [{::env/keys [name]} plan
+        rel (env/get env name)]
+    (relation/assoc-name rel name)))
 
 (defmethod eval :inferenceql.query.plan.type/select
   [plan env]
@@ -464,13 +465,13 @@
 (defmethod eval :inferenceql.query.plan.type/extended-project
   [plan env]
   (let [{::keys [terms plan]} plan
-        coll (map (juxt (fn [{::keys [sexpr]}]
-                          (fn [tuple]
-                            (scalar/eval sexpr env tuple)))
-                        ::relation/attribute)
-                  terms)
+        f-attr-pairs (map (juxt (fn [{::keys [sexpr]}]
+                                  (fn [tuple]
+                                    (scalar/eval sexpr env tuple)))
+                                ::relation/attribute)
+                          terms)
         rel (eval plan env)]
-    (relation/extended-project rel coll)))
+    (relation/extended-project rel f-attr-pairs)))
 
 (defmethod eval :inferenceql.query.plan.type/limit
   [plan env]
@@ -500,7 +501,7 @@
                        (map keyword))
         samples (map #(medley/map-keys symbol %)
                      (repeatedly #(gpm/simulate model variables {})))]
-    (relation/relation samples variables)))
+    (relation/relation samples :attrs variables)))
 
 (defmethod eval :inferenceql.query.plan.type/insert
   [plan env]
@@ -510,7 +511,7 @@
         rel-from (eval plan-from env)
         attributes (relation/attributes rel-to)
         rel (into (vec rel-to) rel-from)]
-    (relation/relation rel attributes)))
+    (relation/relation rel :attrs attributes)))
 
 (def ^:private agg-f
   (->> {'count xforms/count
@@ -558,7 +559,7 @@
                             (if (seq groups)
                               (map #(aggregate aggregations %) groups)
                               (default-aggregation aggregations)))
-                       attributes)))
+                       :attrs attributes)))
 
 (defn ^:private setting->f
   [[attr sexpr] where-sexpr env]

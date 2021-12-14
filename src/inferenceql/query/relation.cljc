@@ -1,6 +1,6 @@
 (ns inferenceql.query.relation
   "Functions for creating and manipulating relations."
-  (:refer-clojure :exclude [distinct empty group-by sort transduce])
+  (:refer-clojure :exclude [distinct empty group-by name sort transduce])
   (:require [clojure.core :as clojure]
             [clojure.spec.alpha :as s]
             [inferenceql.query.tuple :as tuple]
@@ -10,19 +10,20 @@
 
 (defn relation
   "Produces a relation from a sequence of maps."
-  ([coll]
-   (let [attributes (into []
-                          (comp (mapcat keys)
-                                (clojure/distinct))
-                          coll)]
-     (relation coll attributes)))
-  ([coll attributes]
-   (with-meta coll {::attributes attributes})))
+  [coll & {:keys [attrs name]}]
+  (let [attrs (or attrs
+                  (into []
+                        (comp (mapcat keys)
+                              (clojure/distinct))
+                        coll))]
+    (cond-> coll
+      (seq attrs) (vary-meta assoc ::attributes attrs)
+      name (vary-meta assoc ::name name))))
 
 (defn empty
   "Returns an empty relation with the specified attributes."
   [attrs]
-  (with-meta [] {::attributes attrs}))
+  (relation [] :attrs attrs))
 
 (defn relation?
   "Returns true if `x` is a relation."
@@ -36,10 +37,20 @@
   [rel]
   (-> rel meta ::attributes))
 
+(defn name
+  [rel]
+  (-> rel meta ::name))
+
+(defn assoc-name
+  [rel name]
+  (vary-meta (or rel []) assoc ::name name))
+
 (defn tuples
   "Returns a sequence of tuples in relation `rel`."
   [rel]
-  (map #(with-meta % {::tuple/attributes (attributes rel)})
+  (map #(tuple/tuple %
+                     :attrs (attributes rel)
+                     :name (name rel))
        rel))
 
 (defn project
@@ -62,7 +73,7 @@
                               coll))
                  (medley/remove-vals nil?)))]
     (relation (map f (tuples rel))
-              (mapv second coll))))
+              :attrs (mapv second coll))))
 
 (defn select
   [rel pred]
@@ -101,7 +112,7 @@
                          (clojure/distinct)
                          (conj (attributes rel)
                                attr))]
-    (relation rel attributes)))
+    (relation rel :attrs attributes)))
 
 (defn group-by
   [rel f]
@@ -110,5 +121,19 @@
        (vals)
        (map #(relation % (attributes rel)))))
 
+(s/def ::name symbol?)
 (s/def ::attribute symbol?)
 (s/def ::relation relation?)
+
+
+(comment
+
+  (-> (relation '[{x 0}] :name 'data)
+      (tuples)
+      (first)
+      (meta)
+      (tuple/->map)
+      ;; (tuple/get 'data.x)
+      )
+
+  ,)

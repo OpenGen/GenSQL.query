@@ -48,7 +48,7 @@
     (let [attrs (read syms)
           ms (map #(zipmap attrs %)
                   (read vals))]
-      (relation/relation ms attrs))))
+      (relation/relation ms :attrs attrs))))
 
 (comment
 

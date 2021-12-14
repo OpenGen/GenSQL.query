@@ -20,6 +20,26 @@
     "(x, y) VALUES (0, 1)"         '[{x 0 y 1}]
     "(x, y) VALUES (0, 1), (2, 3)" '[{x 0 y 1} {x 2 y 3}]))
 
+(deftest select
+  (testing "attributes"
+    (are [query coll in out] (= out
+                                (-> (eval query {'data (relation/relation coll :attrs in)})
+                                    (relation/attributes)))
+      "SELECT * FROM data;" '[{x 0}]     '[x]   '[x]
+      "SELECT * FROM data;" '[{x 0}]     nil    '[x]
+      "SELECT * FROM data;" '[{x 0 y 1}] '[x]   '[x]
+      "SELECT * FROM data;" '[{x 0}]     '[x y] '[x y]
+      "SELECT x FROM data;" '[{}]        '[x]   '[x]))
+
+  (testing "name"
+    (are [query coll in expected] (= expected
+                                     (-> (eval query {'data (relation/relation coll :name in)})
+                                         (relation/name)))
+      "SELECT * FROM a;" '[{}]    'a 'a
+      "SELECT * FROM a;" '[{x 0}] 'b 'a
+      "SELECT * FROM b;" '[{}]    'b 'b)
+      "SELECT * FROM b;" '[{x 0}] 'b 'b))
+
 (deftest insert-into
   (are [query in out] (= out (eval query {'data in}))
     "INSERT INTO data (x) VALUES (0)"           '[]          '[{x 0}]
@@ -41,10 +61,10 @@
     "UPDATE data SET x=1 WHERE y=0" '[{x 2 y 2} {x 0 y 0}] '[{x 2 y 2} {x 1 y 0}]))
 
 (deftest alter
-  (let [data (relation/relation '[{x 0} {x 1} {x 2}] '[x])]
+  (let [data (relation/relation '[{x 0} {x 1} {x 2}] :attrs '[x])]
     (is (= data (eval "ALTER data ADD y" {'data data}))))
 
-  (are [query in out] (= out (-> (eval query {'data (relation/relation [] in)})
+  (are [query in out] (= out (-> (eval query {'data (relation/relation [] :attrs in)})
                                  (relation/attributes)))
     "ALTER data ADD x" '[]    '[x]
     "ALTER data ADD x" '[x]   '[x]
