@@ -45,7 +45,7 @@ selection-group ::= '(' ws? selection-0 ws? ')'
 
 alias-clause ::= #'(?i)AS' ws simple-symbol
 
-from-clause ::= #'(?i)FROM' ws relation-expr
+from-clause ::= #'(?i)FROM' ws relation-expr (ws? alias-clause)?
 
 where-clause ::= #'(?i)WHERE' ws scalar-expr
 

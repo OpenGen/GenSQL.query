@@ -66,6 +66,10 @@
   [_]
   (s/keys :req [::plan ::relation/attribute]))
 
+(defmethod plan-spec :inferenceql.query.plan.type/rename
+  [_]
+  (s/keys :req [::plan ::relation/name]))
+
 (defn plan?
   [x]
   (s/valid? ::plan x))
@@ -174,6 +178,12 @@
   {::type :inferenceql.query.plan.type/alter
    ::plan op
    ::relation/attribute attr})
+
+(defn rename
+  [op name]
+  {::type :inferenceql.query.plan.type/rename
+   ::plan op
+   ::relation/name name})
 
 (s/def ::output-attribute ::relation/attribute)
 (s/def ::input-attribute ::relation/attribute)
@@ -379,7 +389,14 @@
 
 (defmethod plan-impl :from-clause
   [node]
-  (plan-impl (tree/only-child-node node)))
+  (tree/match [node]
+    [[:from-clause _from relation-expr]]
+    (plan-impl relation-expr)
+
+    [[:from-clause _from relation-expr [:alias-clause _as sym-node]]]
+    (let [name (eval-literal sym-node)]
+      (rename (plan-impl relation-expr)
+              name))))
 
 (defmethod plan-impl :limit-clause
   [node op]
@@ -583,6 +600,12 @@
   (let [{::keys [plan] ::relation/keys [attribute]} plan
         rel (eval plan env)]
     (relation/add-attribute rel attribute)))
+
+(defmethod eval :inferenceql.query.plan.type/rename
+  [plan env]
+  (let [{::keys [plan] ::relation/keys [name]} plan
+        rel (eval plan env)]
+    (relation/assoc-name rel name)))
 
 (defmethod eval :inferenceql.query.plan.type/value
   [plan _]

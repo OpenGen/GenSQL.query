@@ -323,6 +323,7 @@
 
 ;;; Generate
 
+#_
 (deftest generate-generates-correct-columns
   (testing "generate"
     (let [model simple-model

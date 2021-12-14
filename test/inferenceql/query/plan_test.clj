@@ -37,8 +37,24 @@
                                          (relation/name)))
       "SELECT * FROM a;" '[{}]    'a 'a
       "SELECT * FROM a;" '[{x 0}] 'b 'a
-      "SELECT * FROM b;" '[{}]    'b 'b)
+      "SELECT * FROM b;" '[{}]    'b 'b
       "SELECT * FROM b;" '[{x 0}] 'b 'b))
+
+  (testing "from aliasing"
+    (are [query in attrs expected] (= expected
+                                      (try (-> (eval query {'data (relation/relation in :attrs attrs)})
+                                               (relation/tuples)
+                                               (first)
+                                               (tuple/->vector)
+                                               (first))
+                                           (catch Exception _
+                                             :error)))
+      "SELECT x FROM data AS y;" '[{x 0}] '[x] 0
+      "SELECT x FROM data AS y;" '[] '[x] nil
+      "SELECT x FROM data AS x;" '[{x 0}] '[x] 0
+      "SELECT x FROM data AS x;" '[] '[x] nil
+      "SELECT y.x FROM data AS y;" '[{x 0}] '[x] 0
+      "SELECT y.y FROM data AS y;" '[{y 0}] '[x] 0)))
 
 (deftest insert-into
   (are [query in out] (= out (eval query {'data in}))
