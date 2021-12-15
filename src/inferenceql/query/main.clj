@@ -1,15 +1,16 @@
 (ns inferenceql.query.main
   (:refer-clojure :exclude [eval print])
-  (:require [clojure.data.csv :as csv]
+  (:require [clojure.core :as clojure]
+            [clojure.data.csv :as csv]
             [clojure.edn :as edn]
             [clojure.main :as main]
             [clojure.pprint :as pprint]
             [clojure.repl :as repl]
             [clojure.string :as string]
             [clojure.tools.cli :as cli]
+            [inferenceql.inference.gpm :as gpm]
             [inferenceql.query :as query]
             [inferenceql.query.data :as data]
-            [inferenceql.inference.gpm :as gpm]
             [medley.core :as medley]))
 
 (def formats #{"csv" "table"})
@@ -53,10 +54,15 @@
           rows)))
 
 (defn print-exception
-  [result]
-  (if-let [parse-failure (:instaparse/failure (ex-data result))]
-      (clojure.core/print parse-failure)
-      (repl/pst result)))
+  [e]
+  (binding [*out* *err*
+            *print-length* 10
+            *print-level* 4]
+    (if-let [parse-failure (:instaparse/failure (ex-data e))]
+      (clojure/print parse-failure)
+      (if-let [ex-message (ex-message e)]
+        (clojure/println ex-message)
+        (repl/pst e)))))
 
 (defn print-table
   "Prints the results of an InferenceQL query to the console as a table."
