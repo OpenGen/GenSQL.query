@@ -1,6 +1,6 @@
 (ns inferenceql.query.scalar-test
   (:refer-clojure :exclude [eval])
-  (:require [clojure.test :refer [are deftest]]
+  (:require [clojure.test :refer [are deftest is testing]]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.tuple :as tuple]))
@@ -27,19 +27,23 @@
     "(x + y) * z"    '(* (+ x y) z)))
 
 (defn eval
-  ([s env tuple]
-   (-> (parser/parse s :start :scalar-expr)
-       (scalar/plan)
-       (scalar/eval env tuple))))
+  ([s env & tuples]
+   (let [plan (-> (parser/parse s :start :scalar-expr)
+                  (scalar/plan))]
+     (apply scalar/eval plan env tuples))))
 
 (deftest symbols
-  (are [expected s env m attrs name] (= expected
-                                        (eval s env (tuple/tuple m :name name :attrs attrs)))
-    nil "x"      '{}    '{}    '[x] 'data
-    nil "data.x" '{}    '{}    '[x] 'data
-    0   "x"      '{x 0} '{}    '[x] 'data
-    0   "x"      '{}    '{x 0} '[x] 'data
-    0   "data.x" '{}    '{x 0} '[x] 'data))
+  (testing "no tuples"
+    (is (= 0 (eval "x" '{x 0}))))
+
+  (testing "tuples"
+    (are [expected s env m attrs name] (= expected
+                                          (eval s env (tuple/tuple m :name name :attrs attrs)))
+      nil "x"      '{}    '{}    '[x] 'data
+      nil "data.x" '{}    '{}    '[x] 'data
+      0   "x"      '{x 0} '{}    '[x] 'data
+      0   "x"      '{}    '{x 0} '[x] 'data
+      0   "data.x" '{}    '{x 0} '[x] 'data)))
 
 (deftest evaluation
   (are [expected s env m attrs] (= expected

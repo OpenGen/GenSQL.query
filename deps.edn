@@ -1,6 +1,7 @@
 {:deps {org.clojure/clojure {:mvn/version "1.11.0-alpha3"}
         org.clojure/clojurescript {:mvn/version "1.10.896"}
         org.clojure/core.match {:mvn/version "1.0.0"}
+        org.clojure/math.combinatorics {:mvn/version "0.1.6"}
         org.clojure/data.csv {:mvn/version "1.0.0"}
         org.clojure/spec.alpha {:mvn/version "0.3.218"}
         borkdude/sci {:mvn/version "0.2.7"}

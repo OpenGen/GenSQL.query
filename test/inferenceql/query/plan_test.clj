@@ -1,6 +1,7 @@
 (ns inferenceql.query.plan-test
   (:refer-clojure :exclude [alter count distinct eval])
   (:require [clojure.test :refer [are deftest is testing]]
+            [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
@@ -30,15 +31,6 @@
       "SELECT * FROM data;" '[{x 0 y 1}] '[x]   '[x]
       "SELECT * FROM data;" '[{x 0}]     '[x y] '[x y]
       "SELECT x FROM data;" '[{}]        '[x]   '[x]))
-
-  (testing "name"
-    (are [query coll in expected] (= expected
-                                     (-> (eval query {'data (relation/relation coll :name in)})
-                                         (relation/name)))
-      "SELECT * FROM a;" '[{}]    'a 'a
-      "SELECT * FROM a;" '[{x 0}] 'b 'a
-      "SELECT * FROM b;" '[{}]    'b 'b
-      "SELECT * FROM b;" '[{x 0}] 'b 'b))
 
   (testing "from aliasing"
     (are [query in attrs expected] (= expected
@@ -143,3 +135,70 @@
       "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 1}] 0.5
       "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 0} {x 1}] 0.5
       "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 1} {x 1}] 0.5)))
+
+(def mmix
+  {:vars {:x :categorical
+          :y :categorical}
+   :views [[{:probability 0.75
+             :parameters  {:x {"yes" 1.0 "no" 0.0}
+                           :y {"yes" 1.0 "no" 0.0}}}
+            {:probability 0.25
+             :parameters  {:x {"yes" 0.0 "no" 1.0}
+                           :y {"yes" 0.0 "no" 1.0}}}]]})
+
+(def model (gpm/Multimixture mmix))
+
+(deftest generate
+  (testing "attributes"
+    (are [query attrs] (= attrs (relation/attributes (eval query {'model model})))
+      "GENERATE VAR x UNDER model" '[x]
+      "GENERATE VAR x, VAR y UNDER model" '[x y]
+      "GENERATE VAR y, VAR x UNDER model" '[y x]
+      "GENERATE VAR x, VAR y, VAR z UNDER model" '[x y z]))
+  (testing "values"
+    (let [rel (eval "GENERATE VAR x UNDER model" {'model model})]
+      (doseq [tup (relation/tuples (take 5 rel))]
+        (is (= '[x] (keys tup)))
+        (is (contains? #{"yes" "no"} (tuple/get tup 'x)))))))
+
+(deftest join
+  (let [env '{a [{x 0} {x 1}]
+              b [{y 0} {y 1}]}]
+    (are [query expected] (= expected (eval query env))
+      "a JOIN b"
+      '[{x 0 y 0}
+        {x 0 y 1}
+        {x 1 y 0}
+        {x 1 y 1}]
+
+      "a JOIN b ON true"
+      '[{x 0 y 0}
+        {x 0 y 1}
+        {x 1 y 0}
+        {x 1 y 1}]
+
+      "a JOIN b ON false"
+      []
+
+      "a JOIN b ON 0 = 1"
+      []
+
+      "a JOIN b ON x = y"
+      '[{x 0 y 0}
+        {x 1 y 1}]
+
+      "a JOIN b ON a.x = y"
+      '[{x 0 y 0}
+        {x 1 y 1}]
+
+      "a JOIN b ON x = b.y"
+      '[{x 0 y 0}
+        {x 1 y 1}]
+
+      "a JOIN b ON a.x = b.y"
+      '[{x 0 y 0}
+        {x 1 y 1}]
+
+      "a JOIN b ON a.x = b.y"
+      '[{x 0 y 0}
+        {x 1 y 1}])))

@@ -175,29 +175,29 @@
          }})
 
 (defn eval
-  ([sexpr env]
-   (eval sexpr env {}))
-  ([sexpr env tuple]
-   (let [bindings (merge (zipmap (tuple/attributes tuple)
-                                 (repeat nil))
-                         (when-let [tuple-name (tuple/name tuple)]
-                           (zipmap (map #(symbol (str tuple-name "." %))
-                                        (tuple/attributes tuple))
-                                   (repeat nil)))
-                         (tuple/->map tuple)
-                         env)
-         ;; FIXME write a function to produce this automatically
-         ;; from `env`
-         opts {:namespaces namespaces
-               :bindings bindings}]
-     (try (sci/eval-string (pr-str sexpr) opts)
-          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
-            (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
-                                      (ex-message ex))]
-              (let [sym (symbol sym)]
-                (when-not (contains? (set (tuple/attributes tuple))
-                                     sym)
-                  (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
-                                  {:symbol sym
-                                   :env bindings}))))
-              (throw ex)))))))
+  [sexpr env & tuples]
+  (let [tuple-map (fn [tuple]
+                    (merge (zipmap (tuple/attributes tuple)
+                                   (repeat nil))
+                           (when-let [tuple-name (tuple/name tuple)]
+                             (zipmap (map #(symbol (str tuple-name "." %))
+                                          (tuple/attributes tuple))
+                                     (repeat nil)))
+                           env
+                           (tuple/->map tuple)))
+        attributes (into #{} (map tuple/attributes) tuples)
+        bindings (into env (map tuple-map) tuples)
+        ;; FIXME write a function to produce this automatically
+        ;; from `env`
+        opts {:namespaces namespaces
+              :bindings bindings}]
+    (try (sci/eval-string (pr-str sexpr) opts)
+         (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
+           (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
+                                     (ex-message ex))]
+             (let [sym (symbol sym)]
+               (when-not (contains? attributes sym)
+                 (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
+                                 {:symbol sym
+                                  :env bindings}))))
+             (throw ex))))))

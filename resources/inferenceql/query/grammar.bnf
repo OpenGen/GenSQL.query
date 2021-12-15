@@ -10,6 +10,8 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | relation-value
                 | update-expr
                 | alter-expr
+                | join-expr
+                | rename-expr
 
 (* with-expr *)
 
@@ -121,6 +123,14 @@ update-setting ::= simple-symbol ws? '=' ws? scalar-expr
 (* alter-expr *)
 
 alter-expr ::= #'(?i)ALTER' ws relation-expr ws #'(?i)ADD' ws simple-symbol
+
+(* rename-expr *)
+
+rename-expr ::= relation-expr ws alias-clause
+
+(* join-expr *)
+
+join-expr ::= relation-expr ws #'(?i)JOIN' ws relation-expr (ws #'(?i)ON' ws scalar-expr)?
 
 (* generate-expr *)
 

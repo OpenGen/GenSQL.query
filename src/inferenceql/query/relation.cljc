@@ -124,16 +124,3 @@
 (s/def ::name symbol?)
 (s/def ::attribute symbol?)
 (s/def ::relation relation?)
-
-
-(comment
-
-  (-> (relation '[{x 0}] :name 'data)
-      (tuples)
-      (first)
-      (meta)
-      (tuple/->map)
-      ;; (tuple/get 'data.x)
-      )
-
-  ,)

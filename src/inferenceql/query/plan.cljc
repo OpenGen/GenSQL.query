@@ -3,6 +3,7 @@
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.edn :as edn]
+            [clojure.math.combinatorics :as combinatorics]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
@@ -22,6 +23,9 @@
 
 (s/def ::plan (s/multi-spec plan-spec ::type))
 
+(s/def ::plan-1 ::plan)
+(s/def ::plan-2 ::plan)
+
 (s/def ::plan-to ::plan)
 (s/def ::plan-from ::plan)
 
@@ -29,6 +33,8 @@
 (s/def ::limit pos-int?)
 (s/def ::variables (s/coll-of ::model/variable))
 (s/def ::settings (s/map-of ::relation/attribute ::sexpr))
+
+(s/def ::condition ::sexpr)
 
 (defmethod plan-spec :inferenceql.query.plan.type/lookup
   [_]
@@ -178,6 +184,13 @@
   {::type :inferenceql.query.plan.type/alter
    ::plan op
    ::relation/attribute attr})
+
+(defn join
+  [op1 op2 & {:keys [condition]}]
+  (cond-> {::type :inferenceql.query.plan.type/join
+           ::plan-1 op1
+           ::plan-2 op2}
+    (some? condition) (assoc ::condition condition)))
 
 (defn rename
   [op name]
@@ -391,12 +404,13 @@
   [node]
   (tree/match [node]
     [[:from-clause _from relation-expr]]
-    (plan-impl relation-expr)
+    (plan-impl relation-expr)))
 
-    [[:from-clause _from relation-expr [:alias-clause _as sym-node]]]
-    (let [name (eval-literal sym-node)]
-      (rename (plan-impl relation-expr)
-              name))))
+(defmethod plan-impl :rename-expr
+  [node]
+  (tree/match [node]
+    [[:rename-expr relation-expr [:alias-clause _as simple-symbol]]]
+    (rename (plan relation-expr) (eval-literal simple-symbol))))
 
 (defmethod plan-impl :limit-clause
   [node op]
@@ -456,6 +470,18 @@
   (let [rel (literal/read node)]
     (value rel)))
 
+(defmethod plan-impl :join-expr
+  [node]
+  (tree/match [node]
+    [[:join-expr rel-node-1 _join rel-node-2]]
+    (join (plan rel-node-1)
+          (plan rel-node-2))
+
+    [[:join-expr rel-node-1 _join rel-node-2 _on scalar-expr]]
+    (join (plan rel-node-1)
+          (plan rel-node-2)
+          :condition (scalar/plan scalar-expr))))
+
 ;;; eval
 
 (defmulti eval
@@ -470,7 +496,9 @@
   [plan env]
   (let [{::env/keys [name]} plan
         rel (env/get env name)]
-    (relation/assoc-name rel name)))
+    (if (relation/relation? rel)
+      (relation/assoc-name rel name)
+      (relation/relation rel :name name))))
 
 (defmethod eval :inferenceql.query.plan.type/select
   [plan env]
@@ -516,9 +544,10 @@
                          (gpm/variables model)
                          variables)
                        (map keyword))
+        attrs (map symbol variables)
         samples (map #(medley/map-keys symbol %)
                      (repeatedly #(gpm/simulate model variables {})))]
-    (relation/relation samples :attrs variables)))
+    (relation/relation samples :attrs attrs)))
 
 (defmethod eval :inferenceql.query.plan.type/insert
   [plan env]
@@ -610,3 +639,20 @@
 (defmethod eval :inferenceql.query.plan.type/value
   [plan _]
   (::relation/relation plan))
+
+(defmethod eval :inferenceql.query.plan.type/join
+  [plan env]
+  (let [{::keys [plan-1 plan-2 condition]} plan
+        rel-1 (eval plan-1 env)
+        rel-2 (eval plan-2 env)
+        attrs (into []
+                    (core/distinct)
+                    (into (relation/attributes rel-1)
+                          (relation/attributes rel-2)))
+        tuples (sequence (comp (filter (if (some? condition)
+                                         #(apply scalar/eval condition env %)
+                                         (constantly true)))
+                               (map #(apply merge %)))
+                         (combinatorics/cartesian-product (relation/tuples rel-1)
+                                                          (relation/tuples rel-2)))]
+    (relation/relation tuples :attrs attrs)))
