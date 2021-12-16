@@ -93,21 +93,21 @@
 
 (defn eval
   "Evaluate a query and return the results."
-  [query data models]
-  (try (query/q query data models)
+  [query tables models]
+  (try (query/q query tables models)
        (catch Exception e
          e)))
 
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
-  [data models & {:keys [print] :or {print print-table}}]
+  [tables models & {:keys [print] :or {print print-table}}]
   (let [repl-options [:prompt #(clojure.core/print "iql> ")
                       :read (fn [request-prompt request-exit]
                               (case (main/skip-whitespace *in*)
                                 :line-start request-prompt
                                 :stream-end request-exit
                                 (read-line)))
-                      :eval #(eval % data models)
+                      :eval #(eval % tables models)
                       :print print]]
     (apply main/repl repl-options)))
 
@@ -148,4 +148,4 @@
                            (slurp-csv (or data *in*)))]
             (if query
               (print (eval query data models))
-              (repl data models :print print))))))
+              (repl {:data data} models :print print))))))

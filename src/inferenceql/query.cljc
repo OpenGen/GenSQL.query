@@ -36,18 +36,26 @@
   "Returns the result of executing a query on a set of rows. A registry
   mapping model names to model values models can be provided as an optional
   third argument."
-  ([query rows]
-   (q query rows {}))
-  ([query rows models]
-   (let [node-or-failure (parser/parse query)]
+  ([query tables]
+   (q query tables {}))
+  ([query tables models]
+   (let [symbolize-keys (fn [coll]
+                          (into []
+                                (map #(medley/map-keys symbol %))
+                                coll))
+         relation (fn [coll]
+                    (let [coll (symbolize-keys coll)]
+                      (if-let [columns (-> coll meta :iql/columns)]
+                        (relation/relation coll :attrs (map symbol columns))
+                        (relation/relation coll))))
+         node-or-failure (parser/parse query)]
      (if-not (insta/failure? node-or-failure)
        (let [plan (query-plan node-or-failure)
-             tuples (map #(medley/map-keys symbol %) rows)
-             in-rel (if-let [columns (-> rows meta :iql/columns)]
-                      (relation/relation tuples :attrs (map symbol columns))
-                      (relation/relation tuples))
+             relations (->> tables
+                            (medley/map-keys symbol)
+                            (medley/map-vals relation))
              models (medley/map-keys symbol models)
-             env (merge models {(symbol default-table) in-rel})
+             env (merge models relations)
              out-rel (eval plan env)
              kw-rel (map #(medley/map-keys keyword %)
                          out-rel)]

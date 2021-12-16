@@ -62,9 +62,9 @@ See below for usage examples.
 
 ```clojure
 (query/q "SELECT * FROM data"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 0 :y 2}
     {:x 1 :y 1}
     {:x 2 :y 0}]
@@ -74,9 +74,9 @@ Individual columns can be selected.
 
 ```clojure
 (query/q "SELECT x FROM data"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 0}
     {:x 1}
     {:x 2}]
@@ -88,9 +88,9 @@ By default, results are returned in the order that they were provided (or genera
 
 ```clojure
 (query/q "SELECT * FROM data ORDER BY y"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 2 :y 0}
     {:x 1 :y 1}
     {:x 0 :y 2}]
@@ -98,9 +98,9 @@ By default, results are returned in the order that they were provided (or genera
 
 ```clojure
 (query/q "SELECT * FROM data ORDER BY y ASC"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 2 :y 0}
     {:x 1 :y 1}
     {:x 0 :y 2}]
@@ -108,9 +108,9 @@ By default, results are returned in the order that they were provided (or genera
 
 ```clojure
 (query/q "SELECT * FROM data ORDER BY y DESC"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 0 :y 2}
     {:x 1 :y 1}
     {:x 2 :y 0}]
@@ -122,9 +122,9 @@ By default, results are returned in the order that they were provided (or genera
 
 ```clojure
 (query/q "SELECT x FROM data LIMIT 2"
-         [{:x 0}
-          {:x 1}
-          {:x 2}])
+         {:data [{:x 0}
+                 {:x 1}
+                 {:x 2}]})
 => [{:x 0}
     {:x 1}]
 ```
@@ -137,42 +137,42 @@ Five binary predicates can be used in `WHERE` clauses.
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x = 1"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 1 :y 1}]
 ```
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x > 1"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 2 :y 0}]
 ```
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x < 1"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 0 :y 2}]
 ```
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x >= 1"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 1 :y 1}
     {:x 2 :y 0}]
 ```
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x <= 1"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 0 :y 2}
     {:x 1 :y 1}]
 ```
@@ -183,9 +183,9 @@ Conditions can be joined together with `AND` and `OR`.
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x > 0 AND y > 0"
-         [{:x 0 :y 2}
-          {:x 1 :y 1}
-          {:x 2 :y 0}])
+         {:data [{:x 0 :y 2}
+                 {:x 1 :y 1}
+                 {:x 2 :y 0}]})
 => [{:x 1 :y 1}]
 ```
 
@@ -193,7 +193,7 @@ Conditions can be joined together with `AND` and `OR`.
 
 ```clojure
 (query/q "SELECT * FROM data WHERE x = 0 AND x = 1 OR x = 1"
-         [{:x 1}])
+         {:data [{:x 1}]})
 => [{:x 1}]
 ```
 
@@ -203,17 +203,17 @@ Conditions can be joined together with `AND` and `OR`.
 
 ```clojure
 (query/q "SELECT x FROM data WHERE y IS NULL"
-         [{:x 0 :y 2}
-          {:x 1}
-          {:x 2 :y 1}])
+         {:data [{:x 0 :y 2}
+                 {:x 1}
+                 {:x 2 :y 1}]})
 => [{:x 1}]
 ```
 
 ```clojure
 (query/q "SELECT x FROM data WHERE y IS NOT NULL"
-         [{:x 0 :y 2}
-          {:x 1}
-          {:x 2 :y 1}])
+         {:data [{:x 0 :y 2}
+                 {:x 1}
+                 {:x 2 :y 1}]})
 => [{:x 0}
     {:x 2}]
 ```
@@ -243,10 +243,10 @@ If a variable appears alone, then the probability density of the variable with t
 
 ```clojure
 (query/q "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model) AS p FROM data"
-         [{:x "yes" :y "yes"}
-          {:x "yes" :y "no"}
-          {:x "no"  :y "yes"}
-          {:x "no"  :y "no"}]
+         {:data [{:x "yes" :y "yes"}
+                 {:x "yes" :y "no"}
+                 {:x "no"  :y "yes"}
+                 {:x "no"  :y "no"}]}
          {:model model})
 => [{:p 0.75}
     {:p 0.75}
@@ -258,10 +258,10 @@ If a variable appears alone, then the probability density of the variable with t
 
 ```clojure
 (query/q "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model CONDITIONED BY VAR y = y) AS p FROM data"
-         [{:x "yes" :y "yes"}
-          {:x "yes" :y "no"}
-          {:x "no"  :y "yes"}
-          {:x "no"  :y "no"}]
+         {:data [{:x "yes" :y "yes"}
+                 {:x "yes" :y "no"}
+                 {:x "no"  :y "yes"}
+                 {:x "no"  :y "no"}]}
          {:model model})
 => [{:p 1.0}
     {:p 0.0}
@@ -273,10 +273,10 @@ Literal events may also be provided.
 
 ```clojure
 (query/q "SELECT (PROBABILITY DENSITY OF VAR x = \"yes\" UNDER model CONDITIONED BY VAR y = y) AS p FROM data"
-         [{:x "yes" :y "yes"}
-          {:x "yes" :y "no"}
-          {:x "no"  :y "yes"}
-          {:x "no"  :y "no"}]
+         {:data [{:x "yes" :y "yes"}
+                 {:x "yes" :y "no"}
+                 {:x "no"  :y "yes"}
+                 {:x "no"  :y "no"}]}
          {:model model})
 => [{:p 1.0}
     {:p 0.0}
@@ -286,10 +286,10 @@ Literal events may also be provided.
 
 ```clojure
 (query/q "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model CONDITIONED BY VAR y = \"yes\") AS p FROM data"
-         [{:x "yes" :y "yes"}
-          {:x "yes" :y "no"}
-          {:x "no"  :y "yes"}
-          {:x "no"  :y "no"}]
+         {:data [{:x "yes" :y "yes"}
+                 {:x "yes" :y "no"}
+                 {:x "no"  :y "yes"}
+                 {:x "no"  :y "no"}]}
          {:model model})
 => [{:p 1.0}
     {:p 1.0}
@@ -311,7 +311,7 @@ One can also use generated values from a model as a data source.
 
 ```clojure
 (query/q "SELECT * FROM (GENERATE VAR x UNDER model) LIMIT 3"
-         [{:x "no"}]
+         {:data [{:x "no"}]}
          {:model always-yes-model})
 => [{:x "yes"}
     {:x "yes"}
@@ -322,7 +322,7 @@ One can also generate values that are subject to conditions.
 
 ```clojure
 (query/q "SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR y=\"yes\" ) LIMIT 3"
-         [{:x "no"}]
+         {:data [{:x "no"}]}
          {:model model})
 => [{:x "yes"}
     {:x "yes"}
@@ -333,10 +333,10 @@ One can also compute the probability density of an event under a model that is s
 
 ```clojure
 (query/q "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER (model CONDITIONED BY VAR y=\"yes\")) AS p FROM data"
-         [{:x "yes" :y "yes"}
-          {:x "yes" :y "no"}
-          {:x "no"  :y "yes"}
-          {:x "no"  :y "no"}]
+         {:data [{:x "yes" :y "yes"}
+                 {:x "yes" :y "no"}
+                 {:x "no"  :y "yes"}
+                 {:x "no"  :y "no"}]}
          {:model model})
 => [{:p 1.0}
     {:p 1.0}
