@@ -7,10 +7,10 @@
 (deftest select
   (is (= [{:x 1} {:x 2}]
          (bean/->clj (query.js/query "SELECT * FROM data WHERE x > 0;"
-                                     #js[#js{:x 0}
-                                         #js{:x 1}
-                                         #js{:x 2}]
-                                     #js{})))))
+                                     #js {:data #js [#js {:x 0}
+                                                     #js {:x 1}
+                                                     #js {:x 2}]}
+                                     #js {})))))
 
 (deftest generate
   (let [model (gpm/Multimixture
@@ -19,5 +19,5 @@
                           :parameters {:x {"a" 1}}}]]})]
     (is (= [{:x "a"}]
            (bean/->clj (query.js/query "SELECT * FROM GENERATE * UNDER model LIMIT 1"
-                                       #js[]
-                                       #js{:model model}))))))
+                                       #js {:data #js []}
+                                       #js {:model model}))))))
