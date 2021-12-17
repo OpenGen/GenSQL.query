@@ -10,34 +10,33 @@
 
 ```bash
 % clj -M -m inferenceql.query.main --help
-  -d, --data DATA      data CSV path
-  -m, --model MODEL    model EDN path
-  -s, --schema SCHEMA  schema EDN path
-  -e, --eval STRING    evaluate query in STRING
-  -o, --output FORMAT  output format
+  -t, --table NAME=PATH  []  table CSV name and path
+  -m, --model NAME=PATH  []  model EDN name and path
+  -e, --eval STRING          evaluate query in STRING
+  -o, --output FORMAT        output format
   -h, --help
 ```
 
 If a query is provided it will be evaluated and the result will be printed. If a query is not provided a REPL will be launched.
 
-`DATA` may be either a local file name or a URI.
+`PATH` may be either a local file name or a URI.
 
 ```
-% clj -m inferenceql.query.main --data data.csv --model model.edn
+% clj -m inferenceql.query.main --table data=data.csv --model model=model.edn
 ```
 
 ```
-% clj -m inferenceql.query.main --data https://bcomp.pro/elephantdata --model https://bcomp.pro/elephantmodel
+% clj -m inferenceql.query.main --table data=https://bcomp.pro/elephantdata --model model=https://bcomp.pro/elephantmodel
 ```
 
-If `DATA` is not provided the dataset will be read from stdin.
+If `-t/--table` is not provided a CSV will be read from stdin and bound to `data`.
 
 ``` bash
-% curl -sL https://bcomp.pro/elephantdata | clojure -M -m inferenceql.query.main --model https://bcomp.pro/elephantmodel --eval "SELECT * FROM data LIMIT 1"
+% curl -sL https://bcomp.pro/elephantdata | clojure -M -m inferenceql.query.main --eval "SELECT * FROM data LIMIT 1"
 
-| elephant | rain | student_happy | teacher_sick |
-|----------+------+---------------+--------------|
-|       no |   no |           yes |           no |
+| elephant | rain | teacher_sick | student_happy |
+|----------+------+--------------+---------------|
+|      yes |  yes |           no |           yes |
 ```
 
 ### Clojure interface

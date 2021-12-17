@@ -1,8 +1,8 @@
 (ns inferenceql.query.main
   (:refer-clojure :exclude [eval print])
+  (:import [tech.tablesaw.api Table])
   (:require [clojure.core :as clojure]
             [clojure.data.csv :as csv]
-            [clojure.edn :as edn]
             [clojure.main :as main]
             [clojure.pprint :as pprint]
             [clojure.repl :as repl]
@@ -10,18 +10,29 @@
             [clojure.tools.cli :as cli]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query :as query]
-            [inferenceql.query.data :as data]
             [medley.core :as medley]))
 
-(def formats #{"csv" "table"})
+(def output-formats #{"csv" "table"})
+
+(defn parse-named-pair
+  [s]
+  (when-let [[_ name path] (re-matches #"([^=]+)=([^=]+)" s)]
+    {name path}))
 
 (def cli-options
-  [["-d" "--data DATA" "data CSV path"]
-   ["-m" "--model MODEL" "model EDN path"]
-   ["-s" "--schema SCHEMA" "schema EDN path"]
+  [["-t" "--table NAME=PATH" "table CSV name and path"
+    :multi true
+    :default []
+    :update-fn conj
+    :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
+   ["-m" "--model NAME=PATH" "model EDN name and path"
+    :multi true
+    :default []
+    :update-fn conj
+    :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
    ["-e" "--eval STRING" "evaluate query in STRING"]
    ["-o" "--output FORMAT" "output format"
-    :validate [formats (str "Must be one of: " (string/join ", " formats))]]
+    :validate [output-formats (str "Must be one of: " (string/join ", " output-formats))]]
    ["-h" "--help"]])
 
 (defn slurp-model
@@ -47,11 +58,13 @@
   then converts that table into a vector of maps. See `clojure.java.io/reader`
   for a complete list of supported arguments."
   [x]
-  (let [data (csv/read-csv (slurp x))
-        headers (map keyword (first data))
-        rows (rest data)]
-    (mapv #(zipmap headers %)
-          rows)))
+  (let [row->map (fn [row]
+                   (let [columns (.columnNames row)]
+                     (zipmap (map keyword columns)
+                             (map #(.getObject row %)
+                                  columns))))]
+    (->> (.csv (Table/read) (slurp x) "table")
+         (map row->map))))
 
 (defn print-exception
   [e]
@@ -123,7 +136,7 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {url :model, query :eval, :keys [data schema help output]} options
+        {models :model, query :eval, tables :table, :keys [help output]} options
         print (case output
                 "table" print-table
                 "csv" print-csv
@@ -133,19 +146,23 @@
             (errorln error))
 
           (or help
-              (nil? url)
-              (nil? schema)
-              (and (nil? data) ; reading from stdin
+              (and (empty? tables) ; reading from stdin
                    (nil? query)))
           (errorln summary)
 
           :else
-          (let [models {:model (model url)}
-                schema (medley/map-keys keyword (edn/read-string (slurp schema)))
-                coerce-vals (data/row-coercer schema)
-                remove-nils #(medley/remove-vals nil? %)
-                data (mapv (comp remove-nils coerce-vals)
-                           (slurp-csv (or data *in*)))]
+          (let [models (->> (into {}
+                                  (map parse-named-pair)
+                                  models)
+                            (medley/map-keys keyword)
+                            (medley/map-vals slurp-model))
+                tables (if-not (seq tables)
+                         {:data (slurp-csv *in*)}
+                         (->> (into {}
+                                    (map parse-named-pair)
+                                    tables)
+                              (medley/map-keys keyword)
+                              (medley/map-vals slurp-csv)))]
             (if query
-              (print (eval query data models))
-              (repl {:data data} models :print print))))))
+              (print (eval query tables models))
+              (repl tables models :print print))))))
