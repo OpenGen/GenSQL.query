@@ -39,15 +39,12 @@
   ([query tables]
    (q query tables {}))
   ([query tables models]
-   (let [symbolize-keys (fn [coll]
-                          (into []
-                                (map #(medley/map-keys symbol %))
-                                coll))
-         relation (fn [coll]
-                    (let [coll (symbolize-keys coll)]
+   (let [relation (fn [coll]
+                    (let [tuples (mapv #(medley/map-keys symbol %)
+                                       coll)]
                       (if-let [columns (-> coll meta :iql/columns)]
-                        (relation/relation coll :attrs (map symbol columns))
-                        (relation/relation coll))))
+                        (relation/relation tuples :attrs (map symbol columns))
+                        (relation/relation tuples))))
          node-or-failure (parser/parse query)]
      (if-not (insta/failure? node-or-failure)
        (let [plan (query-plan node-or-failure)

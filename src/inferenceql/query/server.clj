@@ -18,14 +18,14 @@
 (defn- handler
   "Returns a Ring handler that executes queries against the provied data and
   models. Assumes that basic content negotiation has already taken place."
-  [data models]
+  [tables models]
   (fn handler [request]
     (let [query (request-query request)]
       (if-not query
         {:status 400
          :body {:request request}}
         (try
-          (let [result (query/q query data models)]
+          (let [result (query/q query tables models)]
             {:status 200
              :body {:result result
                     :metadata (meta result)}})
@@ -39,13 +39,13 @@
                :body (update ex-data :instaparse/failure pr-str)})))))))
 
 (defn app
-  "Returns a Ring handler that executes queries against the provied data and
+  "Returns a Ring handler that executes queries against the provied tables and
   models. Will do basic content negotiation. Supported request content types are
   text/plain, application/edn, application/json, application/transit+json,
   application/tarnsit+msgpack. For all but the first content type the query is
   expected to be provided as a string."
-  [data models]
-  (-> (handler data models)
+  [tables models]
+  (-> (handler tables models)
       (cors/wrap-cors :access-control-allow-origin (constantly true)
                       :access-control-allow-methods [:post])
       (middleware/wrap-format)))

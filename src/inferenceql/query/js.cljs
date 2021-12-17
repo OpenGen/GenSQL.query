@@ -4,8 +4,8 @@
 
 (defn ^:export query
   "Like `inferenceql.query/q`, but accepts and returns JavaScript values."
-  [query data models]
-  (let [data (bean/->clj data)
+  [query tables models]
+  (let [tables (bean/->clj tables)
         models (bean/bean models)]
-    (-> (query/q query data models)
+    (-> (query/q query tables models)
         (clj->js))))

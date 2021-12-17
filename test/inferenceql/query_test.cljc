@@ -17,6 +17,12 @@
             ;; [inferenceql.query.relation :as relation]
             [instaparse.core :as insta]))
 
+(defn q
+  ([query data]
+   (q query data {}))
+  ([query data models]
+   (query/q query {:data data} models)))
+
 (def simple-mmix
   {:vars {:x :categorical
           :y :categorical}
@@ -145,21 +151,21 @@
 ;;; Basic selection
 
 (deftest select-basic
-  (let [rows [{:x 0}
+  (let [data [{:x 0}
               {:x 1}
               {:x 2}]]
     (testing "with source"
-      (is (= rows (query/q "SELECT x FROM data" rows))))))
+      (is (= data (q "SELECT x FROM data" data))))))
 
 (defspec select-star
   (prop/for-all [table gen-table]
-    (let [results (query/q "SELECT * FROM data" table)]
+    (let [results (q "SELECT * FROM data" table)]
       (is (= results table)))))
 
 (defspec select-col
   (prop/for-all [[table ks] gen-table-col-subset]
     (let [cols (->> ks (map name) (string/join ", "))
-          results (query/q (str "SELECT " cols " FROM data") table)]
+          results (q (str "SELECT " cols " FROM data") table)]
       (is (= (map #(select-keys % ks)
                   table)
              results)))))
@@ -168,8 +174,8 @@
 
 (deftest select-response-metadata
   (are [query data in-c out-c] (= out-c
-                                  (-> (query/q query (cond-> data
-                                                       in-c (with-meta {:iql/columns in-c})))
+                                  (-> (q query (cond-> data
+                                                 in-c (with-meta {:iql/columns in-c})))
                                       meta
                                       :iql/columns))
     "SELECT * FROM data;" [{:x 0}]      [:x]    [:x]
@@ -194,21 +200,21 @@
 (defspec select-order-by
   (prop/for-all [[table col] gen-table-col]
     (let [query (str "SELECT * FROM data ORDER BY " (name col))]
-      (is (->> (query/q query table)
+      (is (->> (q query table)
                (map col)
                (ascending?))))))
 
 (defspec select-order-by-asc
   (prop/for-all [[table col] gen-table-col]
     (let [query (str "SELECT * FROM data ORDER BY " (name col) " ASC")]
-      (is (->> (query/q query table)
+      (is (->> (q query table)
                (map col)
                (ascending?))))))
 
 (defspec select-order-by-desc
   (prop/for-all [[table col] gen-table-col]
     (let [query (str "SELECT * FROM data ORDER BY " (name col) " DESC")]
-      (is (->> (query/q query table)
+      (is (->> (q query table)
                (map col)
                (descending?))))))
 
@@ -221,40 +227,40 @@
 
 (defspec select-limit
   (prop/for-all [[table n] gen-table-limit]
-    (let [results (query/q (str "SELECT * FROM data LIMIT " n) table)]
+    (let [results (q (str "SELECT * FROM data LIMIT " n) table)]
       (is (= (take n table)
              results)))))
 
 (deftest select-where-limit
   (is (= [{:x 2}]
-         (query/q "SELECT * FROM data WHERE x > 0 ORDER BY x DESC LIMIT 1"
-                  [{:x 0}
-                   {:x 1}
-                   {:x 0}
-                   {:x 2}
-                   {:x 0}]))))
+         (q "SELECT * FROM data WHERE x > 0 ORDER BY x DESC LIMIT 1"
+            [{:x 0}
+             {:x 1}
+             {:x 0}
+             {:x 2}
+             {:x 0}]))))
 
 ;; Conditions
 
 (defspec conditions-not-null
   (prop/for-all [[table k] gen-table-col]
-    (let [results (query/q (str "SELECT * FROM data WHERE " (name k) " IS NOT NULL") table)]
+    (let [results (q (str "SELECT * FROM data WHERE " (name k) " IS NOT NULL") table)]
       (is (= (remove (comp nil? k) table)
              results)))))
 
 (deftest conditions-null-example
   (is (= [{}]
-         (query/q "SELECT * FROM data WHERE x IS NULL"
-                  (with-meta [{}] {:iql/columns [:x]})))))
+         (q "SELECT * FROM data WHERE x IS NULL"
+            (with-meta [{}] {:iql/columns [:x]})))))
 
 (defspec conditions-null
   (prop/for-all [[table k] gen-table-col]
-    (let [results (query/q (str "SELECT * FROM data WHERE " (name k) " IS NULL") table)]
+    (let [results (q (str "SELECT * FROM data WHERE " (name k) " IS NULL") table)]
       (is (= (filter (comp nil? k) table)
              results)))))
 
 (deftest conditions-precdence
-  (let [q #(query/q % [{:x 1}])]
+  (let [q #(q % [{:x 1}])]
     (is (= [{:x 1}] (q "SELECT * FROM data WHERE (x=0 AND x=1) OR x=1")))
     (is (= []       (q "SELECT * FROM data WHERE x=0 AND (x=1 OR x=1)")))
     (testing "AND has higher precedence than OR"
@@ -265,17 +271,17 @@
     (is (= [{:x 1 :y 0}
             {:x 0 :y 1}
             {:x 1 :y 1}]
-           (query/q query [{:x 0 :y 0}
-                           {:x 1 :y 0}
-                           {:x 0 :y 1}
-                           {:x 1 :y 1}])))))
+           (q query [{:x 0 :y 0}
+                     {:x 1 :y 0}
+                     {:x 0 :y 1}
+                     {:x 1 :y 1}])))))
 
 (deftest conditions-predicate
   (let [query "SELECT * FROM data WHERE x>0"
         table [{:x -1}
                {:x  0}
                {:x  1}]]
-    (is (= [{:x 1}] (query/q query table)))))
+    (is (= [{:x 1}] (q query table)))))
 
 ;; Probabilities
 
@@ -289,7 +295,7 @@
                          {:probability 0.5
                           :parameters  {:x {"yes" 0.0 "no" 1.0}
                                         :y {"yes" 0.0 "no" 1.0}}}]]})
-        q1 (comp first vals first #(query/q %1 %2 %3))]
+        q1 (comp first vals first #(q %1 %2 %3))]
     (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = \"yes\" UNDER model CONDITIONED BY VAR x = x) FROM data;"
                    (with-meta [{}] {:iql/columns [:x :y]})
                    {:model model})))))
@@ -297,7 +303,7 @@
 (deftest density-of-bindings
   (let [rows [{}]
         models {:model simple-model}
-        q1 (comp first vals first #(query/q % rows models))]
+        q1 (comp first vals first #(q % rows models))]
     (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"no\"  UNDER model)                              FROM data LIMIT 1")))
     (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model)                              FROM data LIMIT 1")))
     (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model CONDITIONED BY VAR y=\"yes\") FROM data LIMIT 1")))
@@ -306,7 +312,7 @@
 
 (deftest density-of-rows
   (let [models {:model simple-model}
-        q1 (comp first vals first #(query/q %1 %2 models))]
+        q1 (comp first vals first #(q %1 %2 models))]
     (are [expected x] (= expected
                          (q1 "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model) FROM data"
                              [{:x x}]))
@@ -327,7 +333,7 @@
 (deftest generate-generates-correct-columns
   (testing "generate"
     (let [model simple-model
-          q #(query/q % [] {:model model})]
+          q #(q % [] {:model model})]
       (testing "with star "
         (doseq [result (q "SELECT * FROM (GENERATE * UNDER model) LIMIT 10")]
           (is (= #{:x :y} (set (keys result))))))
@@ -344,8 +350,8 @@
 ;;; Invalid inputs
 
 (deftest syntax-error
-  (is (thrown? ExceptionInfo (query/q "invalid query" [])))
-  (try (query/q "invalid query" [])
+  (is (thrown? ExceptionInfo (q "invalid query" [])))
+  (try (q "invalid query" [])
        (catch ExceptionInfo e
          (is (= :cognitect.anomalies/incorrect (:cognitect.anomalies/category (ex-data e)))))))
 
@@ -371,15 +377,15 @@
     (is (= (->> table
                 (map #(select-keys % [column]))
                 (map #(walk/postwalk-replace {column label} %)))
-           (query/q (str "SELECT " (name column) " AS " (name label) " FROM data")
-                    table)))))
+           (q (str "SELECT " (name column) " AS " (name label) " FROM data")
+              table)))))
 
 ;;; Insert
 
 (deftest insert-into
   (let [data [{:x 0}]
-        result (query/q "SELECT * FROM (INSERT INTO data (x) VALUES (1), (2))"
-                        data)]
+        result (q "SELECT * FROM (INSERT INTO data (x) VALUES (1), (2))"
+                  data)]
     (is (= [{:x 0} {:x 1} {:x 2}]
            result))))
 
@@ -387,15 +393,15 @@
 
 (deftest update-set
   (let [data [{:x 0} {:x 1} {:x 2}]
-        result (query/q "SELECT * FROM (UPDATE data SET x=-1)"
-                        data)]
+        result (q "SELECT * FROM (UPDATE data SET x=-1)"
+                  data)]
     (is (= [{:x -1} {:x -1} {:x -1}]
            result))))
 
 (deftest update-set-where
   (let [data [{:x 0} {:x 1} {:x 2}]
-        result (query/q "SELECT * FROM (UPDATE data SET x=-1 WHERE x>0)"
-                        data)]
+        result (q "SELECT * FROM (UPDATE data SET x=-1 WHERE x>0)"
+                  data)]
     (is (= [{:x 0} {:x -1} {:x -1}]
            result))))
 
@@ -403,8 +409,8 @@
 #_
 (deftest update-set-where-rowid
   (let [data [{:x 0} {:x 1} {:x 2}]
-        result (query/q "SELECT * FROM (UPDATE data SET x=-1 WHERE rowid=2)"
-                        data)]
+        result (q "SELECT * FROM (UPDATE data SET x=-1 WHERE rowid=2)"
+                  data)]
     (is (= [{:x 0} {:x -1} {:x 2}]
            result))))
 
@@ -414,8 +420,8 @@
   (let [data [{:x 0}
               {:x 1}
               {:x 2}]
-        result (query/q "SELECT * FROM (ALTER data ADD y);"
-                        data)]
+        result (q "SELECT * FROM (ALTER data ADD y);"
+                  data)]
     (is (= data result))
     (is (= [:x :y] (:iql/columns (meta result))))))
 
@@ -423,8 +429,8 @@
 
 (deftest with
   (let [data (with-meta [] {:iql/columns [:x]})
-        result (query/q "WITH (INSERT INTO data (x) VALUES (1), (2), (3)) AS data: SELECT * FROM data;"
-                        data)]
+        result (q "WITH (INSERT INTO data (x) VALUES (1), (2), (3)) AS data: SELECT * FROM data;"
+                  data)]
     (is (= [{:x 1}
             {:x 2}
             {:x 3}]
@@ -432,11 +438,11 @@
 
 (deftest with-rebind
   (let [data []
-        result (query/q "WITH (INSERT INTO data (x) VALUES (1)) AS data,
+        result (q "WITH (INSERT INTO data (x) VALUES (1)) AS data,
                               (INSERT INTO data (x) VALUES (2)) AS data,
                               (INSERT INTO data (x) VALUES (3)) AS data:
                          SELECT * FROM data;"
-                        data)]
+                  data)]
     (is (= [{:x 1}
             {:x 2}
             {:x 3}]
@@ -497,7 +503,7 @@
                        CONDITIONED BY color AND flip
                        AS prob)
                FROM data;"
-        result (query/q query data {:model model})
+        result (q query data {:model model})
         uniq-probs (sort (distinct (map :prob result)))
         [low-p high-p] uniq-probs]
     ;; Our model has two views. The :label column gets incorporated into
@@ -512,7 +518,7 @@
 
 (deftest conditioned-by
   (testing "generate"
-    (let [q #(query/q % (with-meta [] {:iql/columns [:y]}) {:model simple-model})]
+    (let [q #(q % (with-meta [] {:iql/columns [:y]}) {:model simple-model})]
       (doseq [result (q "SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = \"yes\") LIMIT 10")]
         (is (= {:x "yes"} (select-keys result [:x]))))
       (doseq [result (q "WITH \"yes\" AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
@@ -521,7 +527,7 @@
         (is (= {:x "yes"} (select-keys result [:x]))))))
 
   (let [q (fn [query rows]
-            (-> (query/q query rows {:model simple-model})
+            (-> (q query rows {:model simple-model})
                 (first)
                 (vals)
                 (first)))]
