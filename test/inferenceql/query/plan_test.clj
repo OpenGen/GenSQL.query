@@ -48,6 +48,26 @@
       "SELECT y.x FROM data AS y;" '[{x 0}] '[x] 0
       "SELECT y.y FROM data AS y;" '[{y 0}] '[x] 0)))
 
+(deftest order
+  (let [data '[{x 2}
+               {x 0}
+               {x 1}]]
+    (are [query expected] (= expected (eval query {'data data}))
+      "SELECT * FROM data ORDER BY x;"
+      '[{x 0}
+        {x 1}
+        {x 2}]
+
+      "SELECT * FROM data ORDER BY x ASC;"
+      '[{x 0}
+        {x 1}
+        {x 2}]
+
+      "SELECT * FROM data ORDER BY x DESC;"
+      '[{x 2}
+        {x 1}
+        {x 0}])))
+
 (deftest insert-into
   (are [query in out] (= out (eval query {'data in}))
     "INSERT INTO data (x) VALUES (0)"           '[]          '[{x 0}]

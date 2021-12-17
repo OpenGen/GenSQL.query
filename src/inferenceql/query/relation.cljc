@@ -97,7 +97,7 @@
                           (case order
                             :ascending compare
                             :descending #(compare %2 %1))))
-            (attributes rel)))
+            :attrs (attributes rel)))
 
 (defn transduce
   [rel xf]
