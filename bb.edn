@@ -1,0 +1,19 @@
+{:tasks {clean {:doc "Remove all build artifacts"
+                :task (shell "rm -Rf cljs-test-runner-out")}
+
+         test {:doc "Run test"
+               :task (run '-test)}
+
+         -test {:depends [test:clj test:cljs test:readme]}
+
+         test:clj {:doc "Run Clojure test"
+                   :task (clojure "-X:test:clj-test")}
+
+         test:cljs {:doc "Run ClojureScript test"
+                    :task (clojure "-M:test:cljs-test")}
+
+         test:readme {:doc "Run README test"
+                      :task (clojure "-M:test:readme-test")}
+
+         repl {:doc "Launch the InferenceQL REPL"
+               :task (apply shell "clj -M -m inferenceql.query.main" *command-line-args*)}}}
