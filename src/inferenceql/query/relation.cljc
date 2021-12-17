@@ -117,9 +117,9 @@
 (defn group-by
   [rel f]
   (->> (tuples rel)
-       (clojure.core/group-by f)
+       (clojure/group-by f)
        (vals)
-       (map #(relation % (attributes rel)))))
+       (map #(relation % :attrs (attributes rel)))))
 
 (s/def ::name symbol?)
 (s/def ::attribute symbol?)
