@@ -5,7 +5,9 @@
 
 (deftest ->map
   (are [expected m name] (= expected
-                            (-> (tuple/tuple m (when name {:name name}))
+                            (-> (if name
+                                  (tuple/tuple m :name name)
+                                  (tuple/tuple m))
                                 (tuple/->map)))
     '{} '{} nil
     '{} '{} 'data
@@ -14,7 +16,9 @@
 
 (deftest get
   (are [expected m name attr] (= expected
-                                 (-> (tuple/tuple m (when name {:name name}))
+                                 (-> (if name
+                                       (tuple/tuple m :name name)
+                                       (tuple/tuple m))
                                      (tuple/get attr)))
     nil {} nil 'x
     nil {} 'data 'x
