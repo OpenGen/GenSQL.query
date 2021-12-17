@@ -1,6 +1,7 @@
 (ns inferenceql.query.main
   (:refer-clojure :exclude [eval print])
-  (:import [tech.tablesaw.api Table])
+  (:import [tech.tablesaw.api Row]
+           [tech.tablesaw.api Table])
   (:require [clojure.core :as clojure]
             [clojure.data.csv :as csv]
             [clojure.main :as main]
@@ -55,16 +56,23 @@
 
 (defn slurp-csv
   "Opens a reader on x, reads its contents, parses its contents as a table, and
-  then converts that table into a vector of maps. See `clojure.java.io/reader`
-  for a complete list of supported arguments."
+  then converts that table into a relation. See `clojure.java.io/reader` for a
+  complete list of supported arguments."
   [x]
-  (let [row->map (fn [row]
-                   (let [columns (.columnNames row)]
-                     (zipmap (map keyword columns)
-                             (map #(.getObject row %)
-                                  columns))))]
-    (->> (.csv (Table/read) (slurp x) "table")
-         (map row->map))))
+  (let [^Table table (.csv (Table/read) (slurp x) "")
+        columns (.columnNames table)
+        attrs (map keyword columns)
+        row (Row. table)
+        coll (loop [i 0
+                    rows (transient [])]
+               (if (>= i (.rowCount table))
+                 (persistent! rows)
+                 (do (.at row i)
+                     (let [row (zipmap attrs
+                                       (map #(.getObject row %)
+                                            columns))]
+                       (recur (inc i) (conj! rows row))))))]
+    (with-meta coll {:iql/columns attrs})))
 
 (defn print-exception
   [e]
