@@ -39,7 +39,7 @@
                                                (first)
                                                (tuple/->vector)
                                                (first))
-                                           (catch Exception _
+                                           (catch #?(:clj Exception :cljs :default) _
                                              :error)))
       "SELECT x FROM data AS y;" '[{x 0}] '[x] 0
       "SELECT x FROM data AS y;" '[] '[x] nil
