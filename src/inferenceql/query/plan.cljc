@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [alias alter distinct distinct? eval sort type update])
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
-            [clojure.edn :as edn]
             [clojure.math.combinatorics :as combinatorics]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
@@ -82,22 +81,11 @@
 
 ;;; parse tree
 
-(defn eval-literal
-  ([node]
-   (match/match node
-     nil nil
-     [:null _] nil
-     [:value child] (recur child)
-     [_ s] (edn/read-string s)))
-  ([node tag]
-   (when node
-     (eval-literal (tree/get-node node tag)))))
-
 (defn type
   [node]
   (get node ::type))
 
-(def eval-literal-in (comp eval-literal tree/get-node-in))
+(def eval-literal-in (comp literal/read tree/get-node-in))
 
 (defn children
   [node]
@@ -257,12 +245,12 @@
 
 (defmethod plan-impl :simple-symbol
   [node]
-  (let [sym (eval-literal node)]
+  (let [sym (literal/read node)]
     (lookup sym)))
 
 (defn variable-node->symbol
   [node]
-  (-> node tree/only-child-node eval-literal))
+  (-> node tree/only-child-node literal/read ))
 
 (defmethod plan-impl :generate-expr
   [node]
@@ -286,9 +274,9 @@
     [[:selection-group "(" child ")"]] (input-attr child)
     [[:aggregation _aggregator "(" [:star & _] ")"]] nil
     [[:aggregation _aggregator "(" _distinct [:star & _] ")"]] nil
-    [[:aggregation _aggregator "(" child ")"]] (eval-literal child)
-    [[:aggregation _aggregator "(" _distinct child ")"]] (eval-literal child)
-    [[:scalar-expr child]] (eval-literal child)))
+    [[:aggregation _aggregator "(" child ")"]] (literal/read child)
+    [[:aggregation _aggregator "(" _distinct child ")"]] (literal/read child)
+    [[:scalar-expr child]] (literal/read child)))
 
 (defn output-attr
   "For a selection returns the attribute for that selection in the output
@@ -296,7 +284,7 @@
   [node]
   (tree/match [node]
     [[:selection "(" child ")"]] (output-attr child)
-    [[:selection _ [:alias-clause _as sym-node]]] (eval-literal sym-node)
+    [[:selection _ [:alias-clause _as sym-node]]] (literal/read sym-node)
     [[:selection child]] (-> (parser/unparse child)
                              (string/replace #"\s" "")
                              (symbol))))
@@ -410,7 +398,7 @@
   [node]
   (tree/match [node]
     [[:rename-expr relation-expr [:alias-clause _as simple-symbol]]]
-    (rename (plan relation-expr) (eval-literal simple-symbol))))
+    (rename (plan relation-expr) (literal/read simple-symbol))))
 
 (defmethod plan-impl :limit-clause
   [node op]

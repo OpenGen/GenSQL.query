@@ -9,13 +9,9 @@
             [clojure.walk :as walk]
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [inferenceql.inference.gpm :as gpm]
-            ;; [inferenceql.inference.gpm.crosscat :as xcat]
             [inferenceql.query :as query]
             [inferenceql.query.parser :as parser]
-            [inferenceql.query.parser.tree :as tree]
-            [inferenceql.query.plan :as plan]
-            ;; [inferenceql.query.relation :as relation]
-            [instaparse.core :as insta]))
+            [inferenceql.query.parser.tree :as tree]))
 
 (defn q
   ([query data]
@@ -84,69 +80,6 @@
             #(gen/tuple (gen/return %)
                         (gen/not-empty
                          (chuck.gen/subset (mapcat keys %))))))
-
-;;; Literals
-
-(defn parse-and-eval
-  [& args]
-  (-> (apply parser/parse args)
-      (plan/eval-literal)))
-
-(defspec nat-evaluation
-  (prop/for-all [n gen/nat]
-    (let [s (pr-str n)]
-      (is (= n (parse-and-eval s :start :nat))))))
-
-(defspec int-evaluation
-  (prop/for-all [n gen/small-integer]
-    (let [s (pr-str n)]
-      (is (= n (parse-and-eval s :start :int))))))
-
-(defspec symbol-evaluation
-  (prop/for-all [sym gen-symbol]
-    (let [s (pr-str sym)]
-      (is (= sym (parse-and-eval s :start :simple-symbol))))))
-
-(defspec symbol-genvar-relationship
-  ;; This invariant is utilized by the function
-  ;; `inferenceql.query/free-variables`.
-  (testing "symbols can't begin with `inferenceql.query/genvar` prefix."
-    (prop/for-all [s (gen/fmap #(str "G__" %) gen/string)]
-      (is (insta/failure? (parser/parse s :start :simple-symbol))))))
-
-;;; Name
-
-(deftest simple-symbol-parsing
-  (testing "valid"
-    (are [s] (not (insta/failure? (parser/parse s :start :simple-symbol)))
-      "a"
-      "A"
-      "a0"
-      "a0a"
-      "a-"
-      "a-a"
-      "a?"))
-  (testing "invalid"
-    (are [s] (insta/failure? (parser/parse s :start :simple-symbol))
-      "0a")))
-
-;; Float parsing is a bit different in CLJS. Among other things, whole-numbered
-;; floats are printed without a decimal point. Someone should come back and try
-;; to make this work in CLJS at some point.
-#?(:clj (defspec float-parsing
-          (prop/for-all [n (gen/double* {:infinite? false :NaN? false})]
-            (let [s (pr-str n)]
-              (is (== n (parse-and-eval s :start :float)))))))
-
-;;; Query parsing success/failure
-
-(deftest parsing-success
-  (are [start query] (nil? (insta/get-failure (parser/parse query :start start)))
-    :select-expr "SELECT * FROM data"))
-
-(deftest parsing-failure
-  (are [start query] (some? (insta/get-failure (parser/parse query :start start)))
-    :select-expr "123abc"))
 
 ;;; Basic selection
 
