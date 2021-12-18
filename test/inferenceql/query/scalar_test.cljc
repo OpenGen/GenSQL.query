@@ -49,7 +49,7 @@
   (are [expected s env m attrs] (= expected
                                    (let [tuple (tuple/tuple m :attrs attrs)]
                                      (try (eval s env tuple)
-                                          (catch Exception _
+                                          (catch #?(:clj Exception :cljs :default) _
                                             :error))))
     false   "NOT true"         '{}      '{}      '[]
     true    "NOT false"        '{}      '{}      '[]
