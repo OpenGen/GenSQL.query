@@ -130,7 +130,14 @@ rename-expr ::= relation-expr ws alias-clause
 
 (* join-expr *)
 
-join-expr ::= relation-expr ws #'(?i)JOIN' ws relation-expr (ws #'(?i)ON' ws scalar-expr)?
+join-expr ::= join-expr-0
+
+<join-expr-0> ::= join-expr-1 | cross-join-expr | inner-join-expr
+<join-expr-1> ::= join-expr-group
+
+cross-join-expr ::= relation-expr ws #'(?i)CROSS' ws #'(?i)JOIN' ws relation-expr
+inner-join-expr ::= relation-expr (ws #'(?i)INNER')? ws #'(?i)JOIN' ws relation-expr ws #'(?i)ON' ws scalar-expr
+join-expr-group ::= '(' join-expr ')'
 
 (* generate-expr *)
 

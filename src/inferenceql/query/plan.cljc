@@ -173,12 +173,18 @@
    ::plan op
    ::relation/attribute attr})
 
-(defn join
-  [op1 op2 & {:keys [condition]}]
-  (cond-> {::type :inferenceql.query.plan.type/join
-           ::plan-1 op1
-           ::plan-2 op2}
-    (some? condition) (assoc ::condition condition)))
+(defn cross-join
+  [op1 op2]
+  {::type :inferenceql.query.plan.type/cross-join
+   ::plan-1 op1
+   ::plan-2 op2})
+
+(defn inner-join
+  [op1 op2 condition]
+  {::type :inferenceql.query.plan.type/inner-join
+   ::plan-1 op1
+   ::plan-2 op2
+   ::condition condition})
 
 (defn rename
   [op name]
@@ -460,15 +466,31 @@
 
 (defmethod plan-impl :join-expr
   [node]
-  (tree/match [node]
-    [[:join-expr rel-node-1 _join rel-node-2]]
-    (join (plan rel-node-1)
-          (plan rel-node-2))
+  (plan-impl (tree/only-child-node node)))
 
-    [[:join-expr rel-node-1 _join rel-node-2 _on scalar-expr]]
-    (join (plan rel-node-1)
-          (plan rel-node-2)
-          :condition (scalar/plan scalar-expr))))
+(defmethod plan-impl :join-expr-group
+  [node]
+  (plan-impl (tree/only-child-node node)))
+
+(defmethod plan-impl :cross-join-expr
+  [node]
+  (tree/match [node]
+    [[:cross-join-expr rel-node-1 _cross _join rel-node-2]]
+    (cross-join (plan rel-node-1)
+                (plan rel-node-2))))
+
+(defmethod plan-impl :inner-join-expr
+  [node]
+  (tree/match [node]
+    [[:inner-join-expr rel-node-1 _join rel-node-2 _on scalar-expr]]
+    (inner-join (plan rel-node-1)
+                (plan rel-node-2)
+                (scalar/plan scalar-expr))
+
+    [[:inner-join-expr rel-node-1 _inner _join rel-node-2 _on scalar-expr]]
+    (inner-join (plan rel-node-1)
+                (plan rel-node-2)
+                (scalar/plan scalar-expr))))
 
 ;;; eval
 
@@ -628,7 +650,21 @@
   [plan _]
   (::relation/relation plan))
 
-(defmethod eval :inferenceql.query.plan.type/join
+(defmethod eval :inferenceql.query.plan.type/cross-join
+  [plan env]
+  (let [{::keys [plan-1 plan-2]} plan
+        rel-1 (eval plan-1 env)
+        rel-2 (eval plan-2 env)
+        attrs (into []
+                    (core/distinct)
+                    (into (relation/attributes rel-1)
+                          (relation/attributes rel-2)))
+        tuples (sequence (map #(apply merge %))
+                         (combinatorics/cartesian-product (relation/tuples rel-1)
+                                                          (relation/tuples rel-2)))]
+    (relation/relation tuples :attrs attrs)))
+
+(defmethod eval :inferenceql.query.plan.type/inner-join
   [plan env]
   (let [{::keys [plan-1 plan-2 condition]} plan
         rel-1 (eval plan-1 env)
@@ -637,9 +673,7 @@
                     (core/distinct)
                     (into (relation/attributes rel-1)
                           (relation/attributes rel-2)))
-        tuples (sequence (comp (filter (if (some? condition)
-                                         #(apply scalar/eval condition env %)
-                                         (constantly true)))
+        tuples (sequence (comp (filter #(apply scalar/eval condition env %))
                                (map #(apply merge %)))
                          (combinatorics/cartesian-product (relation/tuples rel-1)
                                                           (relation/tuples rel-2)))]

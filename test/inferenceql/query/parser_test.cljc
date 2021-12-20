@@ -7,6 +7,8 @@
   (are [succeeds s] (= succeeds (not (insta/failure? (parser/parse s))))
     false ""
     false "SELECT *"
+    false "data1 JOIN data2"
+
     true "SELECT * FROM data"
     true "SELECT * FROM data;"
     true "UPDATE data SET x=0"

@@ -185,40 +185,50 @@
   (let [env '{a [{x 0} {x 1}]
               b [{y 0} {y 1}]}]
     (are [query expected] (= expected (eval query env))
-      "a JOIN b"
+      "a CROSS JOIN b"
       '[{x 0 y 0}
         {x 0 y 1}
         {x 1 y 0}
         {x 1 y 1}]
 
-      "a JOIN b ON true"
+      "a INNER JOIN b ON true"
       '[{x 0 y 0}
         {x 0 y 1}
         {x 1 y 0}
         {x 1 y 1}]
 
-      "a JOIN b ON false"
+      "a INNER JOIN b ON true"
+      '[{x 0 y 0}
+        {x 0 y 1}
+        {x 1 y 0}
+        {x 1 y 1}]
+
+      "a INNER JOIN b ON false"
       []
 
-      "a JOIN b ON 0 = 1"
+      "a INNER JOIN b ON 0 = 1"
       []
 
       "a JOIN b ON x = y"
       '[{x 0 y 0}
         {x 1 y 1}]
 
-      "a JOIN b ON a.x = y"
+      "a INNER JOIN b ON x = y"
       '[{x 0 y 0}
         {x 1 y 1}]
 
-      "a JOIN b ON x = b.y"
+      "a INNER JOIN b ON a.x = y"
       '[{x 0 y 0}
         {x 1 y 1}]
 
-      "a JOIN b ON a.x = b.y"
+      "a INNER JOIN b ON x = b.y"
       '[{x 0 y 0}
         {x 1 y 1}]
 
-      "a JOIN b ON a.x = b.y"
+      "a INNER JOIN b ON a.x = b.y"
+      '[{x 0 y 0}
+        {x 1 y 1}]
+
+      "a INNER JOIN b ON a.x = b.y"
       '[{x 0 y 0}
         {x 1 y 1}])))
