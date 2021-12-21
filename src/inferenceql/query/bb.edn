@@ -1,4 +1,0 @@
-{:tasks {tests {:doc "Run tests"
-                :tasks (run 'tests:cl)}
-         tests:clj {:doc "Run Clojure tests"
-                    :tasks (clojure "clojure -X:test:clj-test")}}}
