@@ -22,3 +22,27 @@
   "Returns a string that when parsed by `parse` will yield the provided parse tree."
   [node]
   (insta/transform unparse-transformations node))
+
+(comment
+
+  (require '[inferenceql.query.parser] :reload)
+
+  (parse "mutual information of var x with var y under model" :start :mutual-information-expr)
+;; => [:mutual-information-expr
+;;     "mutual"
+;;     [:ws " "]
+;;     "information"
+;;     [:ws " "]
+;;     "of"
+;;     [:ws " "]
+;;     [:variable-list [:variable "var" [:ws " "] [:simple-symbol "x"]]]
+;;     [:ws " "]
+;;     "with"
+;;     [:ws " "]
+;;     [:variable-list [:variable "var" [:ws " "] [:simple-symbol "y"]]]
+;;     [:ws " "]
+;;     "under"
+;;     [:ws " "]
+;;     [:model-expr [:simple-symbol "model"]]]
+
+  ,)

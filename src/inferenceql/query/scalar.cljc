@@ -61,6 +61,9 @@
     [:probability-expr _probability          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
     [:density-expr     _probability _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
 
+    [:mutual-information-expr _mutual _information _of var-lhs _with var-rhs _under model] `(~'iql/mutual-info ~(plan model) ~(plan var-lhs) ~(plan var-rhs))
+    [:variable-list & variables] (map plan variables)
+
     [:model-expr child] (plan child)
     [:model-expr "(" child ")"] (plan child)
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
@@ -108,6 +111,10 @@
                       :operands rest
                       :operator first
                       :variable? symbol?}))))
+
+(defn mutual-info
+  [model vars-lhs vars-rhs]
+  (gpm/mutual-information model vars-lhs vars-rhs {} 1000))
 
 #_
 (defn incorporate
