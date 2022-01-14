@@ -61,7 +61,7 @@
     [:probability-expr _probability          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
     [:density-expr     _probability _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
 
-    [:mutual-information-expr _mutual _information _of var-lhs _with var-rhs _under model] `(~'iql/mutual-info ~(plan model) ~(plan var-lhs) ~(plan var-rhs))
+    [:mutual-information-expr _mutual _information _of var-lhs _with var-rhs _under model] `(~'iql/mutual-info ~(plan model) ~(vec (plan var-lhs)) ~(vec (plan var-rhs)))
     [:variable-list & variables] (map plan variables)
 
     [:model-expr child] (plan child)
@@ -178,6 +178,7 @@
          'pdf pdf
          'condition condition
          'constrain constrain
+         'mutual-info mutual-info
          ;; 'incorporate incorporate
          }})
 
