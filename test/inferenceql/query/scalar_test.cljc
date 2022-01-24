@@ -1,6 +1,7 @@
 (ns inferenceql.query.scalar-test
   (:refer-clojure :exclude [eval])
   (:require [clojure.test :refer [are deftest is testing]]
+            [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.tuple :as tuple]))
@@ -86,3 +87,23 @@
     1       "x + 1"            '{}      '{x 0}   '[x]
     nil     "x + 1"            '{}      '{}      '[x]
     :error  "x + 1"            '{}      '{}      '[]))
+
+(deftest mutual-info
+  (let [model (reify gpm.proto/MutualInfo
+                (mutual-info [_ _ _]
+                  7))
+        env {'model model}]
+    (is (= 7 (eval "MUTUAL INFORMATION OF VAR x > 0 WITH VAR x < 0 UNDER model" env)))))
+
+(deftest approx-mutual-info
+  (let [simulate-count (atom 0)
+        model (reify gpm.proto/GPM
+                (simulate [_this _targets _constraints]
+                  (swap! simulate-count inc)
+                  {})
+
+                (logpdf [_this _targets _constraints]
+                  0))
+        env {'model model}]
+    (eval "APPROXIMATE MUTUAL INFORMATION OF VAR x WITH VAR y UNDER model" env)
+    (is (= 1000 @simulate-count))))

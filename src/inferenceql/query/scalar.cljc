@@ -6,6 +6,7 @@
             [clojure.walk :as walk]
             [hashp.core]
             ;; [inferenceql.inference.search.crosscat :as crosscat]
+            [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.math :as math]
             [inferenceql.query.parser.tree :as tree]
@@ -58,11 +59,11 @@
     [:density-event-eq (variable :guard (tree/tag-pred :variable))    _= (scalar   :guard (tree/tag-pred :scalar-expr))] {(plan variable) (plan scalar)}
     [:density-event-eq (scalar   :guard (tree/tag-pred :scalar-expr)) _= (variable :guard (tree/tag-pred :variable))]    {(plan variable) (plan scalar)}
 
-    [:probability-expr _probability          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
-    [:density-expr     _probability _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
+    [:probability-expr _prob          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
+    [:density-expr     _prob _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
 
-    [:mutual-information-expr _mutual _information _of var-lhs _with var-rhs _under model] `(~'iql/mutual-info ~(plan model) ~(vec (plan var-lhs)) ~(vec (plan var-rhs)))
-    [:variable-list & variables] (map plan variables)
+    [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
+    [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
 
     [:model-expr child] (plan child)
     [:model-expr "(" child ")"] (plan child)
@@ -73,6 +74,7 @@
     [:value [_ child]] (edn/read-string child)
 
     [:variable _var child] (keyword (plan child))
+    [:variable-list & variables] (map plan variables)
 
     [:simple-symbol s] (symbol s)))
 
@@ -113,8 +115,12 @@
                       :variable? symbol?}))))
 
 (defn mutual-info
+  [model event-a event-b]
+  (gpm/mutual-info model event-a event-b))
+
+(defn approx-mutual-info
   [model vars-lhs vars-rhs]
-  (gpm/mutual-information model vars-lhs vars-rhs {} 1000))
+  (approx/mutual-info model vars-lhs vars-rhs {} 1000))
 
 #_
 (defn incorporate
@@ -179,6 +185,7 @@
          'condition condition
          'constrain constrain
          'mutual-info mutual-info
+         'approx-mutual-info approx-mutual-info
          ;; 'incorporate incorporate
          }})
 

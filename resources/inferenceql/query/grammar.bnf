@@ -83,7 +83,7 @@ scalar-expr ::= scalar-expr-0
 <scalar-expr-4> ::= scalar-expr-5 | expr-binop
 <scalar-expr-5> ::= scalar-expr-6 | expr-addition | expr-subtraction
 <scalar-expr-6> ::= scalar-expr-7 | expr-multiplication | expr-division
-<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr | mutual-information-expr
+<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr | mutual-info-expr | approx-mutual-info-expr
 
 expr-disjunction ::= scalar-expr-2 (ws #'(?i)OR'  ws scalar-expr-2)+
 expr-conjunction ::= scalar-expr-3 (ws #'(?i)AND' ws scalar-expr-3)+
@@ -195,7 +195,12 @@ variable ::= #'(?i)VAR' ws simple-symbol
 
 (* mutual-information-expr *)
 
-mutual-information-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
+mutual-info-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
+                     ws #'(?i)OF' ws distribution-event
+                     ws #'(?i)WITH' ws distribution-event
+                     ws #'(?i)UNDER' ws model-expr
+
+approx-mutual-info-expr ::= #'(?i)APPROXIMATE' ws #'(?i)MUTUAL' ws #'(?i)INFORMATION'
                             ws #'(?i)OF' ws variable-list
                             ws #'(?i)WITH' ws variable-list
                             ws #'(?i)UNDER' ws model-expr
