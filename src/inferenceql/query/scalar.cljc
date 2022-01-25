@@ -116,7 +116,9 @@
 
 (defn mutual-info
   [model event-a event-b]
-  (gpm/mutual-info model event-a event-b))
+  (let [event-a (inference-event event-a)
+        event-b (inference-event event-b)]
+    (gpm/mutual-info model event-a event-b)))
 
 (defn approx-mutual-info
   [model vars-lhs vars-rhs]
