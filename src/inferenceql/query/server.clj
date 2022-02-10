@@ -18,14 +18,14 @@
 (defn- handler
   "Returns a Ring handler that executes queries against the provied data and
   models. Assumes that basic content negotiation has already taken place."
-  [tables models]
+  [db]
   (fn handler [request]
     (let [query (request-query request)]
       (if-not query
         {:status 400
          :body {:request request}}
         (try
-          (let [result (query/q query tables models)]
+          (let [result (query/q query db)]
             {:status 200
              :body {:result result
                     :metadata (meta result)}})
@@ -44,8 +44,8 @@
   text/plain, application/edn, application/json, application/transit+json,
   application/tarnsit+msgpack. For all but the first content type the query is
   expected to be provided as a string."
-  [tables models]
-  (-> (handler tables models)
+  [db]
+  (-> (handler db)
       (cors/wrap-cors :access-control-allow-origin (constantly true)
                       :access-control-allow-methods [:post])
       (middleware/wrap-format)))

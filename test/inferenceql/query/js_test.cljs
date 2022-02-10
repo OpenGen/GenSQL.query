@@ -2,22 +2,30 @@
   (:require [cljs-bean.core :as bean]
             [clojure.test :as test :refer [deftest is]]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.query.db :as db]
             [inferenceql.query.js :as query.js]))
 
+(defn db
+  [tables models]
+  (binding [*print-meta* true]
+    (as-> (db/empty) %
+      (reduce-kv db/with-table % tables)
+      (reduce-kv db/with-model % models)
+      (pr-str %))))
+
 (deftest select
-  (is (= [{:x 1} {:x 2}]
-         (bean/->clj (query.js/query "SELECT * FROM data WHERE x > 0;"
-                                     #js {:data #js [#js {:x 0}
-                                                     #js {:x 1}
-                                                     #js {:x 2}]}
-                                     #js {})))))
+  (let [db (db '{data [{x 0}
+                       {x 1}
+                       {x 2}]}
+               {})]
+    (is (= [{:x 1} {:x 2}]
+           (bean/->clj (query.js/query "SELECT * FROM data WHERE x > 0;" db))))))
 
 (deftest generate
   (let [model (gpm/Multimixture
                {:vars {:x :categorical}
                 :views [[{:probability 1
-                          :parameters {:x {"a" 1}}}]]})]
+                          :parameters {:x {"a" 1}}}]]})
+        db (db {} {'model model})]
     (is (= [{:x "a"}]
-           (bean/->clj (query.js/query "SELECT * FROM GENERATE * UNDER model LIMIT 1"
-                                       #js {:data #js []}
-                                       #js {:model model}))))))
+           (bean/->clj (query.js/query "SELECT * FROM GENERATE * UNDER model LIMIT 1" db))))))

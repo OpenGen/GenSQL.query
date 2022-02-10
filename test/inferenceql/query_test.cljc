@@ -10,14 +10,29 @@
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query :as query]
+            [inferenceql.query.relation :as relation]
+            [inferenceql.query.db :as db]
             [inferenceql.query.parser :as parser]
-            [inferenceql.query.parser.tree :as tree]))
+            [inferenceql.query.parser.tree :as tree]
+            [medley.core :as medley]))
 
 (defn q
   ([query data]
    (q query data {}))
   ([query data models]
-   (query/q query {:data data} models)))
+   (let [relation (fn [coll]
+                    (let [tuples (mapv #(medley/map-keys symbol %)
+                                       coll)]
+                      (if-let [columns (-> coll meta :iql/columns)]
+                        (relation/relation tuples :attrs (map symbol columns))
+                        (relation/relation tuples))))
+         models (medley/map-keys symbol models)
+         data (relation data)
+         db (-> (reduce-kv db/with-model
+                           (db/empty)
+                           models)
+                (db/with-table 'data data))]
+     (query/q query db))))
 
 (def simple-mmix
   {:vars {:x :categorical

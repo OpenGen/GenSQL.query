@@ -11,6 +11,7 @@
             [clojure.tools.cli :as cli]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query :as query]
+            [inferenceql.query.db :as db]
             [medley.core :as medley]))
 
 (def output-formats #{"csv" "table"})
@@ -31,6 +32,7 @@
     :default []
     :update-fn conj
     :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
+   ["-d" "--db PATH" "database path"]
    ["-e" "--eval STRING" "evaluate query in STRING"]
    ["-o" "--output FORMAT" "output format"
     :validate [output-formats (str "Must be one of: " (string/join ", " output-formats))]]
@@ -61,7 +63,7 @@
   [x]
   (let [^Table table (.csv (Table/read) (slurp x) "")
         columns (.columnNames table)
-        attrs (map keyword columns)
+        attrs (map symbol columns)
         row (Row. table)
         coll (loop [i 0
                     rows (transient [])]
@@ -114,21 +116,21 @@
 
 (defn eval
   "Evaluate a query and return the results."
-  [query tables models]
-  (try (query/q query tables models)
+  [query db]
+  (try (query/q query db)
        (catch Exception e
          e)))
 
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
-  [tables models & {:keys [print] :or {print print-table}}]
+  [db & {:keys [print] :or {print print-table}}]
   (let [repl-options [:prompt #(clojure.core/print "iql> ")
                       :read (fn [request-prompt request-exit]
                               (case (main/skip-whitespace *in*)
                                 :line-start request-prompt
                                 :stream-end request-exit
                                 (read-line)))
-                      :eval #(eval % tables models)
+                      :eval #(eval % db)
                       :print print]]
     (apply main/repl repl-options)))
 
@@ -144,7 +146,8 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {models :model, query :eval, tables :table, :keys [help output]} options
+        {models :model, query :eval, tables :table, :keys [db help output]} options
+
         print (case output
                 "table" print-table
                 "csv" print-csv
@@ -155,6 +158,7 @@
 
           (or help
               (and (empty? tables) ; reading from stdin
+                   (nil? db)
                    (nil? query)))
           (errorln summary)
 
@@ -162,15 +166,39 @@
           (let [models (->> (into {}
                                   (map parse-named-pair)
                                   models)
-                            (medley/map-keys keyword)
+                            (medley/map-keys symbol)
                             (medley/map-vals slurp-model))
                 tables (if-not (seq tables)
-                         {:data (slurp-csv *in*)}
+                         {'data (slurp-csv *in*)}
                          (->> (into {}
                                     (map parse-named-pair)
                                     tables)
-                              (medley/map-keys keyword)
-                              (medley/map-vals slurp-csv)))]
+                              (medley/map-keys symbol)
+                              (medley/map-vals slurp-csv)))
+                db (as-> (if db
+                           (db/slurp db)
+                           (db/empty))
+                       %
+                     (reduce-kv db/with-table % tables)
+                     (reduce-kv db/with-model % models))]
             (if query
-              (print (eval query tables models))
-              (repl tables models :print print))))))
+              (print (eval query db))
+              (repl db :print print))))))
+
+
+(comment
+
+
+  (let [data (main/slurp-csv "/Users/zane/Desktop/ignored.csv")
+        model (main/slurp-model "/Users/zane/Desktop/sample.0.edn")
+        db (-> (db/empty)
+               (db/with-table 'data data)
+               (db/with-model 'model model))]
+    #_
+    (parser/parse "select approximate mutual information of var Purpose with var Users under model from data limit 1;" )
+    (pprint/print-table
+     (query/q "select * from data limit 5" db))
+
+    )
+
+  ,)

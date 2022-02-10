@@ -1,11 +1,19 @@
 (ns inferenceql.query.js
-  (:require [cljs-bean.core :as bean]
-            [inferenceql.query :as query]))
+  (:require [clojure.edn :as edn]
+            [inferenceql.query :as query]
+            [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.gpm.multimixture :as mmix]))
+
+(defn read-db
+  [s]
+  (let [readers (assoc gpm/readers
+                       'inferenceql.inference.gpm.multimixture.Multimixture
+                       mmix/map->Multimixture)]
+    (edn/read-string {:readers readers} s)))
 
 (defn ^:export query
   "Like `inferenceql.query/q`, but accepts and returns JavaScript values."
-  [query tables models]
-  (let [tables (bean/->clj tables)
-        models (bean/bean models)]
-    (-> (query/q query tables models)
+  [query s]
+  (let [db (read-db s)]
+    (-> (query/q query db)
         (clj->js))))
