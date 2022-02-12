@@ -192,8 +192,9 @@
          }})
 
 (defn eval
-  [sexpr env & tuples]
-  (let [tuple-map (fn [tuple]
+  [sexpr env bindings & tuples]
+  (let [env (merge @env bindings)
+        tuple-map (fn [tuple]
                     (merge (zipmap (tuple/attributes tuple)
                                    (repeat nil))
                            (when-let [tuple-name (tuple/name tuple)]
@@ -203,7 +204,9 @@
                            env
                            (tuple/->map tuple)))
         attributes (into #{} (map tuple/attributes) tuples)
-        bindings (into env (map tuple-map) tuples)
+        bindings (into (merge env bindings)
+                       (map tuple-map)
+                       tuples)
         ;; FIXME write a function to produce this automatically
         ;; from `env`
         opts {:namespaces namespaces

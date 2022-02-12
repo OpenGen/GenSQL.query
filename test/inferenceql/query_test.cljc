@@ -387,9 +387,9 @@
 (deftest with-rebind
   (let [data []
         result (q "WITH (INSERT INTO data (x) VALUES (1)) AS data,
-                              (INSERT INTO data (x) VALUES (2)) AS data,
-                              (INSERT INTO data (x) VALUES (3)) AS data:
-                         SELECT * FROM data;"
+                        (INSERT INTO data (x) VALUES (2)) AS data,
+                        (INSERT INTO data (x) VALUES (3)) AS data:
+                     SELECT * FROM data;"
                   data)]
     (is (= [{:x 1}
             {:x 2}
@@ -463,6 +463,20 @@
     (is (= (map :prob result) [high-p high-p high-p high-p low-p low-p]))))
 
 ;;; Condition by
+
+(comment
+
+  (Math/exp (gpm/logpdf simple-model {:x "yes"} {:y "no"}))
+  (Math/exp (gpm/logpdf (gpm/condition simple-model {:y "no"}) {:x "yes"} {}))
+
+  (require '[inferenceql.query.plan :as plan])
+  (plan/plan (parser/parse "WITH model CONDITIONED BY VAR y = \"no\" AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data"))
+
+  (q "WITH model CONDITIONED BY VAR y = \"no\" AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data"
+     [{:x "yes"}]
+     {'model simple-model})
+
+  ,)
 
 (deftest conditioned-by
   (testing "generate"

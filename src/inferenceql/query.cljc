@@ -2,13 +2,10 @@
   "This file defines functions for parsing, transforming, and executing IQL-SQL
   queries."
   (:refer-clojure :exclude [eval])
-  (:require [clojure.spec.alpha :as s]
-            [hashp.core]
+  (:require [hashp.core]
             [inferenceql.query.db :as db]
             [inferenceql.query.parser :as parser]
-            [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.plan :as plan]
-            [inferenceql.query.plan.environment :as env]
             [inferenceql.query.relation :as relation]
             [instaparse.core :as insta]
             [medley.core :as medley]))
@@ -18,21 +15,6 @@
   ^:prviate
   'data)
 
-(s/def ::plan (s/keys :req [::plan/plan ::env/plan]))
-
-(defn query-plan
-  [node]
-  (case (tree/tag node)
-    :query (recur (tree/only-child-node node))
-    :relation-expr {::plan/plan (plan/plan node)}
-    :with-expr {::plan/plan (plan/plan (tree/get-node node :relation-expr))
-                ::env/plan (env/plan node)}))
-
-(defn eval
-  [plan env]
-  (let [env (env/eval (::env/plan plan) env)]
-    (plan/eval (::plan/plan plan) env)))
-
 (defn q
   "Returns the result of executing a query on a set of rows. A registry
   mapping model names to model values models can be provided as an optional
@@ -40,9 +22,9 @@
   [query db]
   (let [node-or-failure (parser/parse query)]
     (if-not (insta/failure? node-or-failure)
-      (let [plan (query-plan node-or-failure)
-            env (db/env db)
-            out-rel (eval plan env)
+      (let [plan (plan/plan node-or-failure)
+            env (atom (db/env db))
+            out-rel (plan/eval plan env {})
             kw-rel (map #(medley/map-keys keyword %)
                         out-rel)]
         (with-meta kw-rel
@@ -51,3 +33,8 @@
             ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
                     :instaparse/failure failure}]
         (throw (ex-info "Parsing failure" ex-map))))))
+
+
+(comment
+
+  ,)

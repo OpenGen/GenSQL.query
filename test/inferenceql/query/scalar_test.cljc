@@ -31,7 +31,7 @@
   ([s env & tuples]
    (let [plan (-> (parser/parse s :start :scalar-expr)
                   (scalar/plan))]
-     (apply scalar/eval plan env tuples))))
+     (apply scalar/eval plan (atom env) {} tuples))))
 
 (deftest symbols
   (testing "no tuples"

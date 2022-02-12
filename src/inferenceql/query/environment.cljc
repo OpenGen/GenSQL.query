@@ -4,8 +4,9 @@
 
 (defn get
   "Look up a symbol in the given environment."
-  [env sym]
-  (clojure.core/get env sym))
+  [env bindings sym]
+  (let [env (merge env bindings)]
+    (clojure.core/get env sym)))
 
 (defn env?
   "Returns `true` if `x` is an environment."

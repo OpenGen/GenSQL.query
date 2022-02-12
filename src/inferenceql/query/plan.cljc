@@ -77,7 +77,9 @@
 
 (defn plan?
   [x]
-  (s/valid? ::plan x))
+  ;; (s/valid? ::plan x)
+  (and (associative? x)
+       (contains? x ::type)))
 
 ;;; parse tree
 
@@ -185,6 +187,12 @@
    ::plan-1 op1
    ::plan-2 op2
    ::condition condition})
+
+(defn with
+  [bindings op]
+  {::type :inferenceql.query.plan.type/with
+   ::bindings bindings
+   ::plan op})
 
 (defn rename
   [op name]
@@ -492,64 +500,82 @@
                 (plan rel-node-2)
                 (scalar/plan scalar-expr))))
 
+(defmethod plan-impl :with-expr
+  [node]
+  (let [expr-plan (fn expr-plan [node]
+                    (case (tree/tag node)
+                      :relation-expr (plan node)
+                      :scalar-expr (scalar/plan node)
+                      :model-expr (scalar/plan node)
+                      (recur (first (tree/child-nodes node)))))
+        children (tree/child-nodes node)
+        binding-nodes (butlast children)
+        relation-node (last children)
+        plan (plan relation-node)]
+    (with (into []
+                (map (juxt tree/alias expr-plan))
+                binding-nodes)
+          plan)))
+
 ;;; eval
 
 (defmulti eval
   "Evaluates a relational query plan in the context of an environment. Returns a
   relation."
-  (fn [plan _env]
+  (fn eval-dispatch
+    [plan _env _bindings]
     (when (nil? plan)
       (throw (ex-info "Query plan is nil" {})))
     (::type plan)))
 
 (defmethod eval :inferenceql.query.plan.type/lookup
-  [plan env]
+  [plan env bindings]
   (let [{::env/keys [name]} plan
-        rel (env/get env name)]
+        rel (env/get @env bindings name)]
     (if (relation/relation? rel)
       (relation/assoc-name rel name)
       (relation/relation rel :name name))))
 
 (defmethod eval :inferenceql.query.plan.type/select
-  [plan env]
+  [plan env bindings]
   (let [{::keys [sexpr plan]} plan
-        rel (eval plan env)
-        pred #(scalar/eval sexpr env %)]
+        rel (eval plan env bindings)
+        pred #(scalar/eval sexpr env bindings %)]
     (relation/select rel pred)))
 
 (defmethod eval :inferenceql.query.plan.type/extended-project
-  [plan env]
+  [plan env bindings]
   (let [{::keys [terms plan]} plan
         f-attr-pairs (map (juxt (fn [{::keys [sexpr]}]
                                   (fn [tuple]
-                                    (scalar/eval sexpr env tuple)))
+                                    (scalar/eval sexpr env bindings tuple)))
                                 ::relation/attribute)
                           terms)
-        rel (eval plan env)]
+        rel (eval plan env bindings)]
     (relation/extended-project rel f-attr-pairs)))
 
 (defmethod eval :inferenceql.query.plan.type/limit
-  [plan env]
+  [plan env bindings]
   (let [{::keys [limit plan]} plan
-        rel (eval plan env)]
+        rel (eval plan env bindings)]
     (relation/limit rel limit)))
 
 (defmethod eval :inferenceql.query.plan.type/distinct
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan]} plan
-        rel (eval plan env)]
+        rel (eval plan env bindings)]
     (relation/distinct rel)))
 
 (defmethod eval :inferenceql.query.plan.type/sort
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan order] ::relation/keys [attribute]} plan
-        rel (eval plan env)]
+        rel (eval plan env bindings)]
     (relation/sort rel attribute order)))
 
 (defmethod eval :inferenceql.query.plan.type/generate
-  [plan env]
+  [plan env bindings]
   (let [{::keys [sexpr variables]} plan
-        model (scalar/eval sexpr env)
+        model (scalar/eval sexpr env bindings)
         variables (->> (if (= '* variables)
                          (gpm/variables model)
                          variables)
@@ -560,11 +586,11 @@
     (relation/relation samples :attrs attrs)))
 
 (defmethod eval :inferenceql.query.plan.type/insert
-  [plan env]
+  [plan env bindings]
   (let [plan-to (::plan plan)
         plan-from (::plan-from plan)
-        rel-to (eval plan-to env)
-        rel-from (eval plan-from env)
+        rel-to (eval plan-to env bindings)
+        rel-from (eval plan-from env bindings)
         attributes (relation/attributes rel-to)
         rel (into (vec rel-to) rel-from)]
     (relation/relation rel :attrs attributes)))
@@ -603,12 +629,12 @@
                     group))
 
 (defmethod eval :inferenceql.query.plan.type/group
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan groups aggregations]} plan
         grouping-f (if (seq groups)
                      #(select-keys (tuple/->map %) groups)
                      (constantly nil))
-        rel (eval plan env)
+        rel (eval plan env bindings)
         groups (relation/group-by rel grouping-f)
         attributes (map ::output-attr aggregations)]
     (relation/relation (map #(zipmap attributes %)
@@ -618,43 +644,43 @@
                        :attrs attributes)))
 
 (defn ^:private setting->f
-  [[attr sexpr] where-sexpr env]
+  [[attr sexpr] where-sexpr env bindings]
   (fn [tuple]
     (cond-> tuple
-      (scalar/eval where-sexpr env tuple)
-      (assoc attr (scalar/eval sexpr env tuple)))))
+      (scalar/eval where-sexpr env bindings tuple)
+      (assoc attr (scalar/eval sexpr env bindings tuple)))))
 
 (defmethod eval :inferenceql.query.plan.type/update
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan settings sexpr]} plan
         sexpr (or sexpr true)
-        rel (eval plan env)
-        f (reduce comp (map #(setting->f % sexpr env)
+        rel (eval plan env bindings)
+        f (reduce comp (map #(setting->f % sexpr env bindings)
                             settings))
         xf (map f)]
     (relation/transduce rel xf)))
 
 (defmethod eval :inferenceql.query.plan.type/alter
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan] ::relation/keys [attribute]} plan
-        rel (eval plan env)]
+        rel (eval plan env bindings)]
     (relation/add-attribute rel attribute)))
 
 (defmethod eval :inferenceql.query.plan.type/rename
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan] ::relation/keys [name]} plan
-        rel (eval plan env)]
+        rel (eval plan env bindings)]
     (relation/assoc-name rel name)))
 
 (defmethod eval :inferenceql.query.plan.type/value
-  [plan _]
+  [plan _env _bindings]
   (::relation/relation plan))
 
 (defmethod eval :inferenceql.query.plan.type/cross-join
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan-1 plan-2]} plan
-        rel-1 (eval plan-1 env)
-        rel-2 (eval plan-2 env)
+        rel-1 (eval plan-1 env bindings)
+        rel-2 (eval plan-2 env bindings)
         attrs (into []
                     (core/distinct)
                     (into (relation/attributes rel-1)
@@ -665,16 +691,64 @@
     (relation/relation tuples :attrs attrs)))
 
 (defmethod eval :inferenceql.query.plan.type/inner-join
-  [plan env]
+  [plan env bindings]
   (let [{::keys [plan-1 plan-2 condition]} plan
-        rel-1 (eval plan-1 env)
-        rel-2 (eval plan-2 env)
+        rel-1 (eval plan-1 env bindings)
+        rel-2 (eval plan-2 env bindings)
         attrs (into []
                     (core/distinct)
                     (into (relation/attributes rel-1)
                           (relation/attributes rel-2)))
-        tuples (sequence (comp (filter #(apply scalar/eval condition env %))
+        tuples (sequence (comp (filter #(apply scalar/eval condition env bindings %))
                                (map #(apply merge %)))
                          (combinatorics/cartesian-product (relation/tuples rel-1)
                                                           (relation/tuples rel-2)))]
     (relation/relation tuples :attrs attrs)))
+
+(defmethod eval :inferenceql.query.plan.type/with
+  [plan env bindings]
+  (let [{::keys [plan] binding-plans ::bindings} plan
+        bindings (loop [bindings bindings
+                        binding-plans binding-plans]
+                   (if-let [[attr plan] (first binding-plans)]
+                     (let [v (if (plan? plan)
+                               (eval plan env bindings)
+                               (scalar/eval plan env bindings))]
+                       (recur (assoc bindings attr v)
+                              (rest binding-plans)))
+                     bindings))]
+    (eval plan env bindings)))
+
+
+(comment
+  (require '[inferenceql.query.parser :as parser])
+
+  (let [plan (plan (parser/parse "with 1 as x: select y + x from data;"))]
+    (eval plan (atom {'data [{'y 1} {'y 2} {'y 3}]}) {}))
+
+
+  (do
+    (require '[clojure.pprint :as pprint])
+    (require '[inferenceql.query :as query])
+    (require '[inferenceql.query.db :as db])
+    (require '[inferenceql.query.main :as main])
+
+    (set! *print-length* 10)
+    (let [data (main/slurp-csv "/Users/zane/Desktop/ignored.csv")
+          model (main/slurp-model "/Users/zane/Desktop/sample.0.edn")
+          db (-> (db/empty)
+                 (db/with-table 'data data)
+                 (db/with-model 'model model))]
+      #_
+      (parser/parse "select approximate mutual information of var Purpose with var Users under model from data limit 1;" )
+      (pprint/print-table
+       (query/q "select * from data limit 5" db))
+
+      ))
+
+  (plan (parser/parse "WITH (INSERT INTO data (x) VALUES (1)) AS data,
+              (INSERT INTO data (x) VALUES (2)) AS data,
+              (INSERT INTO data (x) VALUES (3)) AS data:
+           SELECT * FROM data;"))
+
+  ,)

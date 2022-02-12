@@ -1,6 +1,6 @@
 (* Queries *)
 
-query ::= (relation-expr | with-expr) ';'?
+query ::= relation-expr ';'?
 
 relation-expr ::= '(' ws? relation-expr ws? ')'
                 | simple-symbol
@@ -12,6 +12,7 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | alter-expr
                 | join-expr
                 | rename-expr
+                | with-expr
 
 (* with-expr *)
 
