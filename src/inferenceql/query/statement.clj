@@ -4,7 +4,8 @@
             [inferenceql.query.literal :as literal]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
-            [inferenceql.query.plan :as plan]))
+            [inferenceql.query.plan :as plan]
+            [inferenceql.query.scalar :as scalar]))
 
 (defn statement-node?
   [node]
@@ -39,12 +40,20 @@
     [[:statement child]]
     (eval child)
 
-    [[:create-stmt _create _table sym-node _as expr]]
+    [[:create-table-stmt _create _table sym-node _as expr]]
     (let [sym (literal/read sym-node)
           plan (plan/plan expr)]
       (fn [db]
         (let [env (db/env db)
               out (plan/eval plan (atom env) {})]
+          (db/with-table db sym out))))
+
+    [[:create-model-stmt _create _model sym-node _as expr]]
+    (let [sym (literal/read sym-node)
+          plan (scalar/plan expr)]
+      (fn [db]
+        (let [env (db/env db)
+              out (scalar/eval plan (atom env) {})]
           (db/with-table db sym out))))
 
     [[:drop-stmt _drop _table sym-node]]

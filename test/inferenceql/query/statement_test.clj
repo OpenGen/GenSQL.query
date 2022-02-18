@@ -1,6 +1,8 @@
 (ns inferenceql.query.statement-test
   (:refer-clojure :exclude [alter eval update])
   (:require [clojure.test :refer [are deftest is]]
+            [inferenceql.inference.gpm.conditioned :as conditioned]
+            [inferenceql.inference.gpm.proto :as proto]
             ;; [inferenceql.query.db :as db]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.relation :as relation]
@@ -31,9 +33,25 @@
         db (f db)]
     (:iql/tables db)))
 
+(defn eval-models
+  [models stmt]
+  (let [db {:iql/models models}
+        f (statement/eval (parser/parse stmt))
+        db (f db)]
+    (:iql/models db)))
+
+
 (deftest create-table
   (are [before stmt after] (= after (eval before stmt))
     '{data [{x 0}]} "CREATE TABLE selected AS SELECT * FROM data!" '{data [{x 0}] selected [{x 0}]}))
+
+(deftest create-model
+  (let [model (reify proto/Condition
+                (condition [this conditions]
+                  (conditioned/condition this conditions)))
+        conditioned (conditioned/condition model {:x 3})]
+    (are [before stmt after] (= after (eval before stmt))
+      {'model model} "CREATE MODEL conditioned AS model CONDITIONED BY VAR x = 3!" {'model model 'conditioned conditioned})))
 
 (deftest drop-table
   (are [before stmt after] (= after (eval before stmt))

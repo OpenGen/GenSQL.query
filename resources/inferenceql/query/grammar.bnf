@@ -2,7 +2,8 @@
 
 query ::= relation-expr | (statement '!')
 
-statement ::= create-stmt
+statement ::= create-table-stmt
+            | create-model-stmt
             | drop-stmt
             | insert-stmt
             | update-stmt
@@ -23,7 +24,9 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
 
 (* delete *)
 
-create-stmt ::= #'(?i)CREATE' ws #'(?i)TABLE' ws simple-symbol ws #'(?i)AS' ws relation-expr
+create-table-stmt ::= #'(?i)CREATE' ws #'(?i)TABLE' ws simple-symbol ws #'(?i)AS' ws relation-expr
+
+create-model-stmt ::= #'(?i)CREATE' ws #'(?i)MODEL' ws simple-symbol ws #'(?i)AS' ws model-expr
 
 drop-stmt ::= #'(?i)DROP' ws #'(?i)TABLE' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
 
