@@ -1,12 +1,29 @@
 (ns inferenceql.query.environment
   (:refer-clojure :exclude [get])
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.core :as clojure]
+            [clojure.spec.alpha :as s]))
 
 (defn get
-  "Look up a symbol in the given environment."
+  "Look up a symbol in an environment."
   [env bindings sym]
   (let [env (merge env bindings)]
-    (clojure.core/get env sym)))
+    (clojure/get env sym)))
+
+(defn has?
+  "Returns true if a symbol exists in an environment."
+  [env bindings sym]
+  (let [env (merge env bindings)]
+    (contains? env sym)))
+
+(defn safe-get
+  "Look up a symbol in the given environment."
+  [env bindings sym]
+  (if (has? env bindings sym)
+    (get env bindings sym)
+    (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
+                    {:symbol sym
+                     :env env
+                     :bindings bindings}))))
 
 (defn env?
   "Returns `true` if `x` is an environment."

@@ -23,6 +23,7 @@
     [nil] nil
 
     [[:relation-expr child]] (read child)
+    [[:relation-expr child _semicolon]] (read child)
     [[:value-lists child]] (read child)
 
     [[:simple-symbol-list & children]]

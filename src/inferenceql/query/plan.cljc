@@ -200,6 +200,11 @@
    ::plan op
    ::relation/name name})
 
+(defn drop-table
+  [name]
+  {::type :inferenceql.query.plan.type/drop-table
+   ::relation/name name})
+
 (s/def ::output-attribute ::relation/attribute)
 (s/def ::input-attribute ::relation/attribute)
 (s/def ::aggregator ::env/sym)
@@ -246,6 +251,10 @@
   (get (meta plan) ::parser/node))
 
 (defmethod plan-impl :query
+  [node]
+  (plan-impl (tree/only-child-node node)))
+
+(defmethod plan-impl :statement
   [node]
   (plan-impl (tree/only-child-node node)))
 
@@ -517,6 +526,14 @@
                 binding-nodes)
           plan)))
 
+(defmethod plan-impl :drop-stmt
+  [node]
+  (let [sym-node (tree/match [node]
+                   [[:drop-stmt _drop _table sym-node]] sym-node
+                   [[:drop-stmt _drop _table _if _exists sym-node]] sym-node)
+        name (literal/read sym-node)]
+    (drop-table name)))
+
 ;;; eval
 
 (defmulti eval
@@ -531,7 +548,7 @@
 (defmethod eval :inferenceql.query.plan.type/lookup
   [plan env bindings]
   (let [{::env/keys [name]} plan
-        rel (env/get @env bindings name)]
+        rel (env/safe-get @env bindings name)]
     (if (relation/relation? rel)
       (relation/assoc-name rel name)
       (relation/relation rel :name name))))
@@ -719,6 +736,28 @@
                      bindings))]
     (eval plan env bindings)))
 
+(defmethod eval :inferenceql.query.plan.type/with
+  [plan env bindings]
+  (let [{::keys [plan] binding-plans ::bindings} plan
+        bindings (loop [bindings bindings
+                        binding-plans binding-plans]
+                   (if-let [[attr plan] (first binding-plans)]
+                     (let [v (if (plan? plan)
+                               (eval plan env bindings)
+                               (scalar/eval plan env bindings))]
+                       (recur (assoc bindings attr v)
+                              (rest binding-plans)))
+                     bindings))]
+    (eval plan env bindings)))
+
+(defmethod eval :inferenceql.query.plan.type/drop-table
+  [plan env bindings]
+  (let [{::relation/keys [name]} plan
+        rel (env/get @env bindings name)
+        count (count (relation/tuples rel))
+        result (relation/relation [{'dropped count}])]
+    (swap! env dissoc name)
+    result))
 
 (comment
   (require '[inferenceql.query.parser :as parser])
@@ -726,6 +765,13 @@
   (let [plan (plan (parser/parse "with 1 as x: select y + x from data;"))]
     (eval plan (atom {'data [{'y 1} {'y 2} {'y 3}]}) {}))
 
+  (require '[inferenceql.query.parser] :reload)
+
+  (plan (parser/parse "drop table data;"))
+  (def env (atom {'data '[{x 0} {x 1} {x 2}]}))
+  @env
+  (eval (plan (parser/parse "drop table data;")) env {})
+  @env
 
   (do
     (require '[clojure.pprint :as pprint])

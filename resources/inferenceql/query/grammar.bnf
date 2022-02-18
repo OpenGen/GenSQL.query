@@ -1,8 +1,14 @@
 (* Queries *)
 
-query ::= relation-expr ';'?
+query ::= relation-expr | (statement '!')
+
+statement ::= drop-stmt
+            | insert-stmt
+            | update-stmt
+            | alter-stmt
 
 relation-expr ::= '(' ws? relation-expr ws? ')'
+                | relation-expr ';'
                 | simple-symbol
                 | select-expr
                 | generate-expr
@@ -13,6 +19,18 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | join-expr
                 | rename-expr
                 | with-expr
+
+(* delete *)
+
+drop-stmt ::= #'(?i)DROP' ws #'(?i)TABLE' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
+
+insert-stmt ::= #'(?i)INSERT' ws #'(?i)INTO' ws simple-symbol ws relation-expr
+
+update-stmt ::= #'(?i)UPDATE' ws simple-symbol
+                ws #'(?i)SET' ws update-settings
+                (ws #'(?i)WHERE' ws scalar-expr)?
+
+alter-stmt ::= #'(?i)ALTER' ws simple-symbol ws #'(?i)ADD' ws simple-symbol
 
 (* with-expr *)
 

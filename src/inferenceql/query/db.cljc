@@ -13,6 +13,17 @@
   [x]
   (-> (clojure/slurp x) (edn/read-string)))
 
+(defn get-table
+  [db k]
+  (get-in db [:iql/tables k]))
+
+(defn safe-get-table
+  [db k]
+  (if-let [table (get-table db k)]
+    table
+    (throw (ex-info "Table does not exist"
+                    {:cognitect.anomalies/category :cognitect.anomalies/incorrect}))))
+
 (defn with-table
   [db k table]
   (let [sym (symbol (name k))]

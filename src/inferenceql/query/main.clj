@@ -12,6 +12,7 @@
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query :as query]
             [inferenceql.query.db :as db]
+            [inferenceql.query.relation :as relation]
             [medley.core :as medley]))
 
 (def output-formats #{"csv" "table"})
@@ -92,7 +93,7 @@
   [result]
   (if (instance? Exception result)
     (print-exception result)
-    (let [columns (:iql/columns (meta result))
+    (let [columns (relation/attributes result)
           header-row (map name columns)
           cells (for [row result]
                   (reduce-kv (fn [m k v]
@@ -114,24 +115,30 @@
           table (into [header-row] cells)]
       (csv/write-csv *out* table))))
 
-(defn eval
+(defn make-eval
   "Evaluate a query and return the results."
-  [query db]
-  (try (query/q query db)
-       (catch Exception e
-         e)))
+  [db]
+  (fn [query]
+    (try (let [{rel ::relation/relation new-db ::db/db} (query/query query @db)]
+           (when new-db (reset! db new-db))
+           rel)
+         (catch Exception e
+           e))))
 
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
   [db & {:keys [print] :or {print print-table}}]
-  (let [repl-options [:prompt #(clojure.core/print "iql> ")
+  (let [wrapped-print (fn [x]
+                        (when-not (nil? x)
+                          (print x)))
+        repl-options [:prompt #(clojure.core/print "iql> ")
                       :read (fn [request-prompt request-exit]
                               (case (main/skip-whitespace *in*)
                                 :line-start request-prompt
                                 :stream-end request-exit
                                 (read-line)))
-                      :eval #(eval % db)
-                      :print print]]
+                      :eval (make-eval (atom db))
+                      :print wrapped-print]]
     (apply main/repl repl-options)))
 
 (defn errorln
@@ -182,7 +189,8 @@
                      (reduce-kv db/with-table % tables)
                      (reduce-kv db/with-model % models))]
             (if query
-              (print (eval query db))
+              (let [eval (make-eval (atom db))]
+                (print (eval query)))
               (repl db :print print))))))
 
 
@@ -196,8 +204,8 @@
                (db/with-model 'model model))]
     #_
     (parser/parse "select approximate mutual information of var Purpose with var Users under model from data limit 1;" )
-    (pprint/print-table
-     (query/q "select * from data limit 5" db))
+    (-main "--table" "data=/Users/zane/Desktop/ignored.csv")
+    @last-error
 
     )
 
