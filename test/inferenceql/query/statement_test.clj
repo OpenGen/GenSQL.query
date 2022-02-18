@@ -20,9 +20,9 @@
     "UPDATE data SET x = 3!"
     "UPDATE data SET x = 3 WHERE y = 2!"))
 
-(deftest update-statement?
+(deftest create-statement?
   (are [s] (statement/statement-node? (parser/parse s))
-    "UPDATE data SET x = 3!"))
+    "CREATE TABLE selected AS SELECT * FROM data!"))
 
 (defn eval
   [tables stmt]
@@ -30,6 +30,10 @@
         f (statement/eval (parser/parse stmt))
         db (f db)]
     (:iql/tables db)))
+
+(deftest create-table
+  (are [before stmt after] (= after (eval before stmt))
+    '{data [{x 0}]} "CREATE TABLE selected AS SELECT * FROM data!" '{data [{x 0}] selected [{x 0}]}))
 
 (deftest drop-table
   (are [before stmt after] (= after (eval before stmt))

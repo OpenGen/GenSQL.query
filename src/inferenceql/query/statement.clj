@@ -39,6 +39,14 @@
     [[:statement child]]
     (eval child)
 
+    [[:create-stmt _create _table sym-node _as expr]]
+    (let [sym (literal/read sym-node)
+          plan (plan/plan expr)]
+      (fn [db]
+        (let [env (db/env db)
+              out (plan/eval plan (atom env) {})]
+          (db/with-table db sym out))))
+
     [[:drop-stmt _drop _table sym-node]]
     (let [sym (literal/read sym-node)]
       #(safe-drop-table % sym))
