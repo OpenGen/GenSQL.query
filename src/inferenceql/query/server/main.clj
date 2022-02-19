@@ -2,10 +2,10 @@
   "This file defines a `-main` function for starting the server defined in
   `inferenceql.query.server`."
   (:require [clojure.tools.cli :as cli]
-            [ring.adapter.jetty :as jetty]
-            [inferenceql.query.data :as data]
+            [inferenceql.query.db :as db]
             [inferenceql.query.main :as main]
-            [inferenceql.query.server :as server]))
+            [inferenceql.query.server :as server]
+            [ring.adapter.jetty :as jetty]))
 
 (def cli-options
   [["-d" "--data DATA" "data CSV path"]
@@ -27,8 +27,9 @@
 
           :else
           (let [model (main/model url)
-                row-coercer (data/row-coercer (get-in model [:model :vars]))
-                models {:model model}
-                data (mapv row-coercer (main/slurp-csv data))
-                app (server/app data models)]
+                data (main/slurp-csv data)
+                db (-> (db/empty)
+                       (db/with-table 'data data)
+                       (db/with-model 'model model))
+                app (server/app db)]
             (jetty/run-jetty app {:port 3000 :join? false})))))
