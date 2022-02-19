@@ -15,5 +15,8 @@
          test:readme {:doc "Run README test"
                       :task (clojure "-M:test:readme-test")}
 
+         lint {:doc "Run Clojure linters"
+               :task (shell "clj-kondo --lint src test")}
+
          repl {:doc "Launch the InferenceQL REPL"
                :task (apply shell "clj -M -m inferenceql.query.main" *command-line-args*)}}}
