@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [eval])
   (:require [inferenceql.query.db :as db]
             [inferenceql.query.literal :as literal]
-            [inferenceql.query.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.scalar :as scalar]))
