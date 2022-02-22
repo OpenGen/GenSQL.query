@@ -200,11 +200,6 @@
    ::plan op
    ::relation/name name})
 
-(defn drop-table
-  [name]
-  {::type :inferenceql.query.plan.type/drop-table
-   ::relation/name name})
-
 (s/def ::output-attribute ::relation/attribute)
 (s/def ::input-attribute ::relation/attribute)
 (s/def ::aggregator ::env/sym)
@@ -526,14 +521,6 @@
                 binding-nodes)
           plan)))
 
-(defmethod plan-impl :drop-stmt
-  [node]
-  (let [sym-node (tree/match [node]
-                   [[:drop-stmt _drop _table sym-node]] sym-node
-                   [[:drop-stmt _drop _table _if _exists sym-node]] sym-node)
-        name (literal/read sym-node)]
-    (drop-table name)))
-
 ;;; eval
 
 (defmulti eval
@@ -749,15 +736,6 @@
                               (rest binding-plans)))
                      bindings))]
     (eval plan env bindings)))
-
-(defmethod eval :inferenceql.query.plan.type/drop-table
-  [plan env bindings]
-  (let [{::relation/keys [name]} plan
-        rel (env/get @env bindings name)
-        count (count (relation/tuples rel))
-        result (relation/relation [{'dropped count}])]
-    (swap! env dissoc name)
-    result))
 
 (comment
   (require '[inferenceql.query.parser :as parser])
