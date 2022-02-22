@@ -1,6 +1,6 @@
 (* Queries *)
 
-query ::= relation-expr | (statement '!')
+query ::= relation-expr | (statement '!') | ('.' command)
 
 statement ::= create-table-stmt
             | create-model-stmt
@@ -22,6 +22,17 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | join-expr
                 | rename-expr
                 | with-expr
+
+(* commands *)
+
+command ::= quit-command
+          | import-command
+
+quit-command ::= 'quit'
+
+import-command ::= 'import' ws path ws simple-symbol
+
+path ::= #'[^\s]+'
 
 (* delete *)
 

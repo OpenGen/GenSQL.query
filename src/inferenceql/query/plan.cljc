@@ -18,6 +18,12 @@
             [medley.core :as medley]
             [net.cgrand.xforms :as xforms]))
 
+(defn relation-node?
+  [node]
+  (tree/match node
+    [:query [:relation-expr & _]] true
+    :else false))
+
 (defmulti plan-spec ::type)
 
 (s/def ::plan (s/multi-spec plan-spec ::type))
@@ -535,7 +541,7 @@
 (defmethod eval :inferenceql.query.plan.type/lookup
   [plan env bindings]
   (let [{::env/keys [name]} plan
-        rel (env/safe-get @env bindings name)]
+        rel (env/safe-get env bindings name)]
     (if (relation/relation? rel)
       (relation/assoc-name rel name)
       (relation/relation rel :name name))))
@@ -741,15 +747,13 @@
   (require '[inferenceql.query.parser :as parser])
 
   (let [plan (plan (parser/parse "with 1 as x: select y + x from data;"))]
-    (eval plan (atom {'data [{'y 1} {'y 2} {'y 3}]}) {}))
+    (eval plan {'data [{'y 1} {'y 2} {'y 3}]} {}))
 
   (require '[inferenceql.query.parser] :reload)
 
   (plan (parser/parse "drop table data;"))
   (def env (atom {'data '[{x 0} {x 1} {x 2}]}))
-  @env
   (eval (plan (parser/parse "drop table data;")) env {})
-  @env
 
   (do
     (require '[clojure.pprint :as pprint])

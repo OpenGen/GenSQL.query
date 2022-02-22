@@ -28,18 +28,15 @@
 
 (defn eval
   [tables stmt]
-  (let [db {:iql/tables tables}
-        f (statement/eval (parser/parse stmt))
-        db (f db)]
-    (:iql/tables db)))
+  (let [db (atom {:iql/tables tables})]
+    (statement/execute (parser/parse stmt) db)
+    (:iql/tables @db)))
 
 (defn eval-models
   [models stmt]
-  (let [db {:iql/models models}
-        f (statement/eval (parser/parse stmt))
-        db (f db)]
-    (:iql/models db)))
-
+  (let [db (atom {:iql/models models})]
+    (statement/execute (parser/parse stmt) db)
+    (:iql/models @db)))
 
 (deftest create-table
   (are [before stmt after] (= after (eval before stmt))

@@ -1,7 +1,5 @@
 (ns inferenceql.query.main
   (:refer-clojure :exclude [eval print])
-  (:import [tech.tablesaw.api Row]
-           [tech.tablesaw.api Table])
   (:require [clojure.core :as clojure]
             [clojure.data.csv :as csv]
             [clojure.main :as main]
@@ -9,9 +7,9 @@
             [clojure.repl :as repl]
             [clojure.string :as string]
             [clojure.tools.cli :as cli]
-            [inferenceql.inference.gpm :as gpm]
             [inferenceql.query :as query]
             [inferenceql.query.db :as db]
+            [inferenceql.query.io :as io]
             [inferenceql.query.relation :as relation]
             [medley.core :as medley]))
 
@@ -38,44 +36,6 @@
    ["-o" "--output FORMAT" "output format"
     :validate [output-formats (str "Must be one of: " (string/join ", " output-formats))]]
    ["-h" "--help"]])
-
-(defn slurp-model
-  "Opens a reader on x, reads its contents, parses its contents into EDN
-  specification, and from that specification creates a multimixture model. See
-  `clojure.java.io/reader` for a complete list of supported arguments."
-  [x]
-  (-> (slurp x) (gpm/read-string)))
-
-(defn model
-  "Attempts to coerce `x` into a model. `x` must either return a multimixture
-  specification when read with `clojure.java.io/reader` or be a valid
-  `inferenceql.inference.gpm/http` server. "
-  [x]
-  (try (slurp-model x)
-       (catch java.io.FileNotFoundException e
-         (if (re-find #"https?://" x)
-           (gpm/http x)
-           (throw e)))))
-
-(defn slurp-csv
-  "Opens a reader on x, reads its contents, parses its contents as a table, and
-  then converts that table into a relation. See `clojure.java.io/reader` for a
-  complete list of supported arguments."
-  [x]
-  (let [^Table table (.csv (Table/read) (slurp x) "")
-        columns (.columnNames table)
-        attrs (map symbol columns)
-        row (Row. table)
-        coll (loop [i 0
-                    rows (transient [])]
-               (if (>= i (.rowCount table))
-                 (persistent! rows)
-                 (do (.at row i)
-                     (let [row (zipmap attrs
-                                       (map #(.getObject row %)
-                                            columns))]
-                       (recur (inc i) (conj! rows row))))))]
-    (with-meta coll {:iql/columns attrs})))
 
 (defn print-exception
   [e]
@@ -116,12 +76,10 @@
       (csv/write-csv *out* table))))
 
 (defn make-eval
-  "Evaluate a query and return the results."
+  "Returns a function that evaluates queries in the context of a database."
   [db]
   (fn [query]
-    (try (let [{rel ::relation/relation new-db ::db/db} (query/query query @db)]
-           (when new-db (reset! db new-db))
-           rel)
+    (try (query/query query db)
          (catch Exception e
            e))))
 
@@ -174,14 +132,14 @@
                                   (map parse-named-pair)
                                   models)
                             (medley/map-keys symbol)
-                            (medley/map-vals slurp-model))
+                            (medley/map-vals io/slurp-model))
                 tables (if-not (seq tables)
-                         {'data (slurp-csv *in*)}
+                         {'data (io/slurp-csv *in*)}
                          (->> (into {}
                                     (map parse-named-pair)
                                     tables)
                               (medley/map-keys symbol)
-                              (medley/map-vals slurp-csv)))
+                              (medley/map-vals io/slurp-csv)))
                 db (as-> (if db
                            (db/slurp db)
                            (db/empty))
@@ -195,7 +153,6 @@
 
 
 (comment
-
 
   (let [data (main/slurp-csv "/Users/zane/Desktop/ignored.csv")
         model (main/slurp-model "/Users/zane/Desktop/sample.0.edn")

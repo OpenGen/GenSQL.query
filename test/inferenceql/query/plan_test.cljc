@@ -12,7 +12,7 @@
   (-> query
       (parser/parse)
       (plan/plan)
-      (plan/eval (atom env) {})))
+      (plan/eval env {})))
 
 (deftest values
   (are [query rel] (= rel (eval query {}))

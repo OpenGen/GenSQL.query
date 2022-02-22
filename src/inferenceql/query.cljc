@@ -3,7 +3,9 @@
   queries."
   (:refer-clojure :exclude [eval])
   (:require [hashp.core]
+            #?(:clj [inferenceql.query.command :as command])
             [inferenceql.query.db :as db]
+            [inferenceql.query.error :as error]
             [inferenceql.query.parser :as parser]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
@@ -17,24 +19,24 @@
   'data)
 
 (defn query
+  "Returns a relation or nil."
   [s db]
   (let [node-or-failure (parser/parse s)]
     (cond (insta/failure? node-or-failure)
-          (let [failure (insta/get-failure node-or-failure)
-                ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
-                        :instaparse/failure failure}]
-            (throw (ex-info "Parsing failure" ex-map)))
+          (throw (error/parse node-or-failure))
+
+          (plan/relation-node? node-or-failure)
+          (let [plan (plan/plan node-or-failure)
+                env (db/env @db)]
+            (plan/eval plan env {}))
 
           (statement/statement-node? node-or-failure)
-          (let [f (statement/eval node-or-failure)
-                new-db (f db)]
-            {::db/db new-db})
+          (do (statement/execute node-or-failure db)
+              nil)
 
-          :else
-          (let [plan (plan/plan node-or-failure)
-                env (atom (db/env db))
-                rel (plan/eval plan env {})]
-            {::relation/relation rel :iql/db db}))))
+          #?@(:clj [(command/command-node? node-or-failure)
+                    (do (command/execute node-or-failure db)
+                        nil)]))))
 
 (defn q
   "Returns the result of executing a query on a set of rows. A registry
@@ -42,8 +44,7 @@
   third argument."
   [s db]
   (let [keywordize-keys #(medley/map-keys keyword %)]
-    (when-let [rel (-> (query s db)
-                       (::relation/relation))]
+    (when-let [rel (query s (atom db))]
       (let [kw-rel (map keywordize-keys rel)
             kw-attrs (map keyword (relation/attributes rel))]
         (with-meta kw-rel

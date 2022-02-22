@@ -193,7 +193,7 @@
 
 (defn eval
   [sexpr env bindings & tuples]
-  (let [env (merge @env bindings)
+  (let [env (merge env bindings)
         tuple-map (fn [tuple]
                     (merge (zipmap (tuple/attributes tuple)
                                    (repeat nil))

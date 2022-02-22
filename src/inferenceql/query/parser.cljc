@@ -27,22 +27,7 @@
 
   (require '[inferenceql.query.parser] :reload)
 
-  (parse "mutual information of var x with var y under model" :start :mutual-information-expr)
-;; => [:mutual-information-expr
-;;     "mutual"
-;;     [:ws " "]
-;;     "information"
-;;     [:ws " "]
-;;     "of"
-;;     [:ws " "]
-;;     [:variable-list [:variable "var" [:ws " "] [:simple-symbol "x"]]]
-;;     [:ws " "]
-;;     "with"
-;;     [:ws " "]
-;;     [:variable-list [:variable "var" [:ws " "] [:simple-symbol "y"]]]
-;;     [:ws " "]
-;;     "under"
-;;     [:ws " "]
-;;     [:model-expr [:simple-symbol "model"]]]
+  (parse ".quit" :start :dot-command)
+  (parse ".import ~/Desktop/zane/ignored.csv ignored" :start :dot-command)
 
   ,)
