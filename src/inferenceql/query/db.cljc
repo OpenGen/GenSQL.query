@@ -2,16 +2,16 @@
   "This file defines functions for the creation, interrogation, and manipulation
   of InferenceQL databases."
   (:refer-clojure :exclude [empty slurp])
-  (:require [clojure.core :as clojure]
-            [clojure.edn :as edn]))
+  #?(:clj (:require [clojure.core :as clojure]
+                    [clojure.edn :as edn])))
+
+#?(:clj (defn slurp
+          [x]
+          (-> (clojure/slurp x) (edn/read-string))))
 
 (defn empty
   []
   {})
-
-(defn slurp
-  [x]
-  (-> (clojure/slurp x) (edn/read-string)))
 
 (defn get-table
   [db k]

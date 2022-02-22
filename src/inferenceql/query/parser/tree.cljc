@@ -1,10 +1,12 @@
 (ns inferenceql.query.parser.tree
   (:refer-clojure :exclude [alias remove])
   #?(:cljs (:require-macros [inferenceql.query.parser.tree]))
-  (:require [clojure.core :as clojure]
-            [clojure.core.match :as match]
+  (:require #?(:clj [clojure.core.match :as match]
+               :cljs [cljs.core.match :as match])
+            [clojure.core :as clojure]
             [clojure.string :as string]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [net.cgrand.macrovich :as macrovich]))
 
 (defn branch?
   "Returns true if `node` could have children (but may not)."
@@ -122,4 +124,6 @@
 
 (defmacro match
   [vars & clauses]
-  `(match/match (remove ~vars whitespace?) ~@clauses))
+  (let [match (macrovich/case :clj 'clojure.core.match/match
+                              :cljs 'cljs.core.match/match)]
+    `(~match (remove ~vars whitespace?) ~@clauses)))
