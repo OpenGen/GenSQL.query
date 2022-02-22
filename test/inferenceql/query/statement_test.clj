@@ -60,7 +60,16 @@
     '{} "DROP TABLE IF EXISTS data!" '{}))
 
 (deftest drop-table-error
-  (is (thrown? Exception (eval {} "DROP TABLE data!"))))
+  (is (thrown? Exception (eval-models {} "DROP TABLE data!"))))
+
+(deftest drop-model
+  (are [before stmt after] (= after (eval-models before stmt))
+    '{model []} "DROP MODEL model!" '{}
+    '{model []} "DROP MODEL IF EXISTS model!" '{}
+    '{} "DROP MODEL IF EXISTS model!" '{}))
+
+(deftest drop-model-error
+  (is (thrown? Exception (eval {} "DROP MODEL model!"))))
 
 (deftest insert-into
   (are [before stmt after] (= after (eval before stmt))

@@ -24,6 +24,17 @@
   (when (db/safe-get-table db sym)
     (update db :iql/tables dissoc sym)))
 
+(defn drop-model
+  [db sym]
+  (if-not (db/get-model db sym)
+    db
+    (update db :iql/models dissoc sym)))
+
+(defn safe-drop-model
+  [db sym]
+  (when (db/safe-get-model db sym)
+    (update db :iql/models dissoc sym)))
+
 (defn eval
   [node]
   (tree/match [node]
@@ -55,13 +66,21 @@
               out (scalar/eval plan (atom env) {})]
           (db/with-table db sym out))))
 
-    [[:drop-stmt _drop _table sym-node]]
+    [[:drop-table-stmt _drop _table sym-node]]
     (let [sym (literal/read sym-node)]
       #(safe-drop-table % sym))
 
-    [[:drop-stmt _drop _table _if _exists sym-node]]
+    [[:drop-table-stmt _drop _table _if _exists sym-node]]
     (let [sym (literal/read sym-node)]
       #(drop-table % sym))
+
+    [[:drop-model-stmt _drop _model sym-node]]
+    (let [sym (literal/read sym-node)]
+      #(safe-drop-model % sym))
+
+    [[:drop-model-stmt _drop _model _if _exists sym-node]]
+    (let [sym (literal/read sym-node)]
+      #(drop-model % sym))
 
     [[:insert-stmt insert into sym-node & rest]]
     (let [sym (literal/read sym-node)

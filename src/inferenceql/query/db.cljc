@@ -24,6 +24,17 @@
     (throw (ex-info "Table does not exist"
                     {:cognitect.anomalies/category :cognitect.anomalies/incorrect}))))
 
+(defn get-model
+  [db k]
+  (get-in db [:iql/models k]))
+
+(defn safe-get-model
+  [db k]
+  (if-let [model (get-model db k)]
+    model
+    (throw (ex-info "Model does not exist"
+                    {:cognitect.anomalies/category :cognitect.anomalies/incorrect}))))
+
 (defn with-table
   [db k table]
   (let [sym (symbol (name k))]

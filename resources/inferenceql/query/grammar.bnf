@@ -4,7 +4,8 @@ query ::= relation-expr | (statement '!')
 
 statement ::= create-table-stmt
             | create-model-stmt
-            | drop-stmt
+            | drop-table-stmt
+            | drop-model-stmt
             | insert-stmt
             | update-stmt
             | alter-stmt
@@ -28,7 +29,9 @@ create-table-stmt ::= #'(?i)CREATE' ws #'(?i)TABLE' ws simple-symbol ws #'(?i)AS
 
 create-model-stmt ::= #'(?i)CREATE' ws #'(?i)MODEL' ws simple-symbol ws #'(?i)AS' ws model-expr
 
-drop-stmt ::= #'(?i)DROP' ws #'(?i)TABLE' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
+drop-table-stmt ::= #'(?i)DROP' ws #'(?i)TABLE' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
+
+drop-model-stmt ::= #'(?i)DROP' ws #'(?i)MODEL' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
 
 insert-stmt ::= #'(?i)INSERT' ws #'(?i)INTO' ws simple-symbol ws relation-expr
 
