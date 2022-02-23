@@ -43,16 +43,17 @@
   mapping model names to model values models can be provided as an optional
   third argument."
   [s db]
-  (let [keywordize-keys #(medley/map-keys keyword %)]
-    (when-let [rel (query s (atom db))]
-      (let [kw-rel (map keywordize-keys rel)
-            kw-attrs (map keyword (relation/attributes rel))]
-        (with-meta kw-rel
-          {:iql/columns kw-attrs})))))
+  (when-let [rel (query s (atom db))]
+    (let [keywordize-keys #(medley/map-keys keyword %)
+          kw-rel (map keywordize-keys rel)
+          kw-attrs (map keyword (relation/attributes rel))]
+      (with-meta kw-rel
+        {:iql/columns kw-attrs}))))
 
 (comment
 
   (q "select * from data where x > 0;" '{:iql/tables {data [{:x 0} {x 1}]}})
   (q "drop table data!" '{:iql/tables {data [{:x 0} {x 1}]}})
+  (q ".export /Users/zane/Desktop/limited.csv data" '{:iql/tables {data [{x 0} {x 1}]}})
 
   ,)

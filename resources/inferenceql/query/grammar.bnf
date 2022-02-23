@@ -27,10 +27,13 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
 
 command ::= quit-command
           | import-command
+          | export-command
 
 quit-command ::= 'quit'
 
 import-command ::= 'import' ws path ws simple-symbol
+
+export-command ::= 'export' ws path ws simple-symbol
 
 path ::= #'[^\s]+'
 

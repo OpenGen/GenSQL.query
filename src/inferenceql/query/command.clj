@@ -27,9 +27,17 @@
     [:import-command _import [:path path] sym-node]
     (let [sym (literal/read sym-node)
           table (io/slurp-csv (parser/unparse path))]
-      (swap! db db/with-table sym table))))
+      (swap! db db/with-table sym table))
+
+    [:export-command _import [:path path] sym-node]
+    (let [sym (literal/read sym-node)
+          table (db/safe-get-table @db sym)]
+      (def table table)
+      (io/spit-csv table path))))
 
 (comment
+
+  table
 
   (require '[inferenceql.query.parser] :reload)
 

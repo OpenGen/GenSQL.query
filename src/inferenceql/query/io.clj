@@ -1,8 +1,10 @@
 (ns inferenceql.query.io
   (:import [tech.tablesaw.api Row]
            [tech.tablesaw.api Table])
-  (:require [clojure.java.io :as io]
-            [inferenceql.inference.gpm :as gpm]))
+  (:require [clojure.data.csv :as csv]
+            [clojure.java.io :as io]
+            [inferenceql.inference.gpm :as gpm]
+            [inferenceql.query.relation :as relation]))
 
 (defmacro inline-file
   "Inlines the contents of the named resource as a string."
@@ -35,3 +37,18 @@
                                             columns))]
                        (recur (inc i) (conj! rows row))))))]
     (with-meta coll {:iql/columns attrs})))
+
+(defn spit-csv
+  "Attempts to write a collection to a location. x is coerced to a writer as per
+  `io/writer`."
+  [rel x]
+  (let [coll (relation/->vector rel)]
+    (with-open [writer (io/writer x)]
+      (csv/write-csv writer coll))))
+
+(comment
+
+  (let [rel (relation/relation '[{x 0 y 2} {x 1 y 1} {x 2 y 0}] :attrs '[x y])]
+    (spit-csv rel "/Users/zane/Desktop/test.csv"))
+
+  )
