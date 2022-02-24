@@ -121,31 +121,32 @@
           (doseq [error errors]
             (errorln error))
 
-          (or help
-              (and (empty? tables) ; reading from stdin
-                   (nil? db)
-                   (nil? query)))
+          help
           (errorln summary)
 
           :else
-          (let [models (->> (into {}
+          (let [swap-in (fn [s]
+                          (if (= "-" s)
+                            *in*
+                            s))
+                models (->> (into {}
                                   (map parse-named-pair)
                                   models)
                             (medley/map-keys symbol)
+                            (medley/map-vals swap-in)
                             (medley/map-vals io/slurp-model))
-                tables (if-not (seq tables)
-                         {'data (io/slurp-csv *in*)}
-                         (->> (into {}
-                                    (map parse-named-pair)
-                                    tables)
-                              (medley/map-keys symbol)
-                              (medley/map-vals io/slurp-csv)))
+                tables (->> (into {}
+                                  (map parse-named-pair)
+                                  tables)
+                            (medley/map-keys symbol)
+                            (medley/map-vals swap-in)
+                            (medley/map-vals io/slurp-csv))
                 db (as-> (if db
-                           (db/slurp db)
+                           (db/slurp (swap-in db))
                            (db/empty))
                        %
-                     (reduce-kv db/with-table % tables)
-                     (reduce-kv db/with-model % models))]
+                       (reduce-kv db/with-table % tables)
+                       (reduce-kv db/with-model % models))]
             (if query
               (let [eval (make-eval (atom db))]
                 (print (eval query)))
