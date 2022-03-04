@@ -32,7 +32,6 @@
     [:export-command _import [:path path] sym-node]
     (let [sym (literal/read sym-node)
           table (db/safe-get-table @db sym)]
-      (def table table)
       (io/spit-csv table path))))
 
 (comment

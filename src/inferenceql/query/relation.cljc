@@ -123,7 +123,7 @@
 
 (defn ->vector
   [rel]
-  (let [attrs (or (attributes rel))]
+  (let [attrs (attributes rel)]
     (into [attrs]
           (mapv (comp vec tuple/->vector)
                 (tuples rel)))))
