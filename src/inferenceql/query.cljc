@@ -49,11 +49,3 @@
           kw-attrs (map keyword (relation/attributes rel))]
       (with-meta kw-rel
         {:iql/columns kw-attrs}))))
-
-(comment
-
-  (q "select * from data where x > 0;" '{:iql/tables {data [{:x 0} {x 1}]}})
-  (q "drop table data!" '{:iql/tables {data [{:x 0} {x 1}]}})
-  (q ".export /Users/zane/Desktop/limited.csv data" '{:iql/tables {data [{x 0} {x 1}]}})
-
-  ,)

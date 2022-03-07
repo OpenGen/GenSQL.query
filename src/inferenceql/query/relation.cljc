@@ -131,9 +131,3 @@
 (s/def ::name symbol?)
 (s/def ::attribute symbol?)
 (s/def ::relation relation?)
-
-(comment
-
-  (->vector (relation '[{x 0 y 2} {x 1 y 1} {x 2 y 0}] :attrs '[x y]))
-
-  ,)

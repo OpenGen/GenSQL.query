@@ -102,15 +102,3 @@
           out (plan/eval plan env {})]
       (swap! db db/with-table sym out)))
   nil)
-
-(comment
-
-  (require '[inferenceql.query.parser :as parser] :reload)
-
-  (statement-node? (parser/parse "drop table data"))
-  (statement-node? (parser/parse "drop table data!"))
-
-  (parser/parse "drop table data")
-  (parser/parse "insert into data (x) values (0)!")
-
-  ,)

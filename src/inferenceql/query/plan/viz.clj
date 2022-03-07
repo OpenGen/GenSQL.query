@@ -106,37 +106,3 @@
                         :edge->descriptor edge->descriptor
                         ;; :node->cluster node->cluster
                         :options {:dpi 100})))
-
-(comment
-
- (viz "select * from data")
-
- (viz
-  "SELECT Period_minutes, Class_of_Orbit, Perigee_km, Apogee_km
-   FROM data
-   WHERE
-       (PROBABILITY OF
-         VAR Period_minutes > (Period_minutes - std_period) AND
-         VAR Period_minutes < (Period_minutes + std_period)
-           UNDER default_model)
-       <
-       (PROBABILITY OF
-           VAR Period_minutes > (Period_minutes - std_period) AND
-           VAR Period_minutes < (Period_minutes + std_period)
-             UNDER default_model CONDITIONED BY VAR Apogee_km = Apogee_km AND VAR Perigee_km = Perigee_km)")
-
- (plan/plan (parser/parse "select x from data"))
-
- (children '{:inferenceql.query.plan/type
-             :inferenceql.query.plan.type/lookup,
-             :inferenceql.query.environment/name data})
-
-
- (viz "SELECT Perigee_km AS Perigee_km_generated,
-         Apogee_km AS Apogee_km_generated
-  FROM GENERATE VAR Perigee_km, VAR Apogee_km
-   UNDER default_model CONSTRAINED BY VAR Period_minutes < 1000")
-
- (viz "GENERATE VAR Perigee_km, VAR Apogee_km UNDER model")
-
- ,)

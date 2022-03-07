@@ -45,10 +45,3 @@
   (let [coll (relation/->vector rel)]
     (with-open [writer (io/writer x)]
       (csv/write-csv writer coll))))
-
-(comment
-
-  (let [rel (relation/relation '[{x 0 y 2} {x 1 y 1} {x 2 y 0}] :attrs '[x y])]
-    (spit-csv rel "/Users/zane/Desktop/test.csv"))
-
-  )

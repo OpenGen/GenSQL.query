@@ -50,17 +50,3 @@
           ms (map #(zipmap attrs %)
                   (read vals))]
       (relation/relation ms :attrs attrs))))
-
-(comment
-
- (require '[inferenceql.query.parser :as parser] :reload)
-
- (-> (parser/parse "... 6: (3), 7: (8) ..." :start :value-lists)
-     (tree/only-child-node)
-     (tree/child-nodes))
-
- (read (parser/parse "(3, 4, 5)" :start :value-list))
- (read (parser/parse "... 0: (3), 8: (7) ..." :start :value-lists))
- (read (parser/parse "(x) VALUES ... 10: (3), 20: (4) ..." :start :relation-value))
-
- ,)

@@ -151,20 +151,3 @@
               (let [eval (make-eval (atom db))]
                 (print (eval query)))
               (repl db :print print))))))
-
-
-(comment
-
-  (let [data (main/slurp-csv "/Users/zane/Desktop/ignored.csv")
-        model (main/slurp-model "/Users/zane/Desktop/sample.0.edn")
-        db (-> (db/empty)
-               (db/with-table 'data data)
-               (db/with-model 'model model))]
-    #_
-    (parser/parse "select approximate mutual information of var Purpose with var Users under model from data limit 1;" )
-    (-main "--table" "data=/Users/zane/Desktop/ignored.csv")
-    @last-error
-
-    )
-
-  ,)

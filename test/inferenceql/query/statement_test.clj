@@ -90,11 +90,3 @@
                              (= after (relation/attributes out-rel)))
     '[] "ALTER data ADD x!" '[x]
     '[x] "ALTER data ADD y!" '[x y]))
-
-
-(comment
-
-  (parser/parse "UPDATE data SET x = 3!")
-  (parser/parse "ALTER data ADD y!")
-
-  ,)

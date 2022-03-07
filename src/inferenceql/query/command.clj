@@ -33,16 +33,3 @@
     (let [sym (literal/read sym-node)
           table (db/safe-get-table @db sym)]
       (io/spit-csv table path))))
-
-(comment
-
-  table
-
-  (require '[inferenceql.query.parser] :reload)
-
-  (execute (parser/parse))
-
-  (parser/parse ".quit")
-  (parser/parse ".import ~/Desktop/zane/ignored.csv ignored")
-
-  ,)

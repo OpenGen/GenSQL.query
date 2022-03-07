@@ -22,12 +22,3 @@
   "Returns a string that when parsed by `parse` will yield the provided parse tree."
   [node]
   (insta/transform unparse-transformations node))
-
-(comment
-
-  (require '[inferenceql.query.parser] :reload)
-
-  (parse ".quit" :start :dot-command)
-  (parse ".import ~/Desktop/zane/ignored.csv ignored" :start :dot-command)
-
-  ,)
