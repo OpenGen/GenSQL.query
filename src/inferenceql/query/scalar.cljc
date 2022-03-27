@@ -109,7 +109,7 @@
     (cond-> model
       (empty? (filter nil? (tree-seq seqable? seq event)))
       (gpm/constrain event
-                     {:operation? list?
+                     {:operation? seq?
                       :operands rest
                       :operator first
                       :variable? symbol?}))))
