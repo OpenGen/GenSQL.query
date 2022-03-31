@@ -13,7 +13,7 @@
         org.clojure/spec.alpha {:mvn/version "0.3.218"}
         org.clojure/tools.cli {:mvn/version "1.0.206"}
         org.slf4j/slf4j-nop {:mvn/version "1.7.32"} ; needed so tablesaw doesn't log
-        probcomp/inferenceql.inference {:git/url "git@github.com:probcomp/inferenceql.inference.git" :git/sha "6938e350673f93bc8383975d92e305ff6872cf61"}
+        probcomp/inferenceql.inference {:git/url "https://github.com/OpenIQL/inferenceql.inference.git" :git/sha "6938e350673f93bc8383975d92e305ff6872cf61"}
         probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git" :git/sha "8dc9d09f747c1e29886bb9628a0110c6f6bc6f5a"}
         rhizome/rhizome {:mvn/version "0.2.9"}
         ring-cors/ring-cors {:mvn/version "0.1.13"}
