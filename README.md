@@ -1,6 +1,6 @@
 # inferenceql.query
-![tests](https://github.com/probcomp/inferenceql.query/workflows/tests/badge.svg)
-![linter](https://github.com/probcomp/inferenceql.query/workflows/linter/badge.svg)
+![tests](https://github.com/OpenIQL/inferenceql.query/workflows/tests/badge.svg)
+![linter](https://github.com/OpenIQL/inferenceql.query/workflows/linter/badge.svg)
 
 ## Usage
 
