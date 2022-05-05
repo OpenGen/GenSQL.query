@@ -2,3 +2,5 @@ name: query
 version: main
 title: Query
 display_version: main
+nav:
+- modules/ROOT/nav.adoc

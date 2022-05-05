@@ -1,0 +1,2 @@
+.InferenceQL
+* xref:index.adoc[]
