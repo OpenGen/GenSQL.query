@@ -1,0 +1,38 @@
+include::partial$base/scalar-expressions/preamble.adoc[]
+
+include::partial$base/scalar-expressions/precedence.adoc[]
+
+include::partial$base/scalar-expressions/disjunction.adoc[]
+
+include::partial$base/scalar-expressions/conjunction.adoc[]
+
+include::partial$base/scalar-expressions/negation.adoc[]
+
+include::partial$base/scalar-expressions/relational-operators.adoc[]
+
+include::partial$base/scalar-expressions/arithmetic.adoc[]
+
+=== `+PROBABILITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
+----
+====
+
+=== `+PROBABILITY DENSITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY DENSITY OF VAR Apogee_km < 1000
+UNDER model CONDITIONED BY VAR Users = "Military"
+----
+====
+
+=== `+MUTUAL INFORMATION OF+`
+
+=== `+APPROXIMATE MUTUAL INFORMATION OF+`

@@ -1,0 +1,33 @@
+== Commands
+
+TIP: All commands begin with the `+.+` character.
+
+=== `+.quit+`
+
+The `+.quit+` command exits the interpreter.
+
+=== `+.import+`
+
+The `+.import+` command creates a table from a `+.csv+` file.
+
+.Import a table from a `+.csv+` file
+[example]
+====
+[source,iql]
+----
+.import /path/to/satellites.csv satellites
+----
+====
+
+=== `+.export+`
+
+The `+.export+` command writes a table to disk as a `+.csv+` file.
+
+.Export a table to a `+.csv+` file
+[example]
+====
+[source,iql]
+----
+.export /path/to/satellites.csv satellites
+----
+====

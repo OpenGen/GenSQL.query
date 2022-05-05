@@ -1,0 +1,15 @@
+include::partial$base/statements/preamble.adoc[]
+
+include::partial$base/statements/create-table.adoc[]
+
+include::partial$permissive/statements/create-model.adoc[]
+
+include::partial$base/statements/drop-table.adoc[]
+
+include::partial$base/statements/drop-model.adoc[]
+
+include::partial$base/statements/insert-into.adoc[]
+
+include::partial$base/statements/update.adoc[]
+
+include::partial$base/statements/alter.adoc[]

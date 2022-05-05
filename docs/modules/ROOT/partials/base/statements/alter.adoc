@@ -1,0 +1,12 @@
+=== `+ALTER+`
+
+The `+ALTER+` command adds new columns to a table in the database.
+
+.Add a column to the `+satellites+` table
+[example]
+====
+[source,iql]
+----
+ALTER satellites ADD Swath!
+----
+====

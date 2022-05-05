@@ -1,0 +1,12 @@
+=== `+ALTER+`
+
+The `+ALTER+` expression evaluates to the a copy of a table with a new empty column added.
+
+.Retrieve the `+satellites+` table with a new column added
+[example]
+====
+[source,iql]
+----
+ALTER satellites ADD Swath
+----
+====

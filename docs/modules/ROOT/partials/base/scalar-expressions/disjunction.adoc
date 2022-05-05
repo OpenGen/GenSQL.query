@@ -1,0 +1,3 @@
+=== Disjunction
+
+Disjunction expressions combine two scalar expressions. A disjunction expression is `+true+` if either of the scalar expressions it is combining are `+true+`. Otherwise it is `+false+`.

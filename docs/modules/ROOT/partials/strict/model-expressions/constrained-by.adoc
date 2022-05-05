@@ -1,0 +1,12 @@
+=== `+CONSTRAINED BY+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  PROBABILITY OF VAR Users = "Military"
+  UNDER model CONSTRAINED BY VAR Apogee_km < 1000
+FROM satellites_model
+----
+====

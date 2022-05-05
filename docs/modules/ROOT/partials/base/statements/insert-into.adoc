@@ -1,0 +1,15 @@
+=== `+INSERT INTO+`
+
+The `+INSERT INTO+` statement inserts a table into a table.
+
+.Insert two rows into the `+satellites+` table
+[example]
+====
+[source,iql]
+----
+INSERT INTO satellites
+(Users, Apogee_km, Perigee_km) VALUES
+  ("Military", 36012, 35559),
+  ("Civil", 786, 769)!
+----
+====

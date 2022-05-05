@@ -1,0 +1,15 @@
+=== `+CREATE TABLE+`
+
+The `+CREATE TABLE+` statement assigns a name to a table so it can be referenced in subsequent queries.
+
+.Assign a name to a <<VALUES,table literal>>
+[example]
+====
+[source,iql]
+----
+CREATE TABLE launch_sites AS
+(Launch_Site, State) VALUES
+  ("Cape Canaveral", "Florida"),
+  ("Kennedy Space Center", "Florida")!
+----
+====

@@ -1,0 +1,13 @@
+include::partial$base/table-expressions/preamble.adoc[]
+
+include::partial$permissive/table-expressions/generate.adoc[]
+
+include::partial$base/table-expressions/insert.adoc[]
+
+include::partial$base/table-expressions/update.adoc[]
+
+include::partial$base/table-expressions/alter.adoc[]
+
+include::partial$base/table-expressions/renaming.adoc[]
+
+include::partial$permissive/table-expressions/with.adoc[]

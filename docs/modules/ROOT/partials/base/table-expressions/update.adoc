@@ -1,0 +1,14 @@
+=== `+UPDATE+`
+
+The `+UPDATE+` expression evaluates to the a copy of a table with a set of changes applied.
+
+.Retrieve the `+satellites+` table with a launch site renamed
+[example]
+====
+[source,iql]
+----
+UPDATE satellites
+SET Launch_Site = "Majestic Cape Canaveral"
+WHERE Launch_Site = "Cape Canaveral"
+----
+====

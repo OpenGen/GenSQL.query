@@ -1,0 +1,12 @@
+=== `+CONDITIONED BY+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  PROBABILITY DENSITY OF VAR Apogee_km < 1000
+  UNDER model CONDITIONED BY VAR Users = "Military"
+FROM satellites_model
+----
+====

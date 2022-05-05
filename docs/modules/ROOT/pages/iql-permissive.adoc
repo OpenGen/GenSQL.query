@@ -1,0 +1,11 @@
+= IQL-permissive
+
+include::partial$base/commands.adoc[]
+
+include::partial$permissive/statements.adoc[]
+
+include::partial$permissive/table-expressions.adoc[]
+
+include::partial$permissive/model-expressions.adoc[]
+
+include::partial$permissive/scalar-expressions.adoc[]

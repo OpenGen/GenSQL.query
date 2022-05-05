@@ -1,0 +1,3 @@
+== Scalar expressions
+
+Scalar expressions evaluate to scalar values. A scalar value refers to a single value. The values of cells in tables are scalar values. The expressions that follow the `+SELECT+` keyword are scalar expressions.

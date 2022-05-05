@@ -1,0 +1,11 @@
+=== `+DROP MODEL+`
+
+The `+DROP MODEL+` statement removes a model from the database.
+
+[example]
+====
+[source,iql]
+----
+DROP MODEL model!
+----
+====

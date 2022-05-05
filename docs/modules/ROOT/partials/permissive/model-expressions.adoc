@@ -1,0 +1,3 @@
+include::partial$base/model-expressions/preamble.adoc[]
+
+include::partial$permissive/model-expressions/given.adoc[]

@@ -1,0 +1,6 @@
+name: query
+title: InferenceQL
+version: main
+display_version: main
+nav:
+- modules/ROOT/nav.adoc

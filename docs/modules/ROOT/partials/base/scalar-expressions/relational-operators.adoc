@@ -1,0 +1,11 @@
+=== Relational operators
+
+Relational operators compare two scalar expressions, evaluating to a boolean value. The following relational operators are supported:
+
+* `+>+`
+* `+>=+`
+* `+=+`
+* `+<=+`
+* `+<+`
+* `+IS+`
+* `+IS NOT+`
