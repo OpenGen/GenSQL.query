@@ -1,2 +1,2 @@
 .InferenceQL
-* xref:index.adoc[]
+* xref:index.adoc[I'm a navigation thingy]

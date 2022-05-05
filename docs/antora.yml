@@ -1,6 +1,6 @@
 name: query
-version: main
 title: Query
+version: main
 display_version: main
 nav:
 - modules/ROOT/nav.adoc
