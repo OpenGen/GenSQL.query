@@ -1,0 +1,3 @@
+=== Arithmetic
+
+Basic arithmetic like multiplication, subtraction, addition, and division can be used to combine scalar values.

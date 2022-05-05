@@ -1,0 +1,22 @@
+[#select,`+SELECT+` expression]
+=== `+SELECT+`
+
+The `+SELECT+` expression evaluates a <<Scalar expressions,scalar expression>> in the context of every row in a table.
+
+.Retrieving an entire table
+[example]
+====
+[source,iql]
+----
+SELECT * FROM satellites
+----
+====
+
+.Retrieve a subset of a table's columns
+[example]
+====
+[source,iql]
+----
+SELECT Users, Apogee_km, Perigee_km FROM satellites
+----
+====

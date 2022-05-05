@@ -1,0 +1,9 @@
+=== Precedence
+
+1. Parentheses, probability-of, density-of, mutual information, approximate mutual information
+2. Multiplication and division
+3. Addition and subtraction
+4. Relational operators
+5. Negation
+6. Conjunction
+7. Disjunction

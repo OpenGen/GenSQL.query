@@ -1,0 +1,66 @@
+== Scalar expressions
+
+Scalar expressions evaluate to scalar values. A scalar value refers to a single value. The values of cells in tables are scalar values. The expressions that follow the `+SELECT+` keyword are scalar expressions.
+
+=== Precedence
+
+1. Parentheses, probability-of, density-of, mutual information, approximate mutual information
+2. Multiplication and division
+3. Addition and subtraction
+4. Relational operators
+5. Negation
+6. Conjunction
+7. Disjunction
+
+=== Disjunction
+
+Disjunction expressions combine two scalar expressions. A disjunction expression is `+true+` if either of the scalar expressions it is combining are `+true+`. Otherwise it is `+false+`.
+
+=== Conjunction
+
+Conjunction expressions combine two scalar expressions. A conjunction expression is `+true+` if both of the scalar expressions it is combining are `+true+`. Otherwise it is `+false+`.
+
+=== Negation
+
+A negation expression is `+true+` if the scalar expression it is negating is `+false+`. Otherwise it is `+true+`.
+
+=== Relational operators
+
+Relational operators compare two scalar expressions, evaluating to a boolean value. The following relational operators are supported:
+
+* `+>+`
+* `+>=+`
+* `+=+`
+* `+<=+`
+* `+<+`
+* `+IS+`
+* `+IS NOT+`
+
+=== Arithmetic
+
+Basic arithmetic like multiplication, subtraction, addition, and division can be used to combine scalar values.
+
+=== `+PROBABILITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
+----
+====
+
+=== `+PROBABILITY DENSITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY DENSITY OF VAR Apogee_km < 1000
+UNDER model CONDITIONED BY VAR Users = "Military"
+----
+====
+
+=== `+MUTUAL INFORMATION OF+`
+
+=== `+APPROXIMATE MUTUAL INFORMATION OF+`

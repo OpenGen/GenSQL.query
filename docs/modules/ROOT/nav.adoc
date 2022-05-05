@@ -1,0 +1,3 @@
+* Languages
+** xref:iql-strict.adoc[IQL-strict]
+** xref:iql-permissive.adoc[IQL-permissive]

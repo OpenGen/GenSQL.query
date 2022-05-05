@@ -1,0 +1,20 @@
+=== `+GENERATE+`
+
+The `+GENERATE+` expression evaluates to a table of samples from a model.
+
+WARNING: The tables returned by `+GENERATE+` are infinite. A query comprised of a generate expression will run forever. In order to view the output if a `+GENERATE+` expression you should limit its output by wrapping it with a <<select expression,Select>> that includes a `+LIMIT+` clause.
+
+[example]
+====
+[source,iql]
+----
+SELECT *
+FROM
+  GENERATE
+    Users,
+    Apogee_km,
+    Perigee_km
+  UNDER model
+LIMIT 10
+----
+====

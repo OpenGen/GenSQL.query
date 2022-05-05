@@ -1,0 +1,5 @@
+== Table expressions
+
+Table expressions evaluate to tables.
+
+NOTE: Unlike SQL statements, table expressions are not terminated with the `+;+` character.

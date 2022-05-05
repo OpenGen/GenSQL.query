@@ -1,0 +1,14 @@
+=== Renaming
+
+Table expressions can be renamed with the `+AS+` keyword.
+
+[example]
+====
+[source,iql]
+----
+(Launch_Site, State) VALUES
+    ("Cape Canaveral", "Florida"),
+    ("Kennedy Space Center", "Florida")
+AS launch_sites
+----
+====

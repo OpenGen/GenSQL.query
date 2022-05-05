@@ -1,0 +1,7 @@
+== Statements
+
+TIP: All statements must be terminated by the `+!+` character. This differentiates them from <<Table expressions,table expressions>> many of which share the same syntax.
+
+Statements change the contents of the database.
+
+WARNING: Changes to the database made by statements are irreversible.

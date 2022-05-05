@@ -1,0 +1,14 @@
+=== `+UPDATE+`
+
+The `+UPDATE+` statement modifies the contents of a table in the database.
+
+.Rename a launch site
+[example]
+====
+[source,iql]
+----
+UPDATE satellites
+SET Launch_Site = "Majestic Cape Canaveral"
+WHERE Launch_Site = "Cape Canaveral"!
+----
+====

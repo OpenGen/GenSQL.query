@@ -1,0 +1,23 @@
+include::partial$base/scalar-expressions/preamble.adoc[]
+
+include::partial$base/scalar-expressions/precedence.adoc[]
+
+include::partial$base/scalar-expressions/disjunction.adoc[]
+
+include::partial$base/scalar-expressions/conjunction.adoc[]
+
+include::partial$base/scalar-expressions/negation.adoc[]
+
+include::partial$base/scalar-expressions/relational-operators.adoc[]
+
+include::partial$base/scalar-expressions/arithmetic.adoc[]
+
+=== `+PROBABILITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY OF Period_minutes UNDER satellites_model
+----
+====

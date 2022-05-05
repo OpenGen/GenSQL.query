@@ -1,0 +1,11 @@
+= IQL-strict
+
+include::partial$base/commands.adoc[]
+
+include::partial$strict/statements.adoc[]
+
+include::partial$strict/table-expressions.adoc[]
+
+include::partial$strict/model-expressions.adoc[]
+
+include::partial$strict/scalar-expressions.adoc[]

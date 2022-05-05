@@ -1,0 +1,12 @@
+=== `+GIVEN+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  PROBABILITY OF Period_minutes
+  UNDER satellites_model GIVEN Class_of_Orbit
+FROM satellites
+----
+====

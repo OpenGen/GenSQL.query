@@ -1,0 +1,3 @@
+=== Negation
+
+A negation expression is `+true+` if the scalar expression it is negating is `+false+`. Otherwise it is `+true+`.
