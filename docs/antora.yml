@@ -1,5 +1,5 @@
-name: query
-title: Query
+name: language
+title: InferenceQL
 version: main
 display_version: main
 nav:

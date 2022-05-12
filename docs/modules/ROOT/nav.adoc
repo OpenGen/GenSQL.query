@@ -1,2 +1,1 @@
-.InferenceQL
-* xref:index.adoc[I'm a navigation thingy]
+* xref:language.adoc[Language]
