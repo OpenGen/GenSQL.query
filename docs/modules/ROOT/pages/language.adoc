@@ -1,0 +1,396 @@
+= Query language
+Zane Shelby <zane@shelby.io>
+
+== Commands
+
+TIP: All commands begin with the `+.+` character.
+
+=== `+.quit+`
+
+The `+.quit+` command exits the interpreter.
+
+=== `+.import+`
+
+The `+.import+` command creates a table from a `+.csv+` file.
+
+.Import a table from a `+.csv+` file
+[example]
+====
+[source,iql]
+----
+.import /path/to/satellites.csv satellites
+----
+====
+
+=== `+.export+`
+
+The `+.export+` command writes a table to disk as a `+.csv+` file.
+
+.Export a table to a `+.csv+` file
+[example]
+====
+[source,iql]
+----
+.export /path/to/satellites.csv satellites
+----
+====
+
+== Statements
+
+TIP: All statements must be terminated by the `+!+` character. This differentiates them from <<Table expressions,table expressions>> many of which share the same syntax.
+
+Statements change the contents of the database.
+
+WARNING: Changes to the database made by statements are irreversible.
+
+=== `+CREATE TABLE+`
+
+The `+CREATE TABLE+` statement assigns a name to a table so it can be referenced in subsequent queries.
+
+.Assign a name to a <<VALUES,table literal>>
+[example]
+====
+[source,iql]
+----
+CREATE TABLE launch_sites AS
+(Launch_Site, State) VALUES
+  ("Cape Canaveral", "Florida"),
+  ("Kennedy Space Center", "Florida")!
+----
+====
+
+=== `+CREATE MODEL+`
+
+The `+CREATE MODEL+` statement assigns a name to a model so it can be referenced in subsequent queries.
+
+[example]
+====
+[source,iql]
+----
+CREATE MODEL military_model AS model CONDITIONED BY VAR Users = "Military"!
+----
+====
+
+=== `+DROP TABLE+`
+
+The `+DROP TABLE+` statement removes a table from the database.
+
+[example]
+====
+[source,iql]
+----
+DROP TABLE satellites!
+----
+====
+
+=== `+DROP MODEL+`
+
+The `+DROP MODEL+` statement removes a model from the database.
+
+[example]
+====
+[source,iql]
+----
+DROP MODEL model!
+----
+====
+
+=== `+INSERT INTO+`
+
+The `+INSERT INTO+` statement inserts a table into a table.
+
+.Insert two rows into the `+satellites+` table
+[example]
+====
+[source,iql]
+----
+INSERT INTO satellites
+(Users, Apogee_km, Perigee_km) VALUES
+  ("Military", 36012, 35559),
+  ("Civil", 786, 769)!
+----
+====
+
+=== `+UPDATE+`
+
+The `+UPDATE+` statement modifies the contents of a table in the database.
+
+.Rename a launch site
+[example]
+====
+[source,iql]
+----
+UPDATE satellites
+SET Launch_Site = "Majestic Cape Canaveral"
+WHERE Launch_Site = "Cape Canaveral"!
+----
+====
+
+=== `+ALTER+`
+
+The `+ALTER+` command adds new columns to a table in the database.
+
+.Add a column to the `+satellites+` table
+[example]
+====
+[source,iql]
+----
+ALTER satellites ADD Swath!
+----
+====
+
+== Table expressions
+
+Table expressions evaluate to tables.
+
+NOTE: Unlike SQL statements, table expressions are not terminated with the `+;+` character.
+
+[#select,`+SELECT+` expression]
+=== `+SELECT+`
+
+The `+SELECT+` expression evaluates a <<Scalar expressions,scalar expression>> in the context of every row in a table.
+
+.Retrieving an entire table
+[example]
+====
+[source,iql]
+----
+SELECT * FROM satellites
+----
+====
+
+.Retrieve a subset of a table's columns
+[example]
+====
+[source,iql]
+----
+SELECT Users, Apogee_km, Perigee_km FROM satellites
+----
+====
+
+=== Literal
+
+Tables can be expressed literally using the `+VALUES+` keyword.
+
+[example]
+====
+[source,iql]
+----
+(Users, Apogee_km, Perigee_km) VALUES
+  ("Military", 36012, 35559),
+  ("Civil", 786, 769)
+----
+====
+
+=== `+GENERATE+`
+
+The `+GENERATE+` expression evaluates to a table of samples from a model.
+
+WARNING: The tables returned by `+GENERATE+` are infinite. A query comprised of a generate expression will run forever. In order to view the output if a `+GENERATE+` expression you should limit its output by wrapping it with a <<select expression,Select>> that includes a `+LIMIT+` clause.
+
+[example]
+====
+[source,iql]
+----
+SELECT *
+FROM
+  GENERATE
+    VAR Users,
+    VAR Apogee_km,
+    VAR Perigee_km
+  UNDER model
+LIMIT 10
+----
+====
+
+=== `+INSERT+`
+
+The `+INSERT+` expression evaluates to a new table with additional values.
+
+.Retrieve the `+satellites+` table with two rows inserted
+[example]
+====
+[source,iql]
+----
+INSERT INTO satellites
+(Users, Apogee_km, Perigee_km) VALUES
+  ("Military", 36012, 35559),
+  ("Civil", 786, 769)
+----
+====
+
+=== `+UPDATE+`
+
+The `+UPDATE+` expression evaluates to the a copy of a table with a set of changes applied.
+
+.Retrieve the `+satellites+` table with a launch site renamed
+[example]
+====
+[source,iql]
+----
+UPDATE satellites
+SET Launch_Site = "Majestic Cape Canaveral"
+WHERE Launch_Site = "Cape Canaveral"
+----
+====
+
+=== `+ALTER+`
+
+The `+ALTER+` expression evaluates to the a copy of a table with a new empty column added.
+
+.Retrieve the `+satellites+` table with a new column added
+[example]
+====
+[source,iql]
+----
+ALTER satellites ADD Swath
+----
+====
+
+=== Joins
+
+Join expressions combine columns from two tables into a new table.
+
+==== `+CROSS JOIN+`
+
+[example]
+====
+[source,iql]
+----
+satellites CROSS JOIN launch_sites
+----
+====
+
+==== `+INNER JOIN+`
+
+[example]
+====
+[source,iql]
+----
+satellites INNER JOIN launch_sites
+ON satellites.Launch_Site = launch_sites.Launch_Site
+----
+====
+
+=== Renaming
+
+Table expressions can be renamed with the `+AS+` keyword.
+
+[example]
+====
+[source,iql]
+----
+(Launch_Site, State) VALUES
+    ("Cape Canaveral", "Florida"),
+    ("Kennedy Space Center", "Florida")
+AS launch_sites
+----
+====
+
+=== `+WITH+`
+
+The `+WITH+` keyword allows you to bind names to values for the lifetime of a query. This can be useful in situations where you want the same value to be used for every row in a table. One example is conditioning a model for use in a `+SELECT+` expression.
+
+[example]
+====
+[source,iql]
+----
+WITH (military_model AS model CONDITIONED BY VAR Users = "Military") AS military_model:
+  SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
+----
+====
+
+== Model expressions
+
+Model expressions evaluate to models.
+
+=== `+CONDITIONED BY+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  PROBABILITY DENSITY OF VAR Apogee_km < 1000
+  UNDER model CONDITIONED BY VAR Users = "Military"
+----
+====
+
+=== `+CONSTRAINED BY+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  PROBABILITY OF VAR Users = "Military"
+  UNDER model CONSTRAINED BY VAR Apogee_km < 1000
+----
+====
+
+== Scalar expressions
+
+Scalar expressions evaluate to scalar values. A scalar value refers to a single value. The values of cells in tables are scalar values. The expressions that follow the `+SELECT+` keyword are scalar expressions.
+
+=== Precedence
+
+1. Parentheses, probability-of, density-of, mutual information, approximate mutual information
+2. Multiplication and division
+3. Addition and subtraction
+4. Relational operators
+5. Negation
+6. Conjunction
+7. Disjunction
+
+=== Disjunction
+
+Disjunction expressions combine two scalar expressions. A disjunction expression is `+true+` if either of the scalar expressions it is combining are `+true+`. Otherwise it is `+false+`.
+
+=== Conjunction
+
+Conjunction expressions combine two scalar expressions. A conjunction expression is `+true+` if both of the scalar expressions it is combining are `+true+`. Otherwise it is `+false+`.
+
+=== Negation
+
+A negation expression is `+true+` if the scalar expression it is negating is `+false+`. Otherwise it is `+true+`.
+
+=== Relational operators
+
+Relational operators compare two scalar expressions, evaluating to a boolean value. The following relational operators are supported:
+
+* `+>+`
+* `+>=+`
+* `+=+`
+* `+<=+`
+* `+<+`
+* `+IS+`
+* `+IS NOT+`
+
+=== Arithmetic
+
+Basic arithmetic like multiplication, subtraction, addition, and division can be used to combine scalar values.
+
+=== `+PROBABILITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
+----
+====
+
+=== `+PROBABILITY DENSITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY DENSITY OF VAR Apogee_km < 1000
+UNDER model CONDITIONED BY VAR Users = "Military"
+----
+====
+
+=== `+MUTUAL INFORMATION OF+`
+
+=== `+APPROXIMATE MUTUAL INFORMATION OF+`
