@@ -235,6 +235,20 @@ incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model
 
 variable ::= #'(?i)VAR' ws simple-symbol
 
+(* given *)
+
+<given-event> ::= given-event-0
+
+<given-event-0> ::= given-event-1 | given-event-and
+<given-event-1> ::= given-event-2 | given-event-binop
+<given-event-2> ::= given-event-group
+
+given-event-and ::= given-event-1 ((ws #'(?i)AND' ws | ws? ',' ws?) given-event-1)+
+<given-event-binop> ::= density-event-eq / distribution-event-binop
+given-event-group ::= '(' ws? given-event ws? ')'
+
+given-expr ::= model-expr ws #'(?i)GIVEN' ws given-event
+
 (* mutual-information-expr *)
 
 mutual-info-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
@@ -252,6 +266,7 @@ variable-list ::= variable (ws? ',' ws? variable)*
 (* model-expr *)
 
 model-expr ::= '(' ws? model-expr ws? ')'
+             | given-expr
              | conditioned-by-expr
              | constrained-by-expr
              | simple-symbol
