@@ -7,6 +7,7 @@
             [inferenceql.query.db :as db]
             [inferenceql.query.error :as error]
             [inferenceql.query.parser :as parser]
+            [inferenceql.query.permissive :as permissive]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.statement :as statement]
@@ -26,7 +27,8 @@
           (throw (error/parse node-or-failure))
 
           (plan/relation-node? node-or-failure)
-          (let [plan (plan/plan node-or-failure)
+          (let [strict-node (permissive/->strict node-or-failure)
+                plan (plan/plan strict-node)
                 env (db/env @db)]
             (plan/eval plan env {}))
 
