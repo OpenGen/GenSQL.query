@@ -2,7 +2,7 @@
   (:require [inferenceql.query.db :as db]
             [inferenceql.query.io :as io]
             [inferenceql.query.literal :as literal]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]))
 
 (defn command-node?

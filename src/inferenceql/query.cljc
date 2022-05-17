@@ -6,7 +6,7 @@
             #?(:clj [inferenceql.query.command :as command])
             [inferenceql.query.db :as db]
             [inferenceql.query.error :as error]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.permissive.parser :as parser]
             [inferenceql.query.permissive :as permissive]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]

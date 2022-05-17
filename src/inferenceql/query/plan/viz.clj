@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [clojure.zip :as zip]
             [inferenceql.query.environment :as env]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.plan :as plan]
             [rhizome.viz :as rhizome]))
 

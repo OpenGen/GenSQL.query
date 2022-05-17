@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [alter count distinct eval])
   (:require [clojure.test :refer [are deftest is testing]]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]))

@@ -9,7 +9,7 @@
             [inferenceql.query.environment :as env]
             [inferenceql.query.literal :as literal]
             [inferenceql.query.model :as model]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]

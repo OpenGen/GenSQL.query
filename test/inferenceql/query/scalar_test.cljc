@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [eval])
   (:require [clojure.test :refer [are deftest is testing]]
             [inferenceql.inference.gpm.proto :as gpm.proto]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.tuple :as tuple]))
 

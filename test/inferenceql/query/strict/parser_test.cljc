@@ -1,6 +1,6 @@
-(ns inferenceql.query.parser-test
+(ns inferenceql.query.strict.parser-test
   (:require [clojure.test :refer [are deftest testing]]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [instaparse.core :as insta]))
 
 (deftest parse
@@ -34,22 +34,3 @@
   (testing "invalid"
     (are [s] (insta/failure? (parser/parse s :start :simple-symbol))
       "0a")))
-
-(deftest permissive-valid
-  (are [s] (not (insta/failure? (parser/parse s :start :given-expr)))
-    "model GIVEN VAR x = 0"
-    "model GIVEN VAR x = y"
-    "model GIVEN VAR x > 0"
-    "model GIVEN VAR x > y"
-    "model GIVEN VAR x = 0 AND VAR y = 0"
-    "model GIVEN VAR x = 0 AND VAR y > 0"
-    "model GIVEN VAR x > 0 AND VAR y = 0"
-    "model GIVEN VAR x = 0, VAR y = 0"
-    "model GIVEN VAR x = 0, VAR y > 0"
-    "model GIVEN VAR x > 0, VAR y = 0"))
-
-(deftest permissive-invalid
-  (are [s] (insta/failure? (parser/parse s :start :given-expr))
-    "model GIVEN VAR x = 0 OR VAR y = 0"
-    "model GIVEN VAR x = 0 OR VAR y > 0"
-    "model GIVEN VAR x > 0 OR VAR y = 0"))
