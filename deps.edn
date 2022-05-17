@@ -6,6 +6,7 @@
         metosin/muuntaja {:mvn/version "0.6.8"}
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
+        org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.50"}
         org.clojure/core.match {:mvn/version "1.0.0"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
