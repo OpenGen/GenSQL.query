@@ -1,0 +1,6 @@
+(* model-expr *)
+
+model-expr ::= '(' ws? model-expr ws? ')'
+             | conditioned-by-expr
+             | constrained-by-expr
+             | simple-symbol

@@ -1,4 +1,4 @@
-(ns inferenceql.query.parser
+(ns inferenceql.query.permissive.parser
   "Functions for parsing IQL SQL queries into a parse tree. See
   `inferenceql.query.parser.tree` for functions that operate on parse trees."
   #?(:clj (:require [inferenceql.query.io :as io])
@@ -6,7 +6,9 @@
   (:require [instaparse.core :as insta]
             [instaparse.combinators :as combinators]))
 
-(def bnf (io/inline-file "inferenceql/query/grammar.bnf"))
+(def bnf
+  (str (io/inline-file "inferenceql/query/base.bnf")
+       (io/inline-file "inferenceql/query/permissive.bnf")))
 
 (def parse
   "An instaparse parser for IQL SQL queries. The grammar is inlined at macro

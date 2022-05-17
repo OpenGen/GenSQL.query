@@ -4,7 +4,7 @@
             [inferenceql.inference.gpm.conditioned :as conditioned]
             [inferenceql.inference.gpm.proto :as proto]
             ;; [inferenceql.query.db :as db]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.statement :as statement]))
 

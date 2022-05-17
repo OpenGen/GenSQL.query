@@ -12,7 +12,7 @@
             [inferenceql.query :as query]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.db :as db]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [medley.core :as medley]))
 

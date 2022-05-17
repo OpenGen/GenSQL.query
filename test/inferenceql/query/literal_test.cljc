@@ -6,7 +6,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [inferenceql.query.literal :as literal]
-            [inferenceql.query.parser :as parser]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.relation :as relation]))
 
 (def gen-symbol
