@@ -1,6 +1,5 @@
 {:deps {borkdude/sci {:mvn/version "0.2.7"}
         cljs-bean/cljs-bean {:mvn/version "1.8.0"}
-        hashp/hashp {:mvn/version "0.2.1"}
         instaparse/instaparse {:mvn/version "1.4.12"}
         medley/medley {:mvn/version "1.4.0"}
         metosin/muuntaja {:mvn/version "0.6.8"}

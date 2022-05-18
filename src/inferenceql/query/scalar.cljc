@@ -4,7 +4,6 @@
             [clojure.edn :as edn]
             [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
-            [hashp.core]
             ;; [inferenceql.inference.search.crosscat :as crosscat]
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]

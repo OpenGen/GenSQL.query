@@ -2,12 +2,11 @@
   "This file defines functions for parsing, transforming, and executing IQL-SQL
   queries."
   (:refer-clojure :exclude [eval])
-  (:require [hashp.core]
-            #?(:clj [inferenceql.query.command :as command])
+  (:require #?(:clj [inferenceql.query.command :as command])
             [inferenceql.query.db :as db]
             [inferenceql.query.error :as error]
-            [inferenceql.query.permissive.parser :as parser]
             [inferenceql.query.permissive :as permissive]
+            [inferenceql.query.permissive.parser :as parser]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.statement :as statement]
