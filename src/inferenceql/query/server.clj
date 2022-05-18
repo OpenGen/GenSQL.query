@@ -2,10 +2,10 @@
   "This file defines functions for starting a web server that provides HTTP access
   to `inferenceql.query/q`."
   (:require [clojure.string :as string]
+            [inferenceql.query.strict :as strict]
             [muuntaja.middleware :as middleware]
             [ring.middleware.cors :as cors]
-            [ring.util.request :as request]
-            [inferenceql.query :as query]))
+            [ring.util.request :as request]))
 
 (defn- request-query
   "Returns the query within the given Ring request map. See `app` for details."
@@ -25,7 +25,7 @@
         {:status 400
          :body {:request request}}
         (try
-          (let [result (query/q query db)]
+          (let [result (strict/q query db)]
             {:status 200
              :body {:result result
                     :metadata (meta result)}})
