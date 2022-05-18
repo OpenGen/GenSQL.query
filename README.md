@@ -42,7 +42,7 @@ If `-t/--table` is not provided a CSV will be read from stdin and bound to `data
 ### Clojure interface
 
 ``` clojure
-(require '[inferenceql.query :as query])
+(require '[inferenceql.query.permissive :as query])
 (require '[inferenceql.query.db :as db])
 
 (defn q

@@ -1,8 +1,8 @@
 (ns inferenceql.query.js
   (:require [clojure.edn :as edn]
-            [inferenceql.query :as query]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.inference.gpm.multimixture :as mmix]))
+            [inferenceql.inference.gpm.multimixture :as mmix]
+            [inferenceql.query.strict :as query]))
 
 (defn read-db
   [s]
@@ -12,7 +12,7 @@
     (edn/read-string {:readers readers} s)))
 
 (defn ^:export query
-  "Like `inferenceql.query/q`, but accepts and returns JavaScript values."
+  "Like `inferenceql.query.permissive/q`, but accepts and returns JavaScript values."
   [query s]
   (let [db (read-db s)]
     (-> (query/q query db)

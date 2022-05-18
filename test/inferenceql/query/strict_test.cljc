@@ -1,4 +1,4 @@
-(ns inferenceql.query-test
+(ns inferenceql.query.strict-test
   (:refer-clojure :exclude [alter])
   #?(:clj (:import [clojure.lang ExceptionInfo]))
   (:require [clojure.string :as string]
@@ -9,11 +9,11 @@
             [clojure.walk :as walk]
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query :as query]
-            [inferenceql.query.relation :as relation]
             [inferenceql.query.db :as db]
-            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
+            [inferenceql.query.relation :as relation]
+            [inferenceql.query.strict :as strict]
+            [inferenceql.query.strict.parser :as parser]
             [medley.core :as medley]))
 
 (defn q
@@ -32,7 +32,7 @@
                            (db/empty)
                            models)
                 (db/with-table 'data data))]
-     (query/q query db))))
+     (strict/q query db))))
 
 (def simple-mmix
   {:vars {:x :categorical

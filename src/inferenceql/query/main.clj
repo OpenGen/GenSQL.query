@@ -7,9 +7,9 @@
             [clojure.repl :as repl]
             [clojure.string :as string]
             [clojure.tools.cli :as cli]
-            [inferenceql.query :as query]
             [inferenceql.query.db :as db]
             [inferenceql.query.io :as io]
+            [inferenceql.query.permissive :as query]
             [inferenceql.query.relation :as relation]
             [medley.core :as medley]))
 

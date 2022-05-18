@@ -1,6 +1,9 @@
 (ns inferenceql.query.permissive
+  "Functions for issuing IQL-permissive queries."
   (:require [clojure.walk :as walk]
-            [inferenceql.query.parser.tree :as tree]))
+            [inferenceql.query.base :as base]
+            [inferenceql.query.parser.tree :as tree]
+            [inferenceql.query.permissive.parser :as parser]))
 
 (def ^:private ws [:ws " "])
 
@@ -38,3 +41,17 @@
 (defn ->strict
   [node]
   (walk/postwalk given->strict node))
+
+(defn parse
+  [s]
+  (-> s (parser/parse) (->strict)))
+
+(defn query
+  "Issues a query against a database. Returns a relation or nil."
+  [s db]
+  (base/query s db parser/parse))
+
+(defn q
+  "Returns the result of executing a query on a set of rows."
+  [s db]
+  (base/q s db parser/parse))
