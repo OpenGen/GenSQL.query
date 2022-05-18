@@ -3,12 +3,10 @@
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.math.combinatorics :as combinatorics]
-            [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.environment :as env]
             [inferenceql.query.literal :as literal]
-            [inferenceql.query.model :as model]
             [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
@@ -24,66 +22,8 @@
     [:query [:relation-expr & _]] true
     :else false))
 
-(defmulti plan-spec ::type)
-
-(s/def ::plan (s/multi-spec plan-spec ::type))
-
-(s/def ::plan-1 ::plan)
-(s/def ::plan-2 ::plan)
-
-(s/def ::plan-to ::plan)
-(s/def ::plan-from ::plan)
-
-(s/def ::sexpr any?)
-(s/def ::limit pos-int?)
-(s/def ::variables (s/coll-of ::model/variable))
-(s/def ::settings (s/map-of ::relation/attribute ::sexpr))
-
-(s/def ::condition ::sexpr)
-
-(defmethod plan-spec :inferenceql.query.plan.type/lookup
-  [_]
-  (s/keys :req [::env/name]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/select
-  [_]
-  (s/keys :req [::plan ::sexpr]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/extended-project
-  [_]
-  (s/keys :req [::plan ::terms]))
-
-(s/def ::term (s/keys :req [::sexpr ::relation/attribute]))
-
-(s/def ::terms (s/coll-of ::term))
-
-(defmethod plan-spec :inferenceql.query.plan.type/generate
-  [_]
-  (s/keys :req [::sexpr ::variables]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/insert
-  [_]
-  (s/keys :req [::plan ::plan-from]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/value
-  [_]
-  (s/keys :req [::relation/relation]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/update
-  [_]
-  (s/keys :req [::settings]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/alter
-  [_]
-  (s/keys :req [::plan ::relation/attribute]))
-
-(defmethod plan-spec :inferenceql.query.plan.type/rename
-  [_]
-  (s/keys :req [::plan ::relation/name]))
-
 (defn plan?
   [x]
-  ;; (s/valid? ::plan x)
   (and (associative? x)
        (contains? x ::type)))
 
@@ -205,18 +145,6 @@
   {::type :inferenceql.query.plan.type/rename
    ::plan op
    ::relation/name name})
-
-(s/def ::output-attribute ::relation/attribute)
-(s/def ::input-attribute ::relation/attribute)
-(s/def ::aggregator ::env/sym)
-
-(s/def ::groups (s/coll-of ::sexpr))
-(s/def ::aggregation (s/keys :req [::aggregator ::input-attr ::output-attr]))
-(s/def ::aggregations (s/coll-of ::aggregation))
-
-(defmethod plan-spec :inferenceql.query.plan.type/group
-  [_]
-  (s/keys :req [::plan ::aggregations] :opt [::groups]))
 
 (defn grouping
   ([op aggregations]

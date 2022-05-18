@@ -1,7 +1,6 @@
 (ns inferenceql.query.environment
   (:refer-clojure :exclude [get])
-  (:require [clojure.core :as clojure]
-            [clojure.spec.alpha :as s]))
+  (:require [clojure.core :as clojure]))
 
 (defn get
   "Look up a symbol in an environment."
@@ -33,6 +32,3 @@
 (defn ->map
   [env]
   env)
-
-(s/def ::env env?)
-(s/def ::sym symbol?)
