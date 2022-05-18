@@ -2,7 +2,6 @@
   "Functions for creating and manipulating relations."
   (:refer-clojure :exclude [distinct empty group-by name sort transduce])
   (:require [clojure.core :as clojure]
-            [clojure.spec.alpha :as s]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]))
 
@@ -127,7 +126,3 @@
     (into [attrs]
           (mapv (comp vec tuple/->vector)
                 (tuples rel)))))
-
-(s/def ::name symbol?)
-(s/def ::attribute symbol?)
-(s/def ::relation relation?)

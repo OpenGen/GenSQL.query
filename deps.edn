@@ -11,7 +11,6 @@
         org.clojure/core.match {:mvn/version "1.0.0"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
         org.clojure/math.combinatorics {:mvn/version "0.1.6"}
-        org.clojure/spec.alpha {:mvn/version "0.3.218"}
         org.clojure/tools.cli {:mvn/version "1.0.206"}
         org.slf4j/slf4j-nop {:mvn/version "1.7.36"} ; needed so tablesaw doesn't log
         probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git" :git/sha "8dc9d09f747c1e29886bb9628a0110c6f6bc6f5a"}
