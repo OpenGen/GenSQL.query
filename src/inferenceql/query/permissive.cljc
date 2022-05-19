@@ -49,7 +49,7 @@
 (defn query
   "Issues a query against a database. Returns a relation or nil."
   [s db]
-  (base/query s db parser/parse))
+  (base/query s db parse))
 
 (defn q
   "Returns the result of executing a query on a set of rows."
