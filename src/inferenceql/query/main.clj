@@ -9,11 +9,13 @@
             [clojure.tools.cli :as cli]
             [inferenceql.query.db :as db]
             [inferenceql.query.io :as io]
-            [inferenceql.query.permissive :as query]
+            [inferenceql.query.permissive :as permissive]
             [inferenceql.query.relation :as relation]
+            [inferenceql.query.strict :as strict]
             [medley.core :as medley]))
 
 (def output-formats #{"csv" "table"})
+(def langs #{"permissive" "strict"})
 
 (defn parse-named-pair
   [s]
@@ -32,6 +34,9 @@
     :update-fn conj
     :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
    ["-d" "--db PATH" "database path"]
+   ["-l" "--lang LANG" "query language"
+    :default "strict"
+    :validate [langs (str "Must be one of: " (string/join ", " langs))]]
    ["-e" "--eval STRING" "evaluate query in STRING"]
    ["-o" "--output FORMAT" "output format"
     :validate [output-formats (str "Must be one of: " (string/join ", " output-formats))]]
@@ -77,15 +82,15 @@
 
 (defn make-eval
   "Returns a function that evaluates queries in the context of a database."
-  [db]
+  [query-fn db]
   (fn [query]
-    (try (query/query query db)
+    (try (query-fn query db)
          (catch Exception e
            e))))
 
 (defn repl
   "Launches an interactive InferenceQL REPL (read-eval-print loop)."
-  [db & {:keys [print] :or {print print-table}}]
+  [query-fn db & {:keys [print] :or {print print-table}}]
   (let [wrapped-print (fn [x]
                         (when-not (nil? x)
                           (print x)))
@@ -95,7 +100,7 @@
                                 :line-start request-prompt
                                 :stream-end request-exit
                                 (read-line)))
-                      :eval (make-eval (atom db))
+                      :eval (make-eval query-fn (atom db))
                       :print wrapped-print]]
     (apply main/repl repl-options)))
 
@@ -111,7 +116,7 @@
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {models :model, query :eval, tables :table, :keys [db help output]} options
+        {models :model, query :eval, tables :table, :keys [db help lang output]} options
 
         print (case output
                 "table" print-table
@@ -146,8 +151,11 @@
                            (db/empty))
                        %
                        (reduce-kv db/with-table % tables)
-                       (reduce-kv db/with-model % models))]
+                       (reduce-kv db/with-model % models))
+                query-fn (case lang
+                           "permissive" permissive/query
+                           "strict" strict/query)]
             (if query
-              (let [eval (make-eval (atom db))]
+              (let [eval (make-eval query-fn (atom db))]
                 (print (eval query)))
-              (repl db :print print))))))
+              (repl query-fn db :print print))))))
