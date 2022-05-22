@@ -1,1 +1,2 @@
-* xref:language.adoc[Language]
+* xref:auto-modeling::auto-modeling.adoc[Automated data modeling]
+* xref:language::language.adoc[Query language]
