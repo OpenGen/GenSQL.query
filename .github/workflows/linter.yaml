@@ -11,8 +11,5 @@ jobs:
           version: '2021.12.19'
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Lint files
-        uses: DeLaGuardo/clojure-lint-action@master
-        with:
-          clj-kondo-args: --lint src test
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint
+        run: clj-kondo --lint src test --config .clj-kondo/ci-config.edn
