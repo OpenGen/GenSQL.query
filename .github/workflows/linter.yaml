@@ -2,6 +2,7 @@ name: linter
 on: push
 jobs:
   lint-files:
+    name: Linter
     runs-on: ubuntu-latest
     steps:
       - name: Setup clj-kondo
