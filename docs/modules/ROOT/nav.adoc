@@ -1,2 +1,3 @@
+* xref:auto-modeling::quick-start.adoc[Quickstart]
 * xref:auto-modeling::auto-modeling.adoc[Automated data modeling]
 * xref:language::language.adoc[Query language]
