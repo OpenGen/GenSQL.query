@@ -7,8 +7,7 @@
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.statement :as statement]
-            [instaparse.core :as insta]
-            [medley.core :as medley]))
+            [instaparse.core :as insta]))
 
 (defn query
   "Issues a query against a database. Returns a relation or nil. A parsing
@@ -38,7 +37,7 @@
   argument."
   [s db parse]
   (when-let [rel (query s (atom db) parse)]
-    (let [keywordize-keys #(medley/map-keys keyword %)
+    (let [keywordize-keys #(update-keys % keyword)
           kw-rel (map keywordize-keys rel)
           kw-attrs (map keyword (relation/attributes rel))]
       (with-meta kw-rel

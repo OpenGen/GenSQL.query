@@ -13,20 +13,19 @@
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.strict :as strict]
-            [inferenceql.query.strict.parser :as parser]
-            [medley.core :as medley]))
+            [inferenceql.query.strict.parser :as parser]))
 
 (defn q
   ([query data]
    (q query data {}))
   ([query data models]
    (let [relation (fn [coll]
-                    (let [tuples (mapv #(medley/map-keys symbol %)
+                    (let [tuples (mapv #(update-keys % symbol)
                                        coll)]
                       (if-let [columns (-> coll meta :iql/columns)]
                         (relation/relation tuples :attrs (map symbol columns))
                         (relation/relation tuples))))
-         models (medley/map-keys symbol models)
+         models (update-keys models symbol)
          data (relation data)
          db (-> (reduce-kv db/with-model
                            (db/empty)

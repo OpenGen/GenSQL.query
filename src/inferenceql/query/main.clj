@@ -11,8 +11,7 @@
             [inferenceql.query.io :as io]
             [inferenceql.query.permissive :as permissive]
             [inferenceql.query.relation :as relation]
-            [inferenceql.query.strict :as strict]
-            [medley.core :as medley]))
+            [inferenceql.query.strict :as strict]))
 
 (def output-formats #{"csv" "table"})
 (def langs #{"permissive" "strict"})
@@ -134,24 +133,24 @@
                           (if (= "-" s)
                             *in*
                             s))
-                models (->> (into {}
-                                  (map parse-named-pair)
-                                  models)
-                            (medley/map-keys symbol)
-                            (medley/map-vals swap-in)
-                            (medley/map-vals io/slurp-model))
-                tables (->> (into {}
-                                  (map parse-named-pair)
-                                  tables)
-                            (medley/map-keys symbol)
-                            (medley/map-vals swap-in)
-                            (medley/map-vals io/slurp-csv))
+                models (-> (into {}
+                                 (map parse-named-pair)
+                                 models)
+                           (update-keys symbol)
+                           (update-vals swap-in)
+                           (update-vals io/slurp-model))
+                tables (-> (into {}
+                                 (map parse-named-pair)
+                                 tables)
+                           (update-keys symbol)
+                           (update-vals swap-in)
+                           (update-vals io/slurp-csv))
                 db (as-> (if db
                            (db/slurp (swap-in db))
                            (db/empty))
                        %
-                       (reduce-kv db/with-table % tables)
-                       (reduce-kv db/with-model % models))
+                     (reduce-kv db/with-table % tables)
+                     (reduce-kv db/with-model % models))
                 query-fn (case lang
                            "permissive" permissive/query
                            "strict" strict/query)]
