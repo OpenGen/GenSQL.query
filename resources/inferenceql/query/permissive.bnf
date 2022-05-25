@@ -1,3 +1,5 @@
+<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | mutual-info-expr | approx-mutual-info-expr
+
 (* model-expr *)
 
 model-expr ::= '(' ws? model-expr ws? ')'
@@ -5,6 +7,12 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | conditioned-by-expr
              | constrained-by-expr
              | simple-symbol
+
+(* permissive event *)
+
+<permissive-event> ::= permissive-density / permissive-distribution
+permissive-density ::= density-event (ws? ',' ws? density-event)*
+permissive-distribution ::= distribution-event (ws? ',' ws? distribution-event)*
 
 (* given *)
 
@@ -19,3 +27,9 @@ given-event-and ::= given-event-1 ((ws #'(?i)AND' ws | ws? ',' ws?) given-event-
 given-event-group ::= '(' ws? given-event ws? ')'
 
 given-expr ::= model-expr ws #'(?i)GIVEN' ws given-event
+
+(* overrides *)
+
+probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
+                     ws permissive-event
+                     ws #'(?i)UNDER' ws model-expr

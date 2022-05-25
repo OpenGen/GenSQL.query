@@ -1,6 +1,18 @@
+<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr | mutual-info-expr | approx-mutual-info-expr
+
 (* model-expr *)
 
 model-expr ::= '(' ws? model-expr ws? ')'
              | conditioned-by-expr
              | constrained-by-expr
              | simple-symbol
+
+(* probability-expr *)
+
+probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
+                     ws distribution-event
+                     ws #'(?i)UNDER' ws model-expr
+
+density-expr ::= #'(?i)PROBABILITY' ws #'(?i)DENSITY' ws #'(?i)OF'
+                 ws density-event
+                 ws #'(?i)UNDER' ws model-expr
