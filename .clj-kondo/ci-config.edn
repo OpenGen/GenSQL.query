@@ -1,0 +1,2 @@
+;; https://github.com/clj-kondo/clj-kondo/blob/master/doc/ci-integration.md#linter-output-integration
+{:output {:pattern "::{{level}} file={{filename}},line={{row}},col={{col}}::{{message}}"}}
