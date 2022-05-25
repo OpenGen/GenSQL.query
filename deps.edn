@@ -7,7 +7,7 @@
         net.cgrand/xforms {:mvn/version "0.19.2"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         openiql/inferenceql.inference {:git/url "https://github.com/OpenIQL/inferenceql.inference.git" :git/sha "da1236f3496dc29724db22fc9126e76b663ba542"}
-        org.clojure/clojurescript {:mvn/version "1.11.50"}
+        org.clojure/clojurescript {:mvn/version "1.11.54"}
         org.clojure/core.match {:mvn/version "1.0.0"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
         org.clojure/math.combinatorics {:mvn/version "0.1.6"}
