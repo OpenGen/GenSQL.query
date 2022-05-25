@@ -31,10 +31,10 @@
   [tup]
   (merge tup
          (when-let [name (name tup)]
-           (medley/map-keys #(symbol (string/join "."
-                                                  [(clojure/name name)
-                                                   (clojure/name %)]))
-                            tup))))
+           (update-keys tup
+                        #(symbol (string/join "."
+                                              [(clojure/name name)
+                                               (clojure/name %)]))))))
 
 (defn attributes
   "Returns the attributes of a tuple."

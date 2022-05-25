@@ -10,7 +10,6 @@
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
-            [medley.core :as medley]
             [sci.core :as sci]))
 
 (defn plan
@@ -85,12 +84,12 @@
 
 (defn pdf
   [model event]
-  (let [event (medley/map-keys keyword event)]
+  (let [event (update-keys event keyword)]
     (math/exp (gpm/logpdf model event {}))))
 
 (defn condition
   [model conditions]
-  (let [conditions (medley/map-keys keyword conditions)]
+  (let [conditions (update-keys conditions keyword)]
     (cond-> model
       (every? some? (vals conditions))
       (gpm/condition conditions))))

@@ -13,7 +13,6 @@
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
-            [medley.core :as medley]
             [net.cgrand.xforms :as xforms]))
 
 (defn relation-node?
@@ -519,7 +518,7 @@
                          variables)
                        (map keyword))
         attrs (map symbol variables)
-        samples (map #(medley/map-keys symbol %)
+        samples (map #(update-keys % symbol)
                      (repeatedly #(gpm/simulate model variables {})))]
     (relation/relation samples :attrs attrs)))
 
@@ -534,13 +533,13 @@
     (relation/relation rel :attrs attributes)))
 
 (def ^:private agg-f
-  (->> {'count xforms/count
-        'avg xforms/avg
-        'median query.xforms/median
-        'std xforms/sd
-        'max xforms/max
-        'min xforms/min}
-       (medley/map-vals #(comp (remove nil?) %))))
+  (-> {'count xforms/count
+       'avg xforms/avg
+       'median query.xforms/median
+       'std xforms/sd
+       'max xforms/max
+       'min xforms/min}
+      (update-vals #(comp (remove nil?) %))))
 
 (defn ^:private aggregation->xform
   [{::keys [aggregator distinct input-attr]}]
