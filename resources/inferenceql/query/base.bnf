@@ -144,9 +144,9 @@ scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 
 insert-expr ::= #'(?i)INSERT' ws #'(?i)INTO' ws relation-expr ws relation-expr
 
-relation-value ::= simple-symbol-list ws #'(?i)VALUES' ws value-lists
+relation-value ::= '(' ws? simple-symbol-list ws? ')' ws #'(?i)VALUES' ws value-lists
 
-simple-symbol-list ::= '(' ws? simple-symbol (ws? ',' ws simple-symbol)* ws? ')'
+simple-symbol-list ::= simple-symbol (ws? ',' ws simple-symbol)*
 value-list ::= '(' ws? value (ws? ',' ws? value)* ws? ')'
 value-lists ::= value-lists-full | value-lists-sparse
 value-lists-full ::= value-list (ws? ',' ws? value-list)*
@@ -181,11 +181,7 @@ join-expr-group ::= '(' join-expr ')'
 
 (* generate-expr *)
 
-generate-expr ::= generate-clause ws #'(?i)UNDER' ws model-expr
-
-generate-clause ::= #'(?i)GENERATE' ws generate-list
-
-generate-list ::= star / variable (ws? ',' ws? variable)*
+generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr
 
 (* conditioning, constraining, and events *)
 
