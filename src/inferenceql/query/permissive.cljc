@@ -2,62 +2,110 @@
   "Functions for issuing IQL-permissive queries."
   (:require #?(:clj [clojure.core.match :as match]
                :cljs [cljs.core.match :as match])
+            [clojure.string :as string]
             [clojure.walk :as walk]
             [inferenceql.query.base :as base]
-            [inferenceql.query.string :as string]
-            [inferenceql.query.sequence :as sequence]
             [inferenceql.query.parser.tree :as tree]
-            [inferenceql.query.permissive.parser :as parser]))
+            [inferenceql.query.permissive.parser :as parser]
+            [inferenceql.query.sequence :as sequence]
+            [inferenceql.query.string :as query.string]))
 
 (def ^:private ws [:ws " "])
+
+(defn density-event?
+  [x]
+  (if-let [tag (tree/tag x)]
+    (-> tag
+        (name)
+        (string/starts-with? "density-event"))
+    false))
+
+(defn distribution-event?
+  [x]
+  (if-let [tag (tree/tag x)]
+    (-> tag
+        (name)
+        (string/starts-with? "distribution-event"))
+    false))
 
 (defn model-expr
   "Takes a model node and an event node and produces a new model-expr node."
   [model event]
-  (case (tree/tag event)
-    :given-event-and
-    (let [events (tree/child-nodes event)]
-      (reduce model-expr model events))
+  (cond (density-event? event)
+        [:conditioned-by-expr [:model-expr model] ws "CONDITIONED" ws "BY" ws [:density-event event]]
 
-    :density-event-eq
-    [:conditioned-by-expr model ws "CONDITIONED" ws "BY" ws event]
+        (distribution-event? event)
+        [:constrained-by-expr [:model-expr model] ws "CONSTRAINED" ws "BY" ws [:distribution-event event]]))
 
-    :distribution-event-binop
-    [:constrained-by-expr model ws "CONSTRAINED" ws "BY" ws event]))
+(defn variable-node
+  [node]
+  (case (tree/tag node)
+    :simple-symbol [:variable "VAR" ws node]))
 
 (defn strict-node
   [node]
-  (if-not (tree/branch? node)
-    node
-    (match/match (vec (remove tree/whitespace? node))
-      [:probability-expr prob of [:permissive-density & events] under model]
-      (let [density (string/match-case "density" prob)
-            separator [ws  (string/match-case "and" prob) ws]
-            events (->> events (filter tree/branch?) (remove tree/whitespace?))
-            event (if (> (count events) 1)
-                    `[~:density-event-and ~@(sequence/intersperse events separator)]
-                    (first events))]
-        [:density-expr prob ws density ws of ws event ws under ws model])
+  (match/match [(vec (remove tree/whitespace? node))]
+    [[:density-event-eq ([:simple-symbol _] :as sym) equals scalar-expr]]
+    [:density-event-eq (variable-node sym) ws equals ws [:scalar-expr scalar-expr]]
 
-      [:probability-expr prob of [:permissive-distribution & events] under model]
-      (let [separator [ws  (string/match-case "and" prob) ws]
-            events (->> events (filter tree/branch?) (remove tree/whitespace?))
-            event (if (> (count events) 1)
-                    `[~:distribution-event-and ~@(sequence/intersperse events separator)]
-                    (first events))]
-        [:probability-expr prob ws of ws event ws under ws model])
+    [[:density-event-eq scalar-expr equals ([:simple-symbol _] :as sym)]]
+    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (variable-node sym)]
 
-      [:given-expr & children]
-      (let [child-nodes (filter tree/branch? children)
-            model (first child-nodes)
-            event (last child-nodes)]
-        (model-expr model event))
+    [[:distribution-event-binop ([:simple-symbol _] :as sym) binop scalar-expr]]
+    [:distribution-event-binop (variable-node sym) ws binop ws [:scalar-expr scalar-expr]]
 
-      :else node)))
+    [[:distribution-event-binop scalar-expr binop ([:simple-symbol _] :as sym)]]
+    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (variable-node sym)]
+
+    [[:generate-expr generate [:simple-symbol-list & children] under model]]
+    (let [variable-list (into [:variable-list]
+                              (map (fn [child]
+                                     (if (= :simple-symbol (tree/tag child))
+                                       (variable-node child)
+                                       child)))
+                              children)]
+      [:generate-expr generate ws variable-list ws under ws model])
+
+    [[:density-event-list & events]]
+    (let [separator [ws "AND" ws]
+          events (->> events
+                      (filter tree/branch?)
+                      (remove tree/whitespace?)
+                      (map tree/only-child))]
+      (if (> (count events) 1)
+        `[~:density-event-and ~@(sequence/intersperse events separator)]
+        (first events)))
+
+    [[:distribution-event-list & events]]
+    (let [separator [ws "AND" ws]
+          events (->> events
+                      (filter tree/branch?)
+                      (remove tree/whitespace?)
+                      (map tree/only-child))]
+      (if (> (count events) 1)
+        `[~:distribution-event-and ~@(sequence/intersperse events separator)]
+        (first events)))
+
+    [[:probability-expr prob of (event :guard density-event?) under model]]
+    (let [density (query.string/match-case "density" prob)]
+      [:density-expr prob ws density ws of ws [:density-event event] ws under ws model])
+
+    [[:probability-expr prob of (event :guard distribution-event?) under model]]
+    [:probability-expr prob ws of ws [:distribution-event event] ws under ws model]
+
+    [[:given-expr [:model-expr model] _given event-list]]
+    (let [events (tree/child-nodes event-list)]
+      (reduce model-expr model events))
+
+    :else node))
 
 (defn ->strict
   [node]
-  (walk/postwalk strict-node node))
+  (let [f (fn [x]
+            (if (tree/branch? x)
+              (strict-node x)
+              x))]
+    (walk/postwalk f node)))
 
 (defn parse
   [s]
