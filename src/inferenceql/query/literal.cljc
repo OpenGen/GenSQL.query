@@ -45,7 +45,7 @@
     [[:value-list & children]]
     (map read (filter tree/branch? children))
 
-    [[:relation-value syms _values vals]]
+    [[:relation-value _open-paren syms _close-paren _values vals]]
     (let [attrs (read syms)
           ms (map #(zipmap attrs %)
                   (read vals))]

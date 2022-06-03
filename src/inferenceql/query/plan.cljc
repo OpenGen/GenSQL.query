@@ -205,12 +205,16 @@
 
 (defmethod plan-impl :generate-expr
   [node]
-  (let [sexpr (scalar/plan (tree/get-node node :model-expr))
-        variables (let [generate-list-nodes (tree/child-nodes (tree/get-node-in node [:generate-clause :generate-list]))]
-                    (if (star? (first generate-list-nodes))
+  (tree/match [node]
+    [[:generate-expr _generate generate-list _under model-expr]]
+    (let [sexpr (scalar/plan model-expr)
+          variables (case (tree/tag generate-list)
+                      :star
                       '*
-                      (map variable-node->symbol generate-list-nodes)))]
-    (generate variables sexpr)))
+
+                      :variable-list
+                      (map variable-node->symbol (tree/child-nodes generate-list)))]
+      (generate variables sexpr))))
 
 (defmethod plan-impl :where-clause
   [node op]
