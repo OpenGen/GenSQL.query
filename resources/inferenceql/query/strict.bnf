@@ -7,6 +7,14 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | constrained-by-expr
              | simple-symbol
 
+(* events *)
+
+distribution-event-binop ::= variable ws? binop ws? scalar-expr
+                           | scalar-expr ws? binop ws? variable
+
+density-event-eq ::= variable ws? '=' ws? scalar-expr
+                   | scalar-expr ws? '=' ws? variable
+
 (* probability-expr *)
 
 probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
@@ -16,3 +24,7 @@ probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
 density-expr ::= #'(?i)PROBABILITY' ws #'(?i)DENSITY' ws #'(?i)OF'
                  ws density-event
                  ws #'(?i)UNDER' ws model-expr
+
+(* generate-expr *)
+
+<generate-list> ::= star / variable-list

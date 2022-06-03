@@ -1,4 +1,5 @@
-<scalar-expr-6> ::= scalar-expr-group | simple-symbol | value | probability-expr | mutual-info-expr | approx-mutual-info-expr
+<scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr
+<scalar-expr-6> ::= scalar-expr-group | simple-symbol | value | mutual-info-expr | approx-mutual-info-expr
 
 (* model-expr *)
 
@@ -10,26 +11,30 @@ model-expr ::= '(' ws? model-expr ws? ')'
 
 (* permissive event *)
 
-<permissive-event> ::= permissive-density / permissive-distribution
-permissive-density ::= density-event (ws? ',' ws? density-event)*
-permissive-distribution ::= distribution-event (ws? ',' ws? distribution-event)*
+<permissive-event-list> ::= density-event-list / distribution-event-list
+density-event-list ::= density-event (ws? ',' ws? density-event)*
+distribution-event-list ::= distribution-event (ws? ',' ws? distribution-event)*
+
+distribution-event-binop ::= simple-symbol ws? binop ws? scalar-expr-3
+                           / scalar-expr-3 ws? binop ws? simple-symbol
+
+density-event-eq ::= simple-symbol ws? '=' ws? scalar-expr-3
+                   / scalar-expr-3 ws? '=' ws? simple-symbol
 
 (* given *)
 
-<given-event> ::= given-event-0
+given-expr ::= model-expr ws #'(?i)GIVEN' ws given-event-list
+given-event-list ::= given-event (ws #'(?i)AND' ws given-event)*
+                   / given-event (ws? ',' ws? given-event)*
 
-<given-event-0> ::= given-event-1 | given-event-and
-<given-event-1> ::= given-event-2 | given-event-binop
-<given-event-2> ::= given-event-group
-
-given-event-and ::= given-event-1 ((ws #'(?i)AND' ws | ws? ',' ws?) given-event-1)+
-<given-event-binop> ::= density-event-eq / distribution-event-binop
-given-event-group ::= '(' ws? given-event ws? ')'
-
-given-expr ::= model-expr ws #'(?i)GIVEN' ws given-event
+<given-event> ::= density-event-eq / distribution-event-binop
 
 (* overrides *)
 
 probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
-                     ws permissive-event
+                     ws permissive-event-list
                      ws #'(?i)UNDER' ws model-expr
+
+(* generate-expr *)
+
+<generate-list> ::= star / simple-symbol-list

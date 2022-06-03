@@ -195,8 +195,6 @@ distribution-event ::= distribution-event-0
 distribution-event-or  ::= distribution-event-1 (ws #'(?i)OR'  ws distribution-event-1)+
 distribution-event-and ::= distribution-event-2 (ws #'(?i)AND' ws distribution-event-2)+
 
-distribution-event-binop ::= variable ws? binop ws? scalar-expr | scalar-expr ws? binop ws? variable
-
 distribution-event-group ::= '(' ws? distribution-event ws? ')'
 
 constrained-by-expr ::= model-expr
@@ -210,8 +208,6 @@ density-event ::= density-event-0
 <density-event-2> ::= density-event-group
 
 density-event-and ::= density-event-1 (ws #'(?i)AND' ws density-event-1)+
-
-density-event-eq ::= variable ws? '=' ws? scalar-expr | scalar-expr ws? '=' ws? variable
 
 density-event-group ::= '(' ws? density-event ws? ')'
 
