@@ -33,8 +33,13 @@
     "model CONDITIONED BY VAR x = 0 CONSTRAINED BY VAR y > 0"
 
     "model GIVEN x > 0, y = 0"
-    "model CONSTRAINED BY VAR x > 0 CONDITIONED BY VAR y = 0"
+    "model CONSTRAINED BY VAR x > 0 CONDITIONED BY VAR y = 0"))
 
+(deftest given-and
+  (are [permissive strict] (= (strict.parser/parse strict :start :model-expr)
+                              (-> permissive
+                                  (permissive.parser/parse :start :model-expr)
+                                  (permissive/->strict)))
     "model GIVEN x = 0 AND y = 0"
     "model CONDITIONED BY VAR x = 0 CONDITIONED BY VAR y = 0"
 
@@ -46,6 +51,32 @@
 
     "model GIVEN x > 0 AND y = 0"
     "model CONSTRAINED BY VAR x > 0 CONDITIONED BY VAR y = 0"))
+
+
+(deftest given-standalone
+  (are [permissive strict] (= (strict.parser/parse strict :start :model-expr)
+                              (-> permissive
+                                  (permissive.parser/parse :start :model-expr)
+                                  (permissive/->strict)))
+    "model GIVEN x"
+    "model CONDITIONED BY VAR x = x"
+
+    "model GIVEN x, y"
+    "model CONDITIONED BY VAR x = x CONDITIONED BY VAR y = y"
+
+    "model GIVEN x, y, z"
+    "model CONDITIONED BY VAR x = x CONDITIONED BY VAR y = y CONDITIONED BY VAR z = z"))
+
+(deftest given-standalone-and
+  (are [permissive strict] (= (strict.parser/parse strict :start :model-expr)
+                              (-> permissive
+                                  (permissive.parser/parse :start :model-expr)
+                                  (permissive/->strict)))
+    "model GIVEN x AND y"
+    "model CONDITIONED BY VAR x = x CONDITIONED BY VAR y = y"
+
+    "model GIVEN x AND y AND z"
+    "model CONDITIONED BY VAR x = x CONDITIONED BY VAR y = y CONDITIONED BY VAR z = z"))
 
 (deftest probability
   (are [permissive strict] (= (-> strict
@@ -70,6 +101,27 @@
 
     "PROBABILITY OF x = 0, y > 0 UNDER model"
     "PROBABILITY OF VAR x = 0 AND VAR y > 0 UNDER model"))
+
+(deftest probability-standalone
+  (are [permissive strict] (= (-> strict
+                                  (strict.parser/parse :start :scalar-expr))
+                              (-> permissive
+                                  (permissive.parser/parse :start :scalar-expr)
+                                  (permissive/->strict)))
+    "PROBABILITY OF x UNDER model"
+    "PROBABILITY DENSITY OF VAR x = x UNDER model"
+
+    "PROBABILITY OF x, y UNDER model"
+    "PROBABILITY DENSITY OF VAR x = x AND VAR y = y UNDER model"
+
+    "PROBABILITY OF x, y, z UNDER model"
+    "PROBABILITY DENSITY OF VAR x = x AND VAR y = y AND VAR z = z UNDER model"
+
+    "PROBABILITY OF x AND y UNDER model"
+    "PROBABILITY DENSITY OF VAR x = x AND VAR y = y UNDER model"
+
+    "PROBABILITY OF x, y, z UNDER model"
+    "PROBABILITY DENSITY OF VAR x = x AND VAR y = y AND VAR z = z UNDER model"))
 
 (deftest generate
   (are [permissive strict] (= (strict.parser/parse strict :start :relation-expr)
