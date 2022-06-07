@@ -11,7 +11,9 @@ model-expr ::= '(' ws? model-expr ws? ')'
 
 (* permissive event *)
 
-<permissive-event-list> ::= density-event-list / distribution-event-list
+<permissive-event-list> ::= (density-event-list / distribution-event-list)
+                          | standalone-event-list
+                          | standalone-event-conjunction
 density-event-list ::= density-event (ws? ',' ws? density-event)*
 distribution-event-list ::= distribution-event (ws? ',' ws? distribution-event)*
 
@@ -21,13 +23,18 @@ distribution-event-binop ::= simple-symbol ws? binop ws? scalar-expr-3
 density-event-eq ::= simple-symbol ws? '=' ws? scalar-expr-3
                    / scalar-expr-3 ws? '=' ws? simple-symbol
 
+standalone-event-list ::= standalone-event (ws? ',' ws? standalone-event)*
+<standalone-event> ::= standalone-event-conjunction / simple-symbol
+standalone-event-conjunction ::= simple-symbol (ws #'(?i)AND' ws simple-symbol)+
+
 (* given *)
 
-given-expr ::= model-expr ws #'(?i)GIVEN' ws given-event-list
-given-event-list ::= given-event (ws #'(?i)AND' ws given-event)*
-                   / given-event (ws? ',' ws? given-event)*
+given-expr ::= model-expr ws #'(?i)GIVEN' ws (given-event-list | given-event-conjunction)
+given-event-list ::= given-event (ws? ',' ws? given-event)*
+given-event-conjunction ::= given-event (ws #'(?i)AND' ws given-event)+
 
-<given-event> ::= density-event-eq / distribution-event-binop
+<given-event> ::= (density-event-eq / distribution-event-binop)
+                | simple-symbol
 
 (* overrides *)
 

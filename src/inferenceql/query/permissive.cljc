@@ -13,19 +13,17 @@
 (def ^:private ws [:ws " "])
 
 (defn density-event?
+  "Returns true if x is a density event."
   [x]
   (if-let [tag (tree/tag x)]
-    (-> tag
-        (name)
-        (string/starts-with? "density-event"))
+    (string/starts-with? (name tag) "density-event")
     false))
 
 (defn distribution-event?
+  "Returns true if x is a distribution event."
   [x]
   (if-let [tag (tree/tag x)]
-    (-> tag
-        (name)
-        (string/starts-with? "distribution-event"))
+    (string/starts-with? (name tag) "distribution-event")
     false))
 
 (defn model-expr
@@ -35,56 +33,73 @@
         [:conditioned-by-expr [:model-expr model] ws "CONDITIONED" ws "BY" ws [:density-event event]]
 
         (distribution-event? event)
-        [:constrained-by-expr [:model-expr model] ws "CONSTRAINED" ws "BY" ws [:distribution-event event]]))
+        [:constrained-by-expr [:model-expr model] ws "CONSTRAINED" ws "BY" ws [:distribution-event event]]
 
-(defn variable-node
+        :else
+        (throw (ex-info (str "Cannot generate model expression for event")
+                        {:event event}))))
+
+(defn symbol->variable
+  "Returns the variable node equivalent of a simple symbol node."
   [node]
-  (case (tree/tag node)
-    :simple-symbol [:variable "VAR" ws node]))
+  [:variable "VAR" ws node])
+
+(defn symbol->density-event-eq
+  "Given a simple symbol node for returns the density event for when the
+  variable of that name equals the value held by that symbol in the
+  environment."
+  [node]
+  (if-not (= :simple-symbol (tree/tag node))
+    node
+    (let [variable (symbol->variable node)
+          scalar-expr-node [:scalar-expr node]]
+      [:density-event-eq variable ws "=" ws scalar-expr-node])))
+
+(defn and-node
+  [tag nodes]
+  (let [separator [ws "AND" ws]]
+    (if (> (count nodes) 1)
+      `[~tag ~@(sequence/intersperse nodes separator)]
+      (first nodes))))
+
+(defn fif
+  "Returns a function that calls f on its argument if calling pred? on its
+  argument returns true."
+  [f pred?]
+  (fn fif-fn [x]
+    (cond-> x
+      (pred? x) (f))))
 
 (defn strict-node
   [node]
   (match/match [(vec (remove tree/whitespace? node))]
     [[:density-event-eq ([:simple-symbol _] :as sym) equals scalar-expr]]
-    [:density-event-eq (variable-node sym) ws equals ws [:scalar-expr scalar-expr]]
+    [:density-event-eq (symbol->variable sym) ws equals ws [:scalar-expr scalar-expr]]
 
     [[:density-event-eq scalar-expr equals ([:simple-symbol _] :as sym)]]
-    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (variable-node sym)]
+    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (symbol->variable sym)]
 
     [[:distribution-event-binop ([:simple-symbol _] :as sym) binop scalar-expr]]
-    [:distribution-event-binop (variable-node sym) ws binop ws [:scalar-expr scalar-expr]]
+    [:distribution-event-binop (symbol->variable sym) ws binop ws [:scalar-expr scalar-expr]]
 
     [[:distribution-event-binop scalar-expr binop ([:simple-symbol _] :as sym)]]
-    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (variable-node sym)]
+    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (symbol->variable sym)]
 
-    [[:generate-expr generate [:simple-symbol-list & children] under model]]
+    [[:generate-expr generate [:simple-symbol-list & nodes] under model]]
     (let [variable-list (into [:variable-list]
-                              (map (fn [child]
-                                     (if (= :simple-symbol (tree/tag child))
-                                       (variable-node child)
-                                       child)))
-                              children)]
+                              (map (fif symbol->variable (tree/tag-pred :simple-symbol)))
+                              nodes)]
       [:generate-expr generate ws variable-list ws under ws model])
 
-    [[:density-event-list & events]]
-    (let [separator [ws "AND" ws]
-          events (->> events
-                      (filter tree/branch?)
-                      (remove tree/whitespace?)
-                      (map tree/only-child))]
-      (if (> (count events) 1)
-        `[~:density-event-and ~@(sequence/intersperse events separator)]
-        (first events)))
+    [[:density-event-list & _]]
+    (and-node :density-event-and
+              (map tree/only-child
+                   (tree/child-nodes node)))
 
-    [[:distribution-event-list & events]]
-    (let [separator [ws "AND" ws]
-          events (->> events
-                      (filter tree/branch?)
-                      (remove tree/whitespace?)
-                      (map tree/only-child))]
-      (if (> (count events) 1)
-        `[~:distribution-event-and ~@(sequence/intersperse events separator)]
-        (first events)))
+    [[:distribution-event-list & _]]
+    (and-node :distribution-event-and
+              (map tree/only-child
+                   (tree/child-nodes node)))
 
     [[:probability-expr prob of (event :guard density-event?) under model]]
     (let [density (query.string/match-case "density" prob)]
@@ -93,11 +108,24 @@
     [[:probability-expr prob of (event :guard distribution-event?) under model]]
     [:probability-expr prob ws of ws [:distribution-event event] ws under ws model]
 
-    [[:given-expr [:model-expr model] _given event-list]]
-    (let [events (tree/child-nodes event-list)]
-      (reduce model-expr model events))
+    [[:given-expr [:model-expr model] _given events]]
+    (transduce (map symbol->density-event-eq)
+               (completing model-expr)
+               model
+               (tree/child-nodes events))
 
-    :else node))
+    [[:standalone-event-conjunction & _]]
+    (and-node :density-event-and
+              (map symbol->density-event-eq
+                   (tree/child-nodes node)))
+
+    [[:standalone-event-list & _]]
+    (and-node :density-event-and
+              (map symbol->density-event-eq
+                   (tree/child-nodes node)))
+
+    :else
+    node))
 
 (defn ->strict
   [node]
