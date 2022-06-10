@@ -2,6 +2,7 @@
   "This file defines functions for starting a web server that provides HTTP access
   to `inferenceql.query/q`."
   (:require [clojure.string :as string]
+            [inferenceql.query.permissive :as permissive]
             [inferenceql.query.strict :as strict]
             [muuntaja.middleware :as middleware]
             [ring.middleware.cors :as cors]
@@ -17,15 +18,17 @@
 
 (defn- handler
   "Returns a Ring handler that executes queries against the provied data and
-  models. Assumes that basic content negotiation has already taken place."
-  [db]
+  models using the provided query function (`inferenceql.query.permissive/q` or
+  `inferenceql.query.strict/q`. Assumes that basic content negotiation has
+  already taken place."
+  [q db]
   (fn handler [request]
     (let [query (request-query request)]
       (if-not query
         {:status 400
          :body {:request request}}
         (try
-          (let [result (strict/q query db)]
+          (let [result (q query db)]
             {:status 200
              :body {:result result
                     :metadata (meta result)}})
@@ -44,8 +47,11 @@
   text/plain, application/edn, application/json, application/transit+json,
   application/tarnsit+msgpack. For all but the first content type the query is
   expected to be provided as a string."
-  [db]
-  (-> (handler db)
-      (cors/wrap-cors :access-control-allow-origin (constantly true)
-                      :access-control-allow-methods [:post])
-      (middleware/wrap-format)))
+  [db & {:keys [lang]}]
+  (let [q (case (or lang :strict)
+            :strict strict/q
+            :permissive permissive/q)]
+    (-> (handler q db)
+        (cors/wrap-cors :access-control-allow-origin (constantly true)
+                        :access-control-allow-methods [:post])
+        (middleware/wrap-format))))
