@@ -1,10 +1,5 @@
 (ns inferenceql.query.math)
 
-(defn exp
-  "Returns Euler's number e raised to the power of a double value."
-  [x]
-  (Math/exp x))
-
 (defn median
   "Computes the median of the numerical values in a collection."
   [coll]
