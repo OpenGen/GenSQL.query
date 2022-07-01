@@ -2,11 +2,11 @@
   (:refer-clojure :exclude [eval])
   (:require [clojure.core.match :as match]
             [clojure.edn :as edn]
+            [clojure.math :as math]
             [clojure.walk :as walk]
             ;; [inferenceql.inference.search.crosscat :as crosscat]
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.math :as math]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
