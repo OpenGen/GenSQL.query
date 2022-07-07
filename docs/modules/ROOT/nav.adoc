@@ -1,3 +1,5 @@
+* xref:auto-modeling::quick-start.adoc[Quickstart]
+* xref:auto-modeling::auto-modeling.adoc[Automated data modeling]
 * Languages
 ** xref:iql-strict.adoc[IQL-strict]
 ** xref:iql-permissive.adoc[IQL-permissive]
