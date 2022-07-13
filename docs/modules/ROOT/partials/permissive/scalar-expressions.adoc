@@ -12,12 +12,6 @@ include::partial$base/scalar-expressions/relational-operators.adoc[]
 
 include::partial$base/scalar-expressions/arithmetic.adoc[]
 
-=== `+PROBABILITY OF+`
+include::partial$permissive/scalar-expressions/probability-of.adoc[]
 
-[example]
-====
-[source,iql]
-----
-SELECT PROBABILITY OF Period_minutes UNDER satellites_model
-----
-====
+include::partial$permissive/scalar-expressions/mutual-information-of.adoc[]

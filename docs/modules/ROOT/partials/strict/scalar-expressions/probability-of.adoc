@@ -1,0 +1,20 @@
+=== `+PROBABILITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
+----
+====
+
+=== `+PROBABILITY DENSITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY DENSITY OF VAR Apogee_km < 1000
+UNDER model CONDITIONED BY VAR Users = "Military"
+----
+====

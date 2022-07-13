@@ -1,0 +1,25 @@
+=== `+MUTUAL INFORMATION OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  MUTUAL INFORMATION OF Apogee_km < 1000
+  WITH Perigee_km < 1000
+  UNDER satellites_model
+FROM satellites
+----
+====
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  MUTUAL INFORMATION OF Apogee_km
+  WITH Perigee_km
+  UNDER satellites_model
+FROM satellites
+----
+====

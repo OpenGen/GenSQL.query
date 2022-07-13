@@ -1,0 +1,9 @@
+=== `+PROBABILITY OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT PROBABILITY OF Period_minutes UNDER satellites_model
+----
+====
