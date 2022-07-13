@@ -1,5 +1,5 @@
-<scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr
-<scalar-expr-6> ::= scalar-expr-group | simple-symbol | value | mutual-info-expr | approx-mutual-info-expr
+<scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr | mutual-info-expr
+<scalar-expr-6> ::= scalar-expr-group | simple-symbol | value
 
 (* model-expr *)
 
@@ -45,3 +45,14 @@ probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
 (* generate-expr *)
 
 <generate-list> ::= star / simple-symbol-list
+
+(* mutual-information-expr *)
+
+mutual-info-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
+                     ws #'(?i)OF' ws simple-symbol-list
+                     ws #'(?i)WITH' ws simple-symbol-list
+                     ws #'(?i)UNDER' ws model-expr
+                   | #'(?i)MUTUAL' ws #'(?i)INFORMATION'
+                     ws #'(?i)OF' ws distribution-event
+                     ws #'(?i)WITH' ws distribution-event
+                     ws #'(?i)UNDER' ws model-expr

@@ -136,3 +136,31 @@
 
     "GENERATE x, y, z UNDER model"
     "GENERATE VAR x, VAR y, VAR z UNDER model"))
+
+(deftest approximate-mutual-info
+  (are [permissive strict] (= (strict.parser/parse strict :start :scalar-expr)
+                              (-> permissive
+                                  (permissive.parser/parse :start :scalar-expr)
+                                  (permissive/->strict)))
+    "MUTUAL INFORMATION OF x WITH y UNDER model"
+    "APPROXIMATE MUTUAL INFORMATION OF VAR x WITH VAR y UNDER model"
+
+    "MUTUAL INFORMATION OF x, y WITH z UNDER model"
+    "APPROXIMATE MUTUAL INFORMATION OF VAR x, VAR y WITH VAR z UNDER model"
+
+    "MUTUAL INFORMATION OF x WITH y, z UNDER model"
+    "APPROXIMATE MUTUAL INFORMATION OF VAR x WITH VAR y, VAR z UNDER model"))
+
+(deftest mutual-info
+  (are [permissive strict] (= (strict.parser/parse strict :start :scalar-expr)
+                              (-> permissive
+                                  (permissive.parser/parse :start :scalar-expr)
+                                  (permissive/->strict)))
+    "MUTUAL INFORMATION OF x > 0 WITH y > 0 UNDER model"
+    "MUTUAL INFORMATION OF VAR x > 0 WITH VAR y > 0 UNDER model"
+
+    "MUTUAL INFORMATION OF x > 0 AND y > 0 WITH z > 0 UNDER model"
+    "MUTUAL INFORMATION OF VAR x > 0 AND VAR y > 0 WITH VAR z > 0 UNDER model"
+
+    "MUTUAL INFORMATION OF x > 0 WITH y > 0 AND z > 0 UNDER model"
+    "MUTUAL INFORMATION OF VAR x > 0 WITH VAR y > 0 AND VAR z > 0 UNDER model"))

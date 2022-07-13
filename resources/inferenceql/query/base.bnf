@@ -217,18 +217,6 @@ incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model
 
 variable ::= #'(?i)VAR' ws simple-symbol
 
-(* mutual-information-expr *)
-
-mutual-info-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
-                     ws #'(?i)OF' ws distribution-event
-                     ws #'(?i)WITH' ws distribution-event
-                     ws #'(?i)UNDER' ws model-expr
-
-approx-mutual-info-expr ::= #'(?i)APPROXIMATE' ws #'(?i)MUTUAL' ws #'(?i)INFORMATION'
-                            ws #'(?i)OF' ws variable-list
-                            ws #'(?i)WITH' ws variable-list
-                            ws #'(?i)UNDER' ws model-expr
-
 variable-list ::= variable (ws? ',' ws? variable)*
 
 (* binop *)
