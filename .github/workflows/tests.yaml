@@ -12,7 +12,7 @@ jobs:
       - name: Setup Clojure tools
         uses: DeLaGuardo/setup-clojure@master
         with:
-          tools-deps: 1.10.3.1040
+          cli: 1.10.3.1040
       - name: Setup node
         uses: actions/setup-node@v2
       - name: Checkout repository
