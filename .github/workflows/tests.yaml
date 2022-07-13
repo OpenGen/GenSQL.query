@@ -9,31 +9,41 @@ jobs:
         with:
           distribution: adopt
           java-version: 17
+
       - name: Setup Clojure tools
         uses: DeLaGuardo/setup-clojure@master
         with:
           cli: 1.10.3.1040
+
       - name: Setup node
         uses: actions/setup-node@v2
+
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Install ws
         run: npm install ws
+
       - name: Cache m2
         uses: actions/cache@v2
         with:
           path: ~/.m2
           key: m2-${{ hashFiles('deps.edn') }}
+
       - name: Cache gitlibs
         uses: actions/cache@v2
         with:
           path: ~/.gitlibs
           key: gitlibs-${{ hashFiles('deps.edn') }}
+
       - name: Prepare dependencies
         run: clojure -M:test:clj-test:cljs-test:readme-test -P
+
       - name: Run Clojure tests
         run: clojure -X:test:clj-test
+
       - name: Run ClojureScript tests
         run: clojure -M:test:cljs-test
+
       - name: Run README tests
         run: clojure -M:test:readme-test
