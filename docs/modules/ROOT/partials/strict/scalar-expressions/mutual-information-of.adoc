@@ -1,0 +1,27 @@
+=== `+MUTUAL INFORMATION OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  MUTUAL INFORMATION OF VAR Apogee_km < 1000
+  WITH VAR Perigee_km < 1000
+  UNDER satellites_model
+FROM satellites
+----
+====
+
+=== `+APPROXIMATE MUTUAL INFORMATION OF+`
+
+[example]
+====
+[source,iql]
+----
+SELECT
+  APPROXIMATE MUTUAL INFORMATION OF VAR Apogee_km
+  WITH VAR Perigee_km
+  UNDER satellites_model
+FROM satellites
+----
+====

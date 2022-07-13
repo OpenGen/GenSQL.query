@@ -12,27 +12,6 @@ include::partial$base/scalar-expressions/relational-operators.adoc[]
 
 include::partial$base/scalar-expressions/arithmetic.adoc[]
 
-=== `+PROBABILITY OF+`
+include::partial$strict/scalar-expressions/probability-of.adoc[]
 
-[example]
-====
-[source,iql]
-----
-SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
-----
-====
-
-=== `+PROBABILITY DENSITY OF+`
-
-[example]
-====
-[source,iql]
-----
-SELECT PROBABILITY DENSITY OF VAR Apogee_km < 1000
-UNDER model CONDITIONED BY VAR Users = "Military"
-----
-====
-
-=== `+MUTUAL INFORMATION OF+`
-
-=== `+APPROXIMATE MUTUAL INFORMATION OF+`
+include::partial$strict/scalar-expressions/mutual-information-of.adoc[]
