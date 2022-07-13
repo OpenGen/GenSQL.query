@@ -12,6 +12,14 @@
 
 (def ^:private ws [:ws " "])
 
+(defn fif
+  "Returns a function that calls f on its argument if calling pred? on its
+  argument returns true."
+  [f pred?]
+  (fn fif-fn [x]
+    (cond-> x
+      (pred? x) (f))))
+
 (defn density-event?
   "Returns true if x is a density event."
   [x]
@@ -25,6 +33,9 @@
   (if-let [tag (tree/tag x)]
     (string/starts-with? (name tag) "distribution-event")
     false))
+
+(def simple-symbol-list?
+  (tree/tag-pred :simple-symbol-list))
 
 (defn model-expr
   "Takes a model node and an event node and produces a new model-expr node."
@@ -44,6 +55,12 @@
   [node]
   [:variable "VAR" ws node])
 
+(defn symbol-list->variable-list
+  [node]
+  (into [:variable-list]
+        (map (fif symbol->variable (tree/tag-pred :simple-symbol)))
+        (rest node)))
+
 (defn symbol->density-event-eq
   "Given a simple symbol node for returns the density event for when the
   variable of that name equals the value held by that symbol in the
@@ -61,14 +78,6 @@
     (if (> (count nodes) 1)
       `[~tag ~@(sequence/intersperse nodes separator)]
       (first nodes))))
-
-(defn fif
-  "Returns a function that calls f on its argument if calling pred? on its
-  argument returns true."
-  [f pred?]
-  (fn fif-fn [x]
-    (cond-> x
-      (pred? x) (f))))
 
 (defn strict-node
   [node]
@@ -107,6 +116,25 @@
 
     [[:probability-expr prob of (event :guard distribution-event?) under model]]
     [:probability-expr prob ws of ws [:distribution-event event] ws under ws model]
+
+    [[:mutual-info-expr mutual info
+      of (of-list :guard simple-symbol-list?)
+      with (with-list :guard simple-symbol-list?)
+      under model]]
+    (let [approx (query.string/match-case "approximate" mutual)]
+      [:approx-mutual-info-expr approx ws mutual ws info ws
+       of ws (symbol-list->variable-list of-list) ws
+       with ws (symbol-list->variable-list with-list) ws
+       under ws model])
+
+    [[:mutual-info-expr mutual info
+      of (of-event :guard distribution-event?)
+      with (with-event :guard distribution-event?)
+      under model]]
+    [:mutual-info-expr mutual ws info ws
+     of ws of-event ws
+     with ws with-event ws
+     under ws model]
 
     [[:given-expr [:model-expr model] _given events]]
     (transduce (map symbol->density-event-eq)
@@ -148,3 +176,10 @@
   "Returns the result of executing a query on a set of rows."
   [s db]
   (base/q s db parser/parse))
+
+(comment
+
+  (-> (parser/parse "x, y" :start :simple-symbol-list)
+      (symbol-list->variable-list))
+
+  ,)
