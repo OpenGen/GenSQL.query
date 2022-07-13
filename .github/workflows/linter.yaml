@@ -8,12 +8,15 @@ jobs:
         uses: DeLaGuardo/setup-clj-kondo@master
         with:
           version: '2022.04.25'
+
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Cache clj-kondo cache
         uses: actions/cache@v2
         with:
           path: .clj-kondo/.cache
           key: clj-kondo-cache-${{ hashFiles('deps.edn') }}
+
       - name: Lint files
         run: clj-kondo --lint src test --dependencies --config .clj-kondo/ci-config.edn
