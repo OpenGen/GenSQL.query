@@ -176,10 +176,3 @@
   "Returns the result of executing a query on a set of rows."
   [s db]
   (base/q s db parser/parse))
-
-(comment
-
-  (-> (parser/parse "x, y" :start :simple-symbol-list)
-      (symbol-list->variable-list))
-
-  ,)
