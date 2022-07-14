@@ -175,4 +175,4 @@
 (defn q
   "Returns the result of executing a query on a set of rows."
   [s db]
-  (base/q s db parser/parse))
+  (base/q s db parse))
