@@ -1,11 +1,11 @@
-{:deps {borkdude/sci {:mvn/version "0.2.7"}
-        cljs-bean/cljs-bean {:mvn/version "1.8.0"}
+{:deps {cljs-bean/cljs-bean {:mvn/version "1.8.0"}
         instaparse/instaparse {:mvn/version "1.4.12"}
         medley/medley {:mvn/version "1.4.0"}
         metosin/muuntaja {:mvn/version "0.6.8"}
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
         openiql/inferenceql.inference {:git/url "https://github.com/OpenIQL/inferenceql.inference.git" :git/sha "cce44b173558d7ed95b5c6c9b91e74c809843ed3"}
+        org.babashka/sci {:mvn/version "0.3.32"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.60"}
         org.clojure/core.match {:mvn/version "1.0.0"}
