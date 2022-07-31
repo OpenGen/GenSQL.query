@@ -125,18 +125,18 @@ scalar-expr ::= scalar-expr-0
 <scalar-expr-4> ::= scalar-expr-5 | expr-addition | expr-subtraction
 <scalar-expr-5> ::= scalar-expr-6 | expr-multiplication | expr-division
 
-expr-disjunction ::= scalar-expr-1 (ws #'(?i)OR'  ws scalar-expr-1)+
-expr-conjunction ::= scalar-expr-2 (ws #'(?i)AND' ws scalar-expr-2)+
+expr-disjunction ::= scalar-expr-0 ws #'(?i)OR'  ws scalar-expr-1
+expr-conjunction ::= scalar-expr-1 ws #'(?i)AND' ws scalar-expr-2
 
 expr-not ::= #'(?i)NOT' ws scalar-expr-3
 
-expr-binop ::= scalar-expr-3 (ws? binop ws? scalar-expr-4)+
+expr-binop ::= scalar-expr-3 ws? binop ws? scalar-expr-4
 
-expr-addition    ::= scalar-expr-4 (ws? '+' ws? scalar-expr-5)+
-expr-subtraction ::= scalar-expr-4 (ws? '-' ws? scalar-expr-5)+
+expr-addition    ::= scalar-expr-4 ws? '+' ws? scalar-expr-5
+expr-subtraction ::= scalar-expr-4 ws? '-' ws? scalar-expr-5
 
-expr-multiplication ::= scalar-expr-5 (ws? '*' ws? scalar-expr-6)+
-expr-division       ::= scalar-expr-5 (ws? '/' ws? scalar-expr-6)+
+expr-multiplication ::= scalar-expr-5 ws? '*' ws? scalar-expr-6
+expr-division       ::= scalar-expr-5 ws? '/' ws? scalar-expr-6
 
 scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 
