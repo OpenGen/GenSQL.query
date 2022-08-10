@@ -2,8 +2,9 @@
   "This file defines functions for the creation, interrogation, and manipulation
   of InferenceQL databases."
   (:refer-clojure :exclude [empty slurp])
-  #?(:clj (:require [clojure.core :as clojure]
-                    [clojure.edn :as edn])))
+  (:require #?(:clj [clojure.core :as clojure])
+            #?(:clj [clojure.edn :as edn])
+            [cognitect.anomalies :as-alias anomalies]))
 
 #?(:clj (defn slurp
           [x]
@@ -22,7 +23,7 @@
   (if-let [table (get-table db k)]
     table
     (throw (ex-info "Table does not exist"
-                    {:cognitect.anomalies/category :cognitect.anomalies/incorrect}))))
+                    {::anomalies/category ::anomalies/incorrect}))))
 
 (defn get-model
   [db k]
@@ -33,7 +34,7 @@
   (if-let [model (get-model db k)]
     model
     (throw (ex-info "Model does not exist"
-                    {:cognitect.anomalies/category :cognitect.anomalies/incorrect}))))
+                    {::anomalies/category ::anomalies/incorrect}))))
 
 (defn with-table
   [db k table]

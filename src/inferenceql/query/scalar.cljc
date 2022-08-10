@@ -4,9 +4,10 @@
             [clojure.edn :as edn]
             [clojure.math :as math]
             [clojure.walk :as walk]
-            ;; [inferenceql.inference.search.crosscat :as crosscat]
+            [cognitect.anomalies :as-alias anomalies]
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
+            ;; [inferenceql.inference.search.crosscat :as crosscat]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
@@ -209,6 +210,7 @@
              (let [sym (symbol sym)]
                (when-not (contains? attributes sym)
                  (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
-                                 {:symbol sym
+                                 {::anomalies/category ::anomalies/incorrect
+                                  symbol sym
                                   :env bindings}))))
              (throw ex))))))

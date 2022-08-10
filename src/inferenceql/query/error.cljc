@@ -1,9 +1,10 @@
 (ns inferenceql.query.error
-  (:require [instaparse.core :as instaparse]))
+  (:require [cognitect.anomalies :as-alias anomalies]
+            [instaparse.core :as instaparse]))
 
 (defn parse
   [parse-result]
-  (let [failure (instaparse/get-failure parse-result)
-        ex-map {:cognitect.anomalies/category :cognitect.anomalies/incorrect
-                :instaparse/failure failure}]
-    (throw (ex-info "Parsing failure" ex-map))))
+  (let [failure (instaparse/get-failure parse-result)]
+    (throw (ex-info (with-out-str (print failure))
+                    {::anomalies/category ::anomalies/incorrect
+                     :instaparse/failure failure}))))
