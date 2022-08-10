@@ -3,7 +3,7 @@
             [inferenceql.query.permissive.parser :as parser]
             [instaparse.core :as insta]))
 
-(deftest permissive-valid
+(deftest given-valid
   (are [s] (not (insta/failure? (parser/parse s :start :given-expr)))
     "model GIVEN x = 0"
     "model GIVEN x = y"
@@ -16,7 +16,7 @@
     "model GIVEN x = 0, y > 0"
     "model GIVEN x > 0, y = 0"))
 
-(deftest permissive-invalid
+(deftest given-invalid
   (are [s] (insta/failure? (parser/parse s :start :given-expr))
     "model GIVEN VAR x = 0 OR VAR y = 0"
     "model GIVEN VAR x = 0 OR VAR y > 0"
