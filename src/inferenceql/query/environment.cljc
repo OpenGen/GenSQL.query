@@ -1,6 +1,7 @@
 (ns inferenceql.query.environment
   (:refer-clojure :exclude [get])
-  (:require [clojure.core :as clojure]))
+  (:require [clojure.core :as clojure]
+            [cognitect.anomalies :as-alias anomalies]))
 
 (defn get
   "Look up a symbol in an environment."
@@ -20,7 +21,8 @@
   (if (has? env bindings sym)
     (get env bindings sym)
     (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
-                    {:symbol sym
+                    {::anomalies/category ::anomalies/incorrect
+                     :symbol sym
                      :env env
                      :bindings bindings}))))
 
