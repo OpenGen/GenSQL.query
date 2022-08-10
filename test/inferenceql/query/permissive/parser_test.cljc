@@ -3,6 +3,10 @@
             [inferenceql.query.permissive.parser :as parser]
             [instaparse.core :as insta]))
 
+(deftest select-valid
+  (are [s] (not (insta/failure? (parser/parse s)))
+    "SELECT * FROM data"))
+
 (deftest given-valid
   (are [s] (not (insta/failure? (parser/parse s :start :given-expr)))
     "model GIVEN x = 0"
