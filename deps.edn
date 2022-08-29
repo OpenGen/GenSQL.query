@@ -13,7 +13,6 @@
         org.clojure/math.combinatorics {:mvn/version "0.1.6"}
         org.clojure/tools.cli {:mvn/version "1.0.206"}
         org.slf4j/slf4j-nop {:mvn/version "1.7.36"} ; needed so tablesaw doesn't log
-        probcomp/metaprob {:git/url "https://github.com/probcomp/metaprob.git" :git/sha "8dc9d09f747c1e29886bb9628a0110c6f6bc6f5a"}
         rhizome/rhizome {:mvn/version "0.2.9"}
         ring-cors/ring-cors {:mvn/version "0.1.13"}
         ring/ring-core {:mvn/version "1.9.5"}
