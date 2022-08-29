@@ -4,7 +4,7 @@
         metosin/muuntaja {:mvn/version "0.6.8"}
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
-        openiql/inferenceql.inference {:git/url "https://github.com/OpenIQL/inferenceql.inference.git" :git/sha "cce44b173558d7ed95b5c6c9b91e74c809843ed3"}
+        io.github.inferenceql/inferenceql.inference {:git/sha "e1dcd0f2721dcdef388f8270dc9bd80eecde3ef9"}
         org.babashka/sci {:mvn/version "0.3.32"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.60"}
