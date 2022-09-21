@@ -233,7 +233,7 @@ float         ::= #'-?\d+\.\d+(E-?\d+)?'
 int           ::= #'-?\d+'
 nat           ::= #'\d+'
 simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?\.]*'
-string        ::= #'\"([^\"]+)\"'
+string        ::= #'\"([^\"]*)\"'
 null          ::= #'(?i)NULL'
 
 (* whitespace *)
