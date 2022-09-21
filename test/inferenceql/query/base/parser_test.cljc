@@ -27,6 +27,7 @@
   (does-not-parse "0a" :simple-symbol))
 
 (deftest parse-string-success
+  (parses "\"\"" :string)
   (parses "\"x\"" :string)
   (parses "\"xy\"" :string)
   (parses "\"0\"" :string)
