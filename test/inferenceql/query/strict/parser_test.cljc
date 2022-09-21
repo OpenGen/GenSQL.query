@@ -20,17 +20,3 @@
     true "UPDATE data SET x=0, y=1 WHERE z=1"
     true "UPDATE data SET x = 0, y = 1 WHERE z = 1"
     true "SELECT avg(x) FROM data"))
-
-(deftest simple-symbol-parsing
-  (testing "valid"
-    (are [s] (not (insta/failure? (parser/parse s :start :simple-symbol)))
-      "a"
-      "A"
-      "a0"
-      "a0a"
-      "a-"
-      "a-a"
-      "a?"))
-  (testing "invalid"
-    (are [s] (insta/failure? (parser/parse s :start :simple-symbol))
-      "0a")))
