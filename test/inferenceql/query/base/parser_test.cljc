@@ -25,3 +25,23 @@
 
 (deftest parse-simple-symbol-failure
   (does-not-parse "0a" :simple-symbol))
+
+(deftest parse-string-success
+  (parses "\"x\"" :string)
+  (parses "\"xy\"" :string)
+  (parses "\"0\"" :string)
+  (parses "\"01\"" :string)
+  (parses "\"x0\"" :string)
+  (parses "\"0x\"" :string))
+
+(deftest parse-string-failure
+  (does-not-parse "" :string)
+  (does-not-parse "x" :string)
+  (does-not-parse "''" :string)
+  (does-not-parse "'x'" :string)
+  (does-not-parse "\"" :string)
+  (does-not-parse "\"x" :string)
+  (does-not-parse "x\"" :string)
+  (does-not-parse "\"\"\"" :string)
+  (does-not-parse "\"x\"\"" :string)
+  (does-not-parse "\"\"x\"" :string))
