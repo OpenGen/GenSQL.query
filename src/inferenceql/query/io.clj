@@ -1,6 +1,7 @@
 (ns inferenceql.query.io
   (:import [tech.tablesaw.api Row]
-           [tech.tablesaw.api Table])
+           [tech.tablesaw.api Table]
+           [tech.tablesaw.io.csv CsvReadOptions])
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [inferenceql.inference.gpm :as gpm]
@@ -25,7 +26,10 @@
   then converts that table into a relation. See `clojure.java.io/reader` for a
   complete list of supported arguments."
   [x]
-  (let [^Table table (.csv (Table/read) (slurp x) "")
+  (let [csv-string (slurp x)
+        ^Table table (-> (Table/read)
+                         (.usingOptions (-> (CsvReadOptions/builderFromString csv-string)
+                                            (.sample false))))
         columns (.columnNames table)
         attrs (map symbol columns)
         row (Row. table)
