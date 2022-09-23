@@ -32,9 +32,14 @@
                (if (>= i (.rowCount table))
                  (persistent! rows)
                  (do (.at row i)
-                     (let [row (zipmap attrs
-                                       (map #(.getObject row %)
-                                            columns))]
+                     (let [row (reduce (fn [m column]
+                                         (let [value (.getObject row column)
+                                               attr (symbol column)]
+                                           (cond-> m
+                                             (not (contains? #{"" nil} value))
+                                             (assoc attr value))))
+                                       {}
+                                       columns)]
                        (recur (inc i) (conj! rows row))))))]
     (with-meta coll {:iql/columns attrs})))
 
