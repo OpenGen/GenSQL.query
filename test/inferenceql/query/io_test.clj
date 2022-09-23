@@ -1,6 +1,10 @@
 (ns inferenceql.query.io-test
-  (:require [clojure.test :refer [are deftest is]]
-            [clojure.java.io :as java.io]
+  (:require [clojure.java.io :as java.io]
+            [clojure.string :as string]
+            [clojure.test :refer [are deftest is]]
+            [clojure.test.check.clojure-test :refer [defspec]]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
             [inferenceql.query.io :as io]))
 
 (defn slurp-string
@@ -100,3 +104,15 @@
 (deftest slurp-csv-duplicate-column
   (is (thrown? Exception
         (slurp-string "x,x\n0,1"))))
+
+(defspec slurp-csv-type-sampling
+  ;; By default Tablesaw, which we use for CSV parsing, uses heuristics applied
+  ;; to a random sample of the column's values when attempting to infer a
+  ;; columns data type. This can cause problems if a column is comprised of
+  ;; mostly, but not exclusively, values that can be parsed as integers.
+  (let [length 20000]
+    (prop/for-all [index (gen/choose 0 (dec length))]
+      (let [s (string/join \newline
+                           (-> (into ["x"] (repeat length "1.0"))
+                               (assoc index "0.1")))]
+        (is (vector? (slurp-string s)))))))
