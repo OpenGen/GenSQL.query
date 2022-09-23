@@ -41,7 +41,7 @@
                                        {}
                                        columns)]
                        (recur (inc i) (conj! rows row))))))]
-    (with-meta coll {:iql/columns attrs})))
+    (relation/relation coll :attrs attrs)))
 
 (defn spit-csv
   "Attempts to write a collection to a location. x is coerced to a writer as per
