@@ -6,6 +6,8 @@
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.relation :as relation]))
 
+(set! *warn-on-reflection* true)
+
 (defmacro inline-file
   "Inlines the contents of the named resource as a string."
   [n]
@@ -32,7 +34,7 @@
                (if (>= i (.rowCount table))
                  (persistent! rows)
                  (do (.at row i)
-                     (let [row (reduce (fn [m column]
+                     (let [row (reduce (fn [m ^String column]
                                          (let [value (.getObject row column)
                                                attr (symbol column)]
                                            (cond-> m
