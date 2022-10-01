@@ -46,3 +46,14 @@
   (does-not-parse "\"\"\"" :string)
   (does-not-parse "\"x\"\"" :string)
   (does-not-parse "\"\"x\"" :string))
+
+(strict.parser/parse "GENERATE VAR x, VAR y UNDER m" :start :generate-expr)
+(strict.parser/parse "GENERATE VAR x, VAR y  ACCORDING TO PROBABILITY TABLE m" :start :generate-table-expr)
+(strict.parser/parse "FROM m" :start :from-clause)
+(strict.parser/parse "FROM PROBABILITY TABLE m" :start :from-clause)
+
+(permissive.parser/parse "GENERATE x, y UNDER m" :start :generate-expr)
+(permissive.parser/parse "GENERATE x, y  ACCORDING TO PROBABILITY TABLE m" :start :generate-table-expr)
+(permissive.parser/parse "FROM m" :start :from-clause)
+(permissive.parser/parse "FROM PROBABILITY TABLE m" :start :from-clause)
+
