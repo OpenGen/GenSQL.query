@@ -181,7 +181,9 @@ join-expr-group ::= '(' join-expr ')'
 
 (* generate-expr *)
 
-generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr
+generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr | generate-table-expr
+generate-table-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)ACCORDING TO PROBABILITY TABLE' ws model-expr
+
 
 (* conditioning, constraining, and events *)
 
