@@ -181,6 +181,7 @@
         (is (= '[x] (keys tup)))
         (is (contains? #{"yes" "no"} (tuple/get tup 'x)))))))
 
+
 (deftest join
   (let [env '{a [{x 0} {x 1}]
               b [{y 0} {y 1}]}]
@@ -232,3 +233,31 @@
       "a INNER JOIN b ON a.x = b.y"
       '[{x 0 y 0}
         {x 1 y 1}])))
+
+
+
+(def prob_xy '[{probability 0.5 x "yes"} {probability 0.5 x "no"}])
+
+(defn prob-table-to-categorical-param
+  [table target]
+    {:p (into {} (map (fn [row] [(get row target)  (get row 'probability)]) table))})
+
+
+(prob-table-to-categorical-param prob_xy 'x)
+
+(def q1 "SELECT * FROM GENERATE VAR x UNDER m LIMIT 3")
+(def q2 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 3")
+(def q3 "SELECT * FROM prob_xy")
+
+;
+(parser/parse q1)
+(parser/parse q2)
+;(eval q2 {'m model 'prob_xy prob_xy})
+
+
+
+
+
+
+
+

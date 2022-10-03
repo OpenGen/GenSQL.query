@@ -5,6 +5,7 @@
             [clojure.math.combinatorics :as combinatorics]
             [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.primitives :as primitives]
             [inferenceql.query.environment :as env]
             [inferenceql.query.literal :as literal]
             [inferenceql.query.strict.parser :as parser]
@@ -73,6 +74,12 @@
 (defn generate
   [variables sexpr]
   {::type :inferenceql.query.plan.type/generate
+   ::sexpr sexpr
+   ::variables variables})
+
+(defn generate-prob-table
+  [variables sexpr]
+  {::type :inferenceql.query.plan.type/generate-prob-table
    ::sexpr sexpr
    ::variables variables})
 
@@ -206,15 +213,35 @@
 (defmethod plan-impl :generate-expr
   [node]
   (tree/match [node]
-    [[:generate-expr _generate generate-list _under model-expr]]
+              [[:generate-expr _generate generate-list _under model-expr]]
+              (let [sexpr (scalar/plan model-expr)
+                    variables (case (tree/tag generate-list)
+                                :star
+                                '*
+                                :variable-list
+                                (map variable-node->symbol (tree/child-nodes generate-list)))]
+                (generate variables sexpr))
+              [[:generate-expr [:generate-table-expr _generate generate-list _according model-expr]]]
+              (let [sexpr (scalar/plan model-expr)
+                    variables (case (tree/tag generate-list)
+                                :star
+                                '*
+                                :variable-list
+                                (map variable-node->symbol (tree/child-nodes generate-list)))]
+                (generate-prob-table variables sexpr))))
+
+
+(defmethod plan-impl :generate-table-expr
+  [node]
+  (tree/match [node]
+    [[:generate-table-expr _generate generate-list _according model-expr]]
     (let [sexpr (scalar/plan model-expr)
           variables (case (tree/tag generate-list)
                       :star
                       '*
-
                       :variable-list
                       (map variable-node->symbol (tree/child-nodes generate-list)))]
-      (generate variables sexpr))))
+      (generate-prob-table variables sexpr))))
 
 (defmethod plan-impl :where-clause
   [node op]
@@ -523,7 +550,42 @@
                        (map keyword))
         attrs (map symbol variables)
         samples (map #(update-keys % symbol)
-                     (repeatedly #(gpm/simulate model variables {})))]
+                     (repeatedly #(gpm/simulate model variables {})))
+        _ (println "--model--" )
+        _ (prn model)
+        _ (println "--variables--" )
+        _ (prn variables)
+        _ (println "--attrs--" )
+        _ (prn attrs)
+        ]
+    (relation/relation samples :attrs attrs)))
+
+(defn prob-table-to-categorical-param
+  [table target]
+    {:p (into {} (map (fn [row] [(get row (symbol target))  (get row 'probability)]) table))})
+
+(defn prob-table-generate
+  [targets constraints table]
+  ;XXX: should not be first; doesn't deal yet with more than one variable.
+    {:x (primitives/simulate :categorical (prob-table-to-categorical-param table (first targets)))})
+
+
+
+(defmethod eval :inferenceql.query.plan.type/generate-prob-table
+  [plan env bindings]
+  (let [{::keys [sexpr variables]} plan
+        prob-table (scalar/eval sexpr env bindings)
+        variables (map keyword variables)
+        attrs (map symbol variables)
+        _ (println "--prob-table--" )
+        _ (prn prob-table)
+        _ (println "--variables--" )
+        _ (prn variables)
+        _ (println "--attrs--" )
+        _ (prn attrs)
+        samples (map #(update-keys % symbol)
+                     (repeatedly #(prob-table-generate variables {} prob-table)))
+        ]
     (relation/relation samples :attrs attrs)))
 
 (defmethod eval :inferenceql.query.plan.type/insert
