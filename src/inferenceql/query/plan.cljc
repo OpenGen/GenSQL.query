@@ -539,6 +539,7 @@
 (def ^:private agg-f
   (-> {'count xforms/count
        'avg xforms/avg
+       'sum (xforms/reduce +)
        'median query.xforms/median
        'std xforms/sd
        'max xforms/max
