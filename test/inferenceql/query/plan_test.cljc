@@ -99,7 +99,7 @@
     "ALTER data ADD y" '[x]   '[x y]
     "ALTER data ADD z" '[x y] '[x y z]))
 
-(deftest aggregation
+(deftest aggregation-max
   (are [query in out] (= out (->> (eval query {'data in})
                                   (relation/tuples)
                                   (map tuple/->vector)))
@@ -112,6 +112,20 @@
     "SELECT max(x), min(x) FROM data"    '[{x 0} {x 1}]                             '[[1 0]]
     "SELECT max(x), max(y) FROM data"    '[{x 0 y 1} {x 1 y 0}]                     '[[1 1]]
     "SELECT max(x) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}] '[[2] [3]]))
+
+(deftest aggregation-sum
+  (are [query in out] (= out (->> (eval query {'data in})
+                                  (relation/tuples)
+                                  (map tuple/->vector)))
+    "SELECT sum(x) FROM data"            '[]                                        '[[nil]]
+    "SELECT sum(x) FROM data"            '[{x 0} {x 1}]                             '[[1]]
+    "SELECT sum(x) FROM data"            '[{x 1} {x 0}]                             '[[1]]
+    "SELECT sum(x) FROM data"            '[{x 0} {x 1} {x 2}]                       '[[3]]
+    "SELECT sum(x) FROM data"            '[{x 0} {x 2} {x 1}]                       '[[3]]
+    "SELECT sum(x) FROM data"            '[{x 2} {x 1} {x 0}]                       '[[3]]
+    "SELECT sum(x), min(x) FROM data"    '[{x 0} {x 1}]                             '[[1 0]]
+    "SELECT sum(x), sum(y) FROM data"    '[{x 1 y 1} {x 2 y 0}]                     '[[3 1]]
+    "SELECT sum(x) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}] '[[2] [4]]))
 
 (deftest count
   (testing "count(x)"
