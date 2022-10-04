@@ -3,6 +3,8 @@
   (:require [clojure.test :refer [are deftest is testing]]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.strict.parser :as parser]
+            [inferenceql.query.permissive.parser :as parser-perm]
+            [inferenceql.query.permissive :as perm]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]))
@@ -236,23 +238,46 @@
 
 
 
-(def prob_xy '[{probability 0.5 x "yes"} {probability 0.5 x "no"}])
+(def prob_xy '[
+               {probability 0.01 x "no"  y "no" }
+               {probability 0.05 x "no"  y "yes"}
+               {probability 0.05 x "yes" y "no" }
+               {probability 0.89 x "yes" y "yes"}
+               ])
 
 (defn prob-table-to-categorical-param
-  [table target]
-    {:p (into {} (map (fn [row] [(get row target)  (get row 'probability)]) table))})
+  [table targets]
+    {:p (into {} (map (fn [row] [(select-keys row targets)  (get row 'probability)]) table))})
+
+(defn prob-table-to-categorical-param
+  [table targets]
+    {:p (apply merge-with + (map (fn [row] {(select-keys row targets)  (get row 'probability)}) table))})
 
 
-(prob-table-to-categorical-param prob_xy 'x)
+(defn eval2
+  [query env]
+  (-> query
+      (perm/parse)
+      (plan/plan)
+      (plan/eval env {})))
 
-(def q1 "SELECT * FROM GENERATE VAR x UNDER m LIMIT 3")
-(def q2 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 3")
-(def q3 "SELECT * FROM prob_xy")
+
+(def q0 "SELECT * FROM GENERATE VAR x UNDER m LIMIT 3")
+(def q00 "SELECT * FROM GENERATE x UNDER m LIMIT 3")
+(def q1 "SELECT * FROM prob_xy")
+(def q2 "SELECT * FROM GENERATE VAR x, VAR y ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 3")
+(def q3 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 10")
+(def q4 "SELECT * FROM GENERATE x ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 10")
 
 ;
 (parser/parse q1)
 (parser/parse q2)
-;(eval q2 {'m model 'prob_xy prob_xy})
+(parser/parse q3)
+(perm/parse q4)
+(perm/parse q00)
+;(eval q3 {'m model 'prob_xy prob_xy})
+;(eval2 q4 {'m model 'prob_xy prob_xy})
+;(eval2 q00 {'m model 'prob_xy prob_xy})
 
 
 

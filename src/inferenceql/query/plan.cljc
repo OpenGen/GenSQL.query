@@ -239,7 +239,7 @@
           variables (case (tree/tag generate-list)
                       :star
                       '*
-                      :variable-list
+                      :simple-symbol-list
                       (map variable-node->symbol (tree/child-nodes generate-list)))]
       (generate-prob-table variables sexpr))))
 
@@ -550,26 +550,18 @@
                        (map keyword))
         attrs (map symbol variables)
         samples (map #(update-keys % symbol)
-                     (repeatedly #(gpm/simulate model variables {})))
-        _ (println "--model--" )
-        _ (prn model)
-        _ (println "--variables--" )
-        _ (prn variables)
-        _ (println "--attrs--" )
-        _ (prn attrs)
-        ]
+                     (repeatedly #(gpm/simulate model variables {})))]
     (relation/relation samples :attrs attrs)))
 
 (defn prob-table-to-categorical-param
-  [table target]
-    {:p (into {} (map (fn [row] [(get row (symbol target))  (get row 'probability)]) table))})
+  [table targets]
+    {:p (apply merge-with + (map (fn [row] {(select-keys row targets)  (get row 'probability)}) table))})
+
 
 (defn prob-table-generate
   [targets constraints table]
   ;XXX: should not be first; doesn't deal yet with more than one variable.
-    {:x (primitives/simulate :categorical (prob-table-to-categorical-param table (first targets)))})
-
-
+    (primitives/simulate :categorical (prob-table-to-categorical-param table targets)))
 
 (defmethod eval :inferenceql.query.plan.type/generate-prob-table
   [plan env bindings]
@@ -577,14 +569,14 @@
         prob-table (scalar/eval sexpr env bindings)
         variables (map keyword variables)
         attrs (map symbol variables)
-        _ (println "--prob-table--" )
-        _ (prn prob-table)
-        _ (println "--variables--" )
-        _ (prn variables)
-        _ (println "--attrs--" )
-        _ (prn attrs)
+        ;_ (println "--prob-table--" )
+        ;_ (prn prob-table)
+        ;_ (println "--variables--" )
+        ;_ (prn variables)
+        ;_ (println "--attrs--" )
+        ;_ (prn attrs)
         samples (map #(update-keys % symbol)
-                     (repeatedly #(prob-table-generate variables {} prob-table)))
+                     (repeatedly #(prob-table-generate attrs {} prob-table)))
         ]
     (relation/relation samples :attrs attrs)))
 

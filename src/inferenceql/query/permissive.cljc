@@ -94,11 +94,20 @@
     [[:distribution-event-binop scalar-expr binop ([:simple-symbol _] :as sym)]]
     [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (symbol->variable sym)]
 
+
+
     [[:generate-expr generate [:simple-symbol-list & nodes] under model]]
     (let [variable-list (into [:variable-list]
                               (map (fif symbol->variable (tree/tag-pred :simple-symbol)))
                               nodes)]
       [:generate-expr generate ws variable-list ws under ws model])
+
+    [[:generate-table-expr generate [:simple-symbol-list & nodes] under model]]
+    (let [variable-list (into [:variable-list]
+                              (map (fif symbol->variable (tree/tag-pred :simple-symbol)))
+                              nodes)]
+      [:generate-table-expr generate ws variable-list ws under ws model])
+
 
     [[:density-event-list & _]]
     (and-node :density-event-and
