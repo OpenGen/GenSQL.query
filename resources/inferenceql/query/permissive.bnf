@@ -9,6 +9,10 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | constrained-by-expr
              | simple-symbol
 
+prob-table-expr ::= '(' ws? prob-table-expr ws? ')'
+             | given-expr
+             | simple-symbol
+
 (* permissive event *)
 
 <permissive-event-list> ::= (density-event-list / distribution-event-list)

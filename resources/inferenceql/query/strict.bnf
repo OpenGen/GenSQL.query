@@ -7,6 +7,9 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | constrained-by-expr
              | simple-symbol
 
+prob-table-expr ::= '(' ws? prob-table-expr ws? ')'
+             | simple-symbol
+
 (* events *)
 
 distribution-event-binop ::= variable ws? binop ws? scalar-expr

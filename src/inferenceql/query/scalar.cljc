@@ -59,6 +59,8 @@
 
     [:model-expr child] (plan child)
     [:model-expr "(" child ")"] (plan child)
+    [:prob-table-expr child] (plan child)
+    [:prob-table-expr "(" child ")"] (plan child)
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
