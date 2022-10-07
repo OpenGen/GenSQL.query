@@ -286,11 +286,16 @@
 
 (def q5 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy CONDITIONED BY VAR y=\"no\" LIMIT 1")
 (def q6 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy CONDITIONED BY VAR y=\"no\" LIMIT 100000")
+; XXX: this one (PERMISSIVE) doesn't work yet. Likely have to extend permissive.cljc
+(def q7 "SELECT * FROM GENERATE x ACCORDING TO PROBABILITY TABLE prob_xy GIVEN y=\"no\" LIMIT 1")
+
+;(eval2 q7 {'m model 'prob_xy prob_xy})
+;(prn *e)
 ;
 ;(parser/parse q1)
 ;(parser/parse q2)
 ;(parser/parse q3)
-;(perm/parse q4)
+;(perm/parse q7)
 ;(perm/parse q00)
 ;(eval q3 {'m model 'prob_xy prob_xy})
 ;(eval2 q4 {'m model 'prob_xy prob_xy})

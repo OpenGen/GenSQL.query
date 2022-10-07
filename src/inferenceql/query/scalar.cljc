@@ -64,6 +64,7 @@
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     ;; XXX: Should this be `~(plan table)`???
     [:table-conditioned-by-expr model _conditioned _by event] `(~'iql/condition-table ~(plan model) ~(plan event))
+    [:table-given-expr model _given event] `(~'iql/condition-table ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
     [:value [:null _]] nil
