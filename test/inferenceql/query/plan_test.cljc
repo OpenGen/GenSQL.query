@@ -245,14 +245,29 @@
                {probability 0.89 x "yes" y "yes"}
                ])
 
-(defn prob-table-to-categorical-param
-  [table targets]
-    {:p (into {} (map (fn [row] [(select-keys row targets)  (get row 'probability)]) table))})
 
-(defn prob-table-to-categorical-param
-  [table targets]
-    {:p (apply merge-with + (map (fn [row] {(select-keys row targets)  (get row 'probability)}) table))})
 
+
+(select-keys {'probability 0.01 'x "no"  'y "no" } #{'y, 'x})
+;XXX: next:
+; 1. check if categorical simulate cares about the weights being normalized or ; not.
+; 2. Check: should this be memoized?
+
+; this seems to work...
+(def table prob_xy)
+(def condit {'y "no"})
+(filter #(= condition (select-keys % (keys condition))) table)
+;... which implies, this is the right implementation -- modulo a potential need
+;for normalization.
+(defn condition-table
+  [table conditions]
+  (let [conditions (update-keys conditions symbol)
+        filtered-table (filter #(= condition (select-keys % (keys condition))) table)
+        norm-const (reduce #(+ ('probability %1) ('probability %2)) filtered-table)
+        ]
+    (map (fn [row] (update row 'probability #(/ % norm-const))) filtered-table)))
+
+(condition-table table condit)
 
 (defn eval2
   [query env]
@@ -269,17 +284,25 @@
 (def q3 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 10")
 (def q4 "SELECT * FROM GENERATE x ACCORDING TO PROBABILITY TABLE prob_xy LIMIT 10")
 
+(def q5 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy CONDITIONED BY VAR y=\"no\" LIMIT 1")
+(def q6 "SELECT * FROM GENERATE VAR x ACCORDING TO PROBABILITY TABLE prob_xy CONDITIONED BY VAR y=\"no\" LIMIT 100000")
 ;
-(parser/parse q1)
-(parser/parse q2)
-(parser/parse q3)
-(perm/parse q4)
-(perm/parse q00)
+;(parser/parse q1)
+;(parser/parse q2)
+;(parser/parse q3)
+;(perm/parse q4)
+;(perm/parse q00)
 ;(eval q3 {'m model 'prob_xy prob_xy})
 ;(eval2 q4 {'m model 'prob_xy prob_xy})
 ;(eval2 q00 {'m model 'prob_xy prob_xy})
 
-
+;(time (def out1 (doall (eval q5 {'m model 'prob_xy prob_xy}))))
+;(time (def out2 (doall (eval q6 {'m model 'prob_xy prob_xy}))))
+;
+;(parser/parse q5)
+;(filter #(= {'x "yes"} %) (eval q5 {'m model 'prob_xy prob_xy}))
+;(/ 0.05 0.06)
+;(clojure.core/count (filter #(= {'x "yes"} %) (eval q5 {'m model 'prob_xy prob_xy})))
 
 
 

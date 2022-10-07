@@ -9,6 +9,7 @@ model-expr ::= '(' ws? model-expr ws? ')'
 
 prob-table-expr ::= '(' ws? prob-table-expr ws? ')'
              | simple-symbol
+             | table-conditioned-by-expr
 
 (* events *)
 

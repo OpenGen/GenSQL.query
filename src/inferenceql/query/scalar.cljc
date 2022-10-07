@@ -62,6 +62,8 @@
     [:prob-table-expr child] (plan child)
     [:prob-table-expr "(" child ")"] (plan child)
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
+    ;; XXX: Should this be `~(plan table)`???
+    [:table-conditioned-by-expr model _conditioned _by event] `(~'iql/condition-table ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
     [:value [:null _]] nil
@@ -96,6 +98,13 @@
     (cond-> model
       (every? some? (vals conditions))
       (gpm/condition conditions))))
+
+(defn condition-table
+  [table conditions]
+  (let [conditions (update-keys conditions symbol)
+        filtered-table (filter #(= conditions (select-keys % (keys conditions))) table)
+        norm-const (reduce #(+ ('probability %1) ('probability %2)) filtered-table)]
+    (map (fn [row] (update row 'probability #(/ % norm-const))) filtered-table)))
 
 (defn constrain
   [model event]
@@ -179,6 +188,7 @@
    'iql {'prob prob
          'pdf pdf
          'condition condition
+         'condition-table condition-table
          'constrain constrain
          'mutual-info mutual-info
          'approx-mutual-info approx-mutual-info
