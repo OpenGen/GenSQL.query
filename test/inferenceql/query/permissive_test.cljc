@@ -9,6 +9,12 @@
                               (-> permissive
                                   (permissive.parser/parse)
                                   (permissive/->strict)))
+    "SELECT (x) FROM data"
+    "SELECT (x) FROM data"
+
+    "SELECT (PROBABILITY OF x UNDER model) FROM data"
+    "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model) FROM data"
+
     "SELECT PROBABILITY OF x > 0 UNDER model GIVEN y > 1 AND z > 2 FROM data"
     "SELECT PROBABILITY OF VAR x > 0 UNDER model CONSTRAINED BY VAR y > 1 CONSTRAINED BY VAR z > 2 FROM data"))
 
