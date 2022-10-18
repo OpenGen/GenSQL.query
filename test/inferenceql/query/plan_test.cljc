@@ -9,6 +9,17 @@
             [inferenceql.query.strict.parser :as strict.parser]
             [inferenceql.query.tuple :as tuple]))
 
+(deftest select-plan-strict
+  (are [s] (-> s
+               (strict.parser/parse)
+               (plan/plan)
+               (plan/plan?))
+    "SELECT * FROM data"
+    "SELECT x FROM data"
+    "SELECT (x) FROM data"
+    "SELECT PROBABILITY OF VAR x = x UNDER model FROM data"
+    "SELECT (PROBABILITY OF VAR x = x UNDER model) FROM data"))
+
 (deftest select-plan-permissive
   (are [s] (-> s
                (permissive.parser/parse)
