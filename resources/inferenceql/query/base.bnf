@@ -81,11 +81,7 @@ select-list ::= star
 
 star ::= '*'
 
-selection ::= selection-0 (ws alias-clause)?
-<selection-0> ::= selection-1 | scalar-expr | aggregation
-<selection-1> ::= selection-group
-
-selection-group ::= '(' ws? selection-0 ws? ')'
+selection ::= (scalar-expr | aggregation) (ws alias-clause)?
 
 alias-clause ::= #'(?i)AS' ws simple-symbol
 
