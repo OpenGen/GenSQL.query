@@ -2,15 +2,29 @@
   (:refer-clojure :exclude [alter count distinct eval])
   (:require [clojure.test :refer [are deftest is testing]]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.strict.parser :as parser]
+            [inferenceql.query.permissive :as permissive]
+            [inferenceql.query.permissive.parser :as permissive.parser]
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
+            [inferenceql.query.strict.parser :as strict.parser]
             [inferenceql.query.tuple :as tuple]))
+
+(deftest select-plan-permissive
+  (are [s] (-> s
+               (permissive.parser/parse)
+               (permissive/->strict)
+               (plan/plan)
+               (plan/plan?))
+    "SELECT * FROM data"
+    "SELECT x FROM data"
+    "SELECT (x) FROM data"
+    "SELECT PROBABILITY OF x UNDER model FROM data"
+    "SELECT (PROBABILITY OF x UNDER model) FROM data"))
 
 (defn eval
   [query env]
   (-> query
-      (parser/parse)
+      (strict.parser/parse)
       (plan/plan)
       (plan/eval env {})))
 
