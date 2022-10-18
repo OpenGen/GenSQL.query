@@ -5,7 +5,10 @@
 
 (deftest select-valid
   (are [s] (not (insta/failure? (parser/parse s)))
-    "SELECT * FROM data"))
+    "SELECT * FROM data"
+    "SELECT x FROM data"
+    "SELECT (x) FROM data"
+    "SELECT (PROBABILITY OF x UNDER model) FROM data"))
 
 (deftest given-valid
   (are [s] (not (insta/failure? (parser/parse s :start :given-expr)))
