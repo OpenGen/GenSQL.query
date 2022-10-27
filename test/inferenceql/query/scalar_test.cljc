@@ -7,8 +7,8 @@
             [inferenceql.query.tuple :as tuple]))
 
 (defn plan
-  [s]
-  (-> (parser/parse s :start :scalar-expr)
+  [s & {:keys [start] :or {start :scalar-expr}}]
+  (-> (parser/parse s :start start)
       (scalar/plan)))
 
 (deftest plan-symbol
@@ -69,12 +69,28 @@
     "x * (y + z)" '(* x (+ y z))))
 
 (deftest plan-distribution-event
-  (are [s sexpr] (= sexpr (plan s))
-    "PROBABILITY OF VAR x = 0 OR VAR y = 1 UNDER model"
-    '(iql/prob model [:or [:= :x 0] [:= :y 1]])
+  (are [s sexpr] (= sexpr (plan s :start :distribution-event))
+    "VAR x = 0" [:= :x 0]
+    "VAR x = 0 OR VAR y = 1" [:or [:= :x 0] [:= :y 1]]
+    "VAR x = 0 OR VAR y = 1 OR VAR z = 2" [:or [:or [:= :x 0] [:= :y 1]] [:= :z 2]]
+    "(VAR x = 0)" [:= :x 0]
+    "(VAR x = 0 OR VAR y = 1)" [:or [:= :x 0] [:= :y 1]]))
 
-    "PROBABILITY OF VAR x = 0 OR VAR y = 1 OR VAR z = 2 UNDER model"
-    '(iql/prob model [:or [:or [:= :x 0] [:= :y 1]] [:= :z 2]])))
+(deftest plan-density-event
+  (are [s sexpr] (= sexpr (plan s :start :density-event))
+    "VAR x = 0" {:x 0}
+    "(VAR x = 0)" {:x 0}
+    "VAR x = 0 AND VAR y = 1" {:x 0 :y 1}
+    "(VAR x = 0) AND VAR y = 1" {:x 0 :y 1}
+    "VAR x = 0 AND (VAR y = 1)" {:x 0 :y 1}
+    "(VAR x = 0 AND VAR y = 1)" {:x 0 :y 1}
+    "VAR x = 0 AND VAR y = 1 AND VAR z = 2" {:x 0 :y 1 :z 2}
+    "(VAR x = 0) AND VAR y = 1 AND VAR z = 2" {:x 0 :y 1 :z 2}
+    "VAR x = 0 AND (VAR y = 1) AND VAR z = 2" {:x 0 :y 1 :z 2}
+    "VAR x = 0 AND VAR y = 1 AND (VAR z = 2)" {:x 0 :y 1 :z 2}
+    "(VAR x = 0 AND VAR y = 1) AND VAR z = 2" {:x 0 :y 1 :z 2}
+    "VAR x = 0 AND (VAR y = 1 AND VAR z = 2)" {:x 0 :y 1 :z 2}
+    "(VAR x = 0 AND VAR y = 1 AND VAR z = 2)" {:x 0 :y 1 :z 2}))
 
 (defn eval
   [expr env & tuples]
