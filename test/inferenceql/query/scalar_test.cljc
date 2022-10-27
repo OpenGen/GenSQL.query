@@ -1,9 +1,9 @@
 (ns inferenceql.query.scalar-test
   (:refer-clojure :exclude [eval])
-  (:require [clojure.test :refer [are deftest is testing]]
+  (:require [clojure.test :refer [are deftest is]]
             [inferenceql.inference.gpm.proto :as gpm.proto]
-            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.scalar :as scalar]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.tuple :as tuple]))
 
 (defn plan
@@ -67,6 +67,14 @@
     "x + (y = z)" '(+ x (= y z))
     "(x + y) * z" '(* (+ x y) z)
     "x * (y + z)" '(* x (+ y z))))
+
+(deftest plan-distribution-event
+  (are [s sexpr] (= sexpr (plan s))
+    "PROBABILITY OF VAR x = 0 OR VAR y = 1 UNDER model"
+    '(iql/prob model [:or [:= :x 0] [:= :y 1]])
+
+    "PROBABILITY OF VAR x = 0 OR VAR y = 1 OR VAR z = 2 UNDER model"
+    '(iql/prob model [:or [:or [:= :x 0] [:= :y 1]] [:= :z 2]])))
 
 (defn eval
   [expr env & tuples]
