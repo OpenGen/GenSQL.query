@@ -189,8 +189,8 @@ distribution-event ::= distribution-event-0
 <distribution-event-2> ::= distribution-event-3 | distribution-event-binop
 <distribution-event-3> ::= distribution-event-group
 
-distribution-event-or  ::= distribution-event-1 (ws #'(?i)OR'  ws distribution-event-1)+
-distribution-event-and ::= distribution-event-2 (ws #'(?i)AND' ws distribution-event-2)+
+distribution-event-or  ::= distribution-event-0 ws #'(?i)OR'  ws distribution-event-1
+distribution-event-and ::= distribution-event-1 ws #'(?i)AND' ws distribution-event-2
 
 distribution-event-group ::= '(' ws? distribution-event ws? ')'
 
