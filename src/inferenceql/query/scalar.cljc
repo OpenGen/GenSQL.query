@@ -43,13 +43,15 @@
     [:distribution-event-binop (variable :guard (tree/tag-pred :variable))    [:binop s] (scalar   :guard (tree/tag-pred :scalar-expr))] [(keyword s) (plan variable) (plan scalar)]
     [:distribution-event-binop (scalar   :guard (tree/tag-pred :scalar-expr)) [:binop s] (variable :guard (tree/tag-pred :variable))]    [(keyword s) (plan variable) (plan scalar)]
 
-    [:distribution-event-group child] (plan child)
+    [:distribution-event-group "(" child ")"] (plan child)
 
     [:density-event child] (plan child)
     [:density-event-and & children] (into {} (comp (filter tree/branch?) (map plan)) children)
 
     [:density-event-eq (variable :guard (tree/tag-pred :variable))    _= (scalar   :guard (tree/tag-pred :scalar-expr))] {(plan variable) (plan scalar)}
     [:density-event-eq (scalar   :guard (tree/tag-pred :scalar-expr)) _= (variable :guard (tree/tag-pred :variable))]    {(plan variable) (plan scalar)}
+
+    [:density-event-group "(" child ")"] (plan child)
 
     [:probability-expr _prob          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
     [:density-expr     _prob _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
