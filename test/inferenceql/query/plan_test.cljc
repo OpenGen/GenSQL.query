@@ -17,6 +17,8 @@
     "SELECT * FROM data"
     "SELECT x FROM data"
     "SELECT (x) FROM data"
+    "SELECT MAX(x), y FROM data"
+    "SELECT MAX(x), (y) FROM data"
     "SELECT PROBABILITY OF VAR x = x UNDER model FROM data"
     "SELECT (PROBABILITY OF VAR x = x UNDER model) FROM data"))
 
@@ -29,6 +31,8 @@
     "SELECT * FROM data"
     "SELECT x FROM data"
     "SELECT (x) FROM data"
+    "SELECT MAX(x), y FROM data"
+    "SELECT MAX(x), (y) FROM data"
     "SELECT PROBABILITY OF x UNDER model FROM data"
     "SELECT (PROBABILITY OF x UNDER model) FROM data"))
 
