@@ -1,5 +1,5 @@
 (ns inferenceql.query.plan
-  (:refer-clojure :exclude [alias alter distinct distinct? eval sort type update])
+  (:refer-clojure :exclude [alias alter distinct distinct? eval sort time type update])
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.math.combinatorics :as combinatorics]
@@ -132,6 +132,11 @@
    ::plan-1 op1
    ::plan-2 op2
    ::condition condition})
+
+(defn time
+  [op]
+  {::type :inferenceql.query.plan.type/time
+   ::plan op})
 
 (defn with
   [bindings op]
@@ -416,6 +421,10 @@
   [node]
   (plan-impl (tree/only-child-node node)))
 
+(defmethod plan-impl :time-expr
+  [node]
+  (time (plan (tree/only-child-node node))))
+
 (defmethod plan-impl :join-expr-group
   [node]
   (plan-impl (tree/only-child-node node)))
@@ -673,3 +682,41 @@
                               (rest binding-plans)))
                      bindings))]
     (eval plan env bindings)))
+
+(defmethod eval :inferenceql.query.plan.type/time
+  [plan env bindings]
+  (let [{::keys [plan]} plan
+        start (. System (nanoTime))]
+    (eval plan env bindings)
+    (let [elapsed (/ (double (- (. System (nanoTime)) start))
+                     1.0E9)]
+      (relation/relation [{:seconds elapsed}]
+                         :name :time
+                         :attrs [:seconds]))))
+
+
+(comment
+
+  (-> "TIME SELECT * FROM data"
+      (parser/parse))
+
+  (core/time (+ 1 1))
+
+
+  (-> [:query
+       [:relation-expr
+        [:time-expr
+         "TIME"
+         [:ws " "]
+         [:relation-expr
+          [:select-expr
+           [:select-clause "SELECT" [:ws " "] [:select-list [:star "*"]]]
+           [:ws " "]
+           [:from-clause
+            "FROM"
+            [:ws " "]
+            [:relation-expr [:simple-symbol "data"]]]]]]]]
+      tree/only-child-node
+      plan)
+
+  ,)

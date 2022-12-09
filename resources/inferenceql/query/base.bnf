@@ -22,6 +22,7 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | join-expr
                 | rename-expr
                 | with-expr
+                | time-expr
 
 (* commands *)
 
@@ -60,6 +61,10 @@ alter-stmt ::= #'(?i)ALTER' ws simple-symbol ws #'(?i)ADD' ws simple-symbol
 with-expr ::= #'(?i)WITH' ws binding (ws? ',' ws? binding)* ws? ':' ws? relation-expr
 binding ::= expr ws alias-clause
 <expr> ::= relation-expr | model-expr | scalar-expr
+
+(* time-expr *)
+
+time-expr ::= #'(?i)TIME' ws relation-expr
 
 (* select *)
 
