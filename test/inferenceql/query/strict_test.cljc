@@ -15,6 +15,11 @@
             [inferenceql.query.strict :as strict]
             [inferenceql.query.strict.parser :as parser]))
 
+
+(parser/parse "SELECT * FROM data")
+(parser/parse "INCORPORATE ((1 = true)) INTO m")
+(parser/parse
+"SELECT PROBABILITY DENSITY OF VAR y = \"yes\" UNDER (INCORPORATE (1 = true, 2 = true) INTO model ) FROM data;")
 (defn q
   ([query data]
    (q query data {}))
