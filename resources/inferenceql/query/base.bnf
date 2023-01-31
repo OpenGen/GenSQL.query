@@ -210,7 +210,10 @@ density-event-group ::= '(' ws? density-event ws? ')'
 
 conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED' ws #'(?i)BY' ws density-event
 
-incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model-expr
+incorporate-expr ::= #'(?i)INCORPORATE' ws label-list ws #'(?i)INTO' ws model-expr
+label-list ::= '(' ws? label (ws? ',' ws? label)* ws? ')'
+label ::= (ws? int ws? '='  ws? bool ws?)
+
 
 variable ::= #'(?i)VAR' ws simple-symbol
 
