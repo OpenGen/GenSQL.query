@@ -1,4 +1,4 @@
-<scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr | mutual-info-expr
+<scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr | mutual-info-expr | search-expr
 <scalar-expr-6> ::= scalar-expr-group | simple-symbol | value
 
 (* model-expr *)
