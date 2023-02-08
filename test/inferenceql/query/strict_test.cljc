@@ -9,6 +9,8 @@
             [clojure.walk :as walk]
             [com.gfredericks.test.chuck.generators :as chuck.gen]
             [inferenceql.inference.gpm :as gpm]
+            [inferenceql.inference.gpm.crosscat :as xcat]
+            [inferenceql.inference.search.crosscat :as search]
             [inferenceql.query.db :as db]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
@@ -16,10 +18,6 @@
             [inferenceql.query.strict.parser :as parser]))
 
 
-(parser/parse "SELECT * FROM data")
-(parser/parse "INCORPORATE ((1 = true)) INTO m")
-(parser/parse
-"SELECT PROBABILITY DENSITY OF VAR y = \"yes\" UNDER (INCORPORATE (1 = true, 2 = true) INTO model ) FROM data;")
 (defn q
   ([query data]
    (q query data {}))
@@ -403,24 +401,24 @@
 ;; Incorporate Column
 
 ;; FIXME
-#_
-(def incorporate-test-data
-  {0 {:color "red" :flip true}
-   1 {:color "red" :flip true}
-   2 {:color "red" :flip true}
-   3 {:color "red" :flip false}
-   4 {:color "blue" :flip false}
-   5 {:color "green" :flip false}})
+(def data
+  {0 {:color "red" :height 6 :flip true}
+   1 {:color "red" :height 6 :flip true}
+   2 {:color "red" :height 6 :flip true}
+   3 {:color "red" :height 4 :flip false}
+   4 {:color "blue" :height 4 :flip false}
+   5 {:color "green" :height 4 :flip false}})
 
-;; FIXME
-#_
-(def incorporate-test-xcat-model
+(def model
   (let [options {:color ["red" "blue" "green"]}
         view-1-name (gensym)
         view-2-name (gensym)
-        xcat-spec {:views {view-1-name {:hypers {:color {:alpha 2}}}
-                           view-2-name {:hypers {:flip {:alpha 1 :beta 1}}}}
+
+        xcat-spec {:views {view-1-name {:hypers {:color  {:alpha 2}
+                                                 :height {:m 0 :r 1 :s 2 :nu 3}}}
+                           view-2-name {:hypers {:flip  {:alpha 1 :beta 1}}}}
                    :types {:color  :categorical
+                           :height :gaussian
                            :flip :bernoulli}}
 
         xcat-latents {:global {:alpha 0.5}
@@ -440,16 +438,16 @@
                                                3 :two
                                                4 :two
                                                5 :two}}}}]
-    (xcat/construct-xcat-from-latents xcat-spec xcat-latents incorporate-test-data {:options options})))
+    (xcat/construct-xcat-from-latents xcat-spec xcat-latents data {:options options})))
+
 
 ;; FIXME
-#_
-(deftest incorporate-column
+#_(deftest incorporate-column
   (let [row-order (-> (keys incorporate-test-data)
                       (sort))
         data (mapv #(get incorporate-test-data %) row-order)
         model incorporate-test-xcat-model
-        query "WITH (INCORPORATE COLUMN (1=true, 2=true) AS label INTO model) AS model:
+        query "WITH (INCORPORATE (1=true, 2=true) AS label INTO model) AS model:
                SELECT (PROBABILITY DENSITY OF label=true
                        UNDER model
                        CONDITIONED BY color AND flip
@@ -465,6 +463,18 @@
     ;; in that cluster should have a higher probability.
     (is (= 2 (count uniq-probs)))
     (is (= (map :prob result) [high-p high-p high-p high-p low-p low-p]))))
+
+
+;(def inc_q
+;"SELECT PROBABILITY DENSITY OF VAR color = \"red\" UNDER INCORPORATE (1 = true, 2 = true) INTO model FROM data;")
+;(def inc_q
+;"WITH INCORPORATE (1 = true, 2 = true) INTO model AS search_model:
+;SELECT PROBABILITY DENSITY OF VAR label = true UNDER search_model FROM data")
+;(def pq "SELECT PROBABILITY DENSITY OF VAR color = \"red\" UNDER  model FROM data")
+;(def da "SELECT * FROM data")
+;(def d (map #(get data %) (range 4)))
+;(q inc_q d {:model model})
+
 
 ;;; Condition by
 
