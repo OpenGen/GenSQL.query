@@ -7,7 +7,7 @@
             [cognitect.anomalies :as-alias anomalies]
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
-            ;; [inferenceql.inference.search.crosscat :as crosscat]
+            [inferenceql.inference.search.crosscat :as search]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
@@ -64,6 +64,8 @@
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
+    [:incorporate-expr _incorporate  label _into model] `(~'iql/incorporate ~(plan model) ~(vec label))
+    [:incorporate-expr "(" child ")"] (plan child)
     [:value [:null _]] nil
     [:value [_ child]] (edn/read-string child)
 
@@ -118,25 +120,26 @@
   [model vars-lhs vars-rhs]
   (approx/mutual-info model vars-lhs vars-rhs {} 1000))
 
-#_
+
+(defn convert [v]
+  (if (contains? #{"true" "false"} v)
+    (boolean v)
+    (Integer. v)))
+
+(defn row-label [item]
+  (when (vector? item)
+    (when (contains? #{:int :bool} (first item))
+      (convert (second item)))))
+
 (defn incorporate
-  [model rel]
-  (let [new-columns (fn [model rel]
-                      (set/difference (set (relation/attributes rel))
-                                      (set (gpm/variables model))))
-        incorporate-column (fn [model rel col]
-                             (let [column-map (into {}
-                                                    (map-indexed (fn [i tup]
-                                                                   (when-some [v (tuple/get tup col)]
-                                                                     [i v])))
-                                                    rel)]))]
-    (if-let [new-columns (seq (new-columns model rel))]
-      (reduce #(crosscat/incorporate-labels )
-              model
-              new-columns)
-      (reduce gpm/incorporate
-              model
-              (relation/tuples rel)))))
+  [model label-list]
+  (let [col (->> label-list
+                 (remove #(contains? #{:label-list "(" ")" "," } %))
+                 (map #(map row-label %))
+                 (map #(vec (remove nil? %)))
+                 (vec)
+                 (into {}))]
+  (search/incorporate-labels model col)))
 
 (defn unbox
   "Returns the first value of relation `rel`."
@@ -182,7 +185,7 @@
          'constrain constrain
          'mutual-info mutual-info
          'approx-mutual-info approx-mutual-info
-         ;; 'incorporate incorporate
+         'incorporate incorporate
          }})
 
 (defn eval
