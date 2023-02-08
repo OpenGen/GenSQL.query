@@ -13,6 +13,13 @@
             [inferenceql.query.tuple :as tuple]
             [sci.core :as sci]))
 
+
+
+(defn relation-plan
+  [node]
+  (let [plan (clojure.core/requiring-resolve 'inferenceql.query.plan/plan)]
+    (walk/postwalk-replace {'data ''data} (plan node))))
+
 (defn plan
   [node]
   (match/match (into (empty node)
@@ -55,6 +62,10 @@
 
     [:probability-expr _prob          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
     [:density-expr     _prob _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
+
+    ;; how do I get the selection here right
+    [:search-expr  _relevance _prob _to relation _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) (~'iql/relation-eval ~(relation-plan relation) {~(quote 'data) ~'data} {}) ~(plan s))
+    ;[:search-expr  _relevance _prob _to relation _under model _in _context _of s] `(~'iql/row-search  ~(plan model) ~(prn relation) ~(plan s))
 
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
@@ -167,6 +178,37 @@
     (when-not (some nil? args)
       (apply f args))))
 
+(defn relation-eval
+  [plan env bindings]
+  (let [eval (clojure.core/requiring-resolve 'inferenceql.query.plan/eval)]
+    (eval plan env bindings)))
+
+(defn row-search
+  [row model relation col]
+   (let [
+         ;_ (prn model)
+         ;_ (prn event)
+         _ (println "Relation")
+         _ (prn relation)
+         _ (prn "----")
+         _ (println "row")
+         _ (prn row)
+         _ (prn "----")
+        ; _ (prn (type relation))
+        ;_  (prn "(:inferenceql.query.plan/type relation)")
+        ;_  (prn (:inferenceql.query.plan/type relation))
+        ;_  (prn "(:inferenceql.query.plan/limit relation)")
+        ;_  (prn (:inferenceql.query.plan/limit relation))
+        ;_  (prn "(:inferenceql.query.plan/plan relation)")
+        ;_  (prn (:inferenceql.query.plan/plan relation))
+        ;_  (prn "(:inferenceql.query.plan/plan relation)")
+        env (:inferenceql.query.environment/name (:inferenceql.query.plan/plan relation))
+        ; evaled ((clojure.core/requiring-resolve 'inferenceql.query.plan/eval) relation env {})
+        ; _ (prn evaled)
+        ; _ (println "---")
+         _ (prn col)]
+        0))
+
 (def namespaces
   {'inferenceql.inference.gpm {}
    'clojure.core {'not not
@@ -186,11 +228,13 @@
          'mutual-info mutual-info
          'approx-mutual-info approx-mutual-info
          'incorporate incorporate
+         'relation-eval relation-eval
+         'row-search row-search
          }})
 
 (defn eval
   [sexpr env bindings & tuples]
-  (let [env (merge env bindings)
+  (let [env (merge env bindings {'row (first tuples)})
         tuple-map (fn [tuple]
                     (merge (zipmap (tuple/attributes tuple)
                                    (repeat nil))
@@ -208,6 +252,7 @@
         ;; from `env`
         opts {:namespaces namespaces
               :bindings bindings}]
+    (prn sexpr)
     (try (sci/eval-string (pr-str sexpr) opts)
          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
            (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
