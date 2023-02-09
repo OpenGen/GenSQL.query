@@ -219,6 +219,9 @@ variable ::= #'(?i)VAR' ws simple-symbol
 
 variable-list ::= variable (ws? ',' ws? variable)*
 
+int-list ::= int (ws? ',' ws? int)*
+
+
 (* binop *)
 
 binop ::= '>' | '>=' | '=' | '<=' | '<' | is | is-not
@@ -242,8 +245,8 @@ ws ::= #'\s+'
 
 (* similarity *)
 
-search-expr ::= #'(?i)RELEVANCE' ws #'(?i)PROBABILITY' ws #'(?i)TO'
-                ws relation-expr
+search-expr ::= #'(?i)RELEVANCE' ws #'(?i)PROBABILITY' ws #'(?i)TO'  ws #'(?i)ROWIDS'
+                ws int-list
                 ws #'(?i)UNDER' ws model-expr ws
                 #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
 
