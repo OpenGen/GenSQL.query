@@ -85,6 +85,7 @@
     [:variable-list & variables] (map plan variables)
 
     [:int-list & ids] `(~'iql/get-ids ~ids)
+    [:string-list & ids] `(~'iql/get-ids ~ids)
 
     [:simple-symbol s] (symbol s)))
 
@@ -187,15 +188,15 @@
     (eval plan env bindings)))
 
 (defn get-ids [l]
-  (map second (remove #(= "," %) l)))
+  (map (fn [s] (edn/read-string (second s))) (remove #(= "," %) l)))
 
 ;; XXX: next step, slurp it. next step: make it not insane.
 
 
 #_(def the-data [
-             {:ROWID "0" :x 0 :y 3 :a 6}
-             {:ROWID "1" :x 1 :y 4 :a 7}
-             {:ROWID "2" :x 2 :y 5 :a 8}
+             {'ROWID "Hans"   'x 0 'y 3 'a 6}
+             {'ROWID "Joerg"  'x 1 'y 4 'a 7}
+             {'ROWID "Robert" 'x 2 'y 5 'a 8}
              ])
 
 (def the-data (io/slurp-csv "temp-data.csv"))
@@ -207,8 +208,7 @@
     (let [col (keyword (second col-sym-expr))
           row (update-keys row keyword)
           comparison-symbols (filter #(.contains ids (str (get % 'ROWID))) the-data)
-          comparison (map #(update-keys % keyword) comparison-symbols)
-          ]
+          comparison (map #(update-keys % keyword) comparison-symbols)]
       (search/relevance-probability model
                              row
                              comparison
