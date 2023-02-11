@@ -66,7 +66,7 @@
 
     ;; how do I get the selection here right
     ;[:search-expr  _relevance _prob _to relation _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) (~'iql/relation-eval ~(relation-plan relation) {~(quote 'data) ~'data} {}) ~(plan s))
-    [:search-expr  _relevance _prob _to _rowids ids _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) ~(plan ids) ~s)
+    [:search-expr  _similar _to ids _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) ~(plan ids) ~s)
 
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
@@ -193,13 +193,13 @@
 ;; XXX: next step, slurp it. next step: make it not insane.
 
 
-#_(def the-data [
+(def the-data [
              {'ROWID "Hans"   'x 0 'y 3 'a 6}
              {'ROWID "Joerg"  'x 1 'y 4 'a 7}
              {'ROWID "Robert" 'x 2 'y 5 'a 8}
              ])
 
-(def the-data (io/slurp-csv "temp-data.csv"))
+#_(def the-data (io/slurp-csv "temp-data.csv"))
 
 (def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
 
