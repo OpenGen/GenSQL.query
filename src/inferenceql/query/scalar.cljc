@@ -14,7 +14,7 @@
             [inferenceql.query.io :as io]
             [sci.core :as sci]))
 
-
+(def negation-string "___NEGATION___")
 
 (defn relation-plan
   [node]
@@ -67,7 +67,8 @@
     ;; how do I get the selection here right
     ;[:search-expr  _relevance _prob _to relation _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) (~'iql/relation-eval ~(relation-plan relation) {~(quote 'data) ~'data} {}) ~(plan s))
     [:search-expr  _similar _to comparison-expr _under model] `(~'iql/row-search  ~'row ~(plan model) ~(plan comparison-expr))
-    [:comparison-expr  ids _in _context _of s]  [(plan ids) s]
+    [:pos-comparison-expr  ids _in _context _of s]  [(plan ids) s]
+    [:neg-comparison-expr _not ids _in _context _of s]  [negation-string [(plan ids) s]]
 
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
@@ -85,7 +86,7 @@
     [:variable _var child] (keyword (plan child))
     [:variable-list & variables] (map plan variables)
 
-    [:int-list & ids] `(~'iql/get-ids ~ids)
+    [:int-list & ids]    `(~'iql/get-ids ~ids)
     [:string-list & ids] `(~'iql/get-ids ~ids)
 
     [:simple-symbol s] (symbol s)))
@@ -205,10 +206,13 @@
 (def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
 
 (defn row-search
-  [row model [ids col-sym-expr]]
-  (if (.contains ids (str (get row 'ROWID)))
+  [row model comparison-expr]
+  (if (= (first comparison-expr) negation-string)
+    (- 1.0 (row-search row model (second comparison-expr)))
+  (if (.contains (first comparison-expr) (str (get row 'ROWID)))
     1.0
-    (let [col (keyword (second col-sym-expr))
+    (let [[ids col-sym-expr] comparison-expr
+          col (keyword (second col-sym-expr))
           row-id (get row-id-mapping (str (get row 'ROWID)))
           row (update-keys row keyword)
           comparison-symbols (filter #(.contains ids (str (get % 'ROWID))) the-data)
@@ -220,7 +224,7 @@
                              col
                              row-id
                              row-ids-comparison
-                             ))))
+                             )))))
 
 (def namespaces
   {'inferenceql.inference.gpm {}
