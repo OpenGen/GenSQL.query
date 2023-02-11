@@ -251,4 +251,4 @@ search-expr ::= #'(?i)RELEVANCE' ws #'(?i)PROBABILITY' ws #'(?i)TO'  ws #'(?i)RO
                 ws #'(?i)UNDER' ws model-expr ws
                 #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
 
-<id-list> ::= int-list | string-list
+<id-list> ::= string-list |  int-list

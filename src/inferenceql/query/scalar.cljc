@@ -201,18 +201,24 @@
 
 (def the-data (io/slurp-csv "temp-data.csv"))
 
+(def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
+
 (defn row-search
   [row model ids col-sym-expr]
   (if (.contains ids (str (get row 'ROWID)))
     1.0
     (let [col (keyword (second col-sym-expr))
+          row-id (get row-id-mapping (str (get row 'ROWID)))
           row (update-keys row keyword)
           comparison-symbols (filter #(.contains ids (str (get % 'ROWID))) the-data)
+          row-ids-comparison (map #(get row-id-mapping (str (get % 'ROWID))) comparison-symbols)
           comparison (map #(update-keys % keyword) comparison-symbols)]
       (search/relevance-probability model
                              row
                              comparison
                              col
+                             row-id
+                             row-ids-comparison
                              ))))
 
 (def namespaces
