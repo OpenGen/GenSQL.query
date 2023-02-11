@@ -66,7 +66,8 @@
 
     ;; how do I get the selection here right
     ;[:search-expr  _relevance _prob _to relation _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) (~'iql/relation-eval ~(relation-plan relation) {~(quote 'data) ~'data} {}) ~(plan s))
-    [:search-expr  _similar _to ids _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) ~(plan ids) ~s)
+    [:search-expr  _similar _to comparison-expr _under model] `(~'iql/row-search  ~'row ~(plan model) ~(plan comparison-expr))
+    [:comparison-expr  ids _in _context _of s]  [(plan ids) s]
 
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
@@ -204,7 +205,7 @@
 (def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
 
 (defn row-search
-  [row model ids col-sym-expr]
+  [row model [ids col-sym-expr]]
   (if (.contains ids (str (get row 'ROWID)))
     1.0
     (let [col (keyword (second col-sym-expr))

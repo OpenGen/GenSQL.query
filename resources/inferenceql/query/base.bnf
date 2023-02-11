@@ -246,9 +246,9 @@ ws ::= #'\s+'
 
 (* similarity *)
 
-search-expr ::= #'(?i)SIMILAR' ws #'(?i)TO'
-                ws id-list
-                ws #'(?i)UNDER' ws model-expr ws
-                #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
+search-expr ::= #'(?i)SIMILAR' ws #'(?i)TO' comparison-expr
+                ws #'(?i)UNDER' ws model-expr
+
+comparison-expr ::= ws id-list ws #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
 
 <id-list> ::= string-list |  int-list
