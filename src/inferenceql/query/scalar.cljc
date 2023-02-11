@@ -15,6 +15,7 @@
             [sci.core :as sci]))
 
 (def negation-string "___NEGATION___")
+(def and-string "___AND___")
 
 (defn relation-plan
   [node]
@@ -69,7 +70,7 @@
     [:search-expr  _similar _to comparison-expr _under model] `(~'iql/row-search  ~'row ~(plan model) ~(plan comparison-expr))
     [:pos-comparison-expr  ids _in _context _of s]  [(plan ids) s]
     [:neg-comparison-expr _not ids _in _context _of s]  [negation-string [(plan ids) s]]
-
+    [:comparison-conjunction  "(" left ")"  _ "(" right ")"] [and-string  (plan left) (plan right)]
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
 
@@ -196,21 +197,31 @@
 
 
 (def the-data [
-             {'ROWID "Hans"   'x 0 'y 3 'a 6}
-             {'ROWID "Joerg"  'x 1 'y 4 'a 7}
-             {'ROWID "Robert" 'x 2 'y 5 'a 8}
+             {'ROWID "Hans"   'x 0 'y 0 }
+             {'ROWID "Joerg"  'x 4.8 'a 100}
+             {'ROWID "Robert" 'x 2 }
+             {'ROWID "Bogdan"  'a 33}
              ])
 
 #_(def the-data (io/slurp-csv "temp-data.csv"))
 
+(nth [:a :b :c] 2)
 (def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
 
 (defn row-search
   [row model comparison-expr]
-  (if (= (first comparison-expr) negation-string)
+  (cond
+    (= (first comparison-expr) negation-string)
     (- 1.0 (row-search row model (second comparison-expr)))
-  (if (.contains (first comparison-expr) (str (get row 'ROWID)))
+
+    (= (first comparison-expr) and-string)
+    (* (row-search row model (second comparison-expr))
+       (row-search row model (nth comparison-expr 2)))
+
+    (.contains (first comparison-expr) (str (get row 'ROWID)))
     1.0
+
+    :else
     (let [[ids col-sym-expr] comparison-expr
           col (keyword (second col-sym-expr))
           row-id (get row-id-mapping (str (get row 'ROWID)))
@@ -219,12 +230,12 @@
           row-ids-comparison (map #(get row-id-mapping (str (get % 'ROWID))) comparison-symbols)
           comparison (map #(update-keys % keyword) comparison-symbols)]
       (search/relevance-probability model
-                             row
-                             comparison
-                             col
-                             row-id
-                             row-ids-comparison
-                             )))))
+                                    row
+                                    comparison
+                                    col
+                                    row-id
+                                    row-ids-comparison
+                                    ))))
 
 (def namespaces
   {'inferenceql.inference.gpm {}
