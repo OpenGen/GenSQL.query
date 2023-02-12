@@ -250,11 +250,16 @@ search-expr ::= #'(?i)SIMILAR' ws #'(?i)TO' ws comparison-expr
                 ws #'(?i)UNDER' ws model-expr
 
 
-<comparison-expr> ::= comparison-conjunction | pos-comparison-expr | neg-comparison-expr
+<comparison-expr> ::= comparison-conjunction | pos-comparison-expr | neg-comparison-expr | hyp-row-comparison-expr
 
 comparison-conjunction ::= '(' ws? comparison-expr  ws? ')' ws #'(?i)AND' ws '(' ws? comparison-expr  ws? ')'
 
 pos-comparison-expr ::= id-list ws #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
 neg-comparison-expr ::= #'(?i)NOT' ws id-list ws #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
+
+hyp-row-comparison-expr ::= #'(?i)HYPOTHETICAL' ws #'(?i)ROW' ws '(' ws?  row-spec-list  ws? ')' ws #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
+
+row-spec-list ::= cell-spec (ws? ',' ws? cell-spec)*
+cell-spec ::= simple-symbol ws? '=' ws? scalar-expr-3
 
 <id-list> ::= string-list |  int-list

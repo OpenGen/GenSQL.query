@@ -16,6 +16,7 @@
 
 (def negation-string "___NEGATION___")
 (def and-string "___AND___")
+(def hyp-string "___HYP___")
 
 (defn relation-plan
   [node]
@@ -71,6 +72,10 @@
     [:pos-comparison-expr  ids _in _context _of s]  [(plan ids) s]
     [:neg-comparison-expr _not ids _in _context _of s]  [negation-string [(plan ids) s]]
     [:comparison-conjunction  "(" left ")"  _ "(" right ")"] [and-string  (plan left) (plan right)]
+    [:hyp-row-comparison-expr _hypothetical _row "(" row-spec-list ")" _in _context _of s] [hyp-string (plan row-spec-list) s]
+    [:row-spec-list & children] (into {} (comp (filter tree/branch?) (map plan)) children)
+    [:cell-spec s "=" v] [`(~'iql/get-sym ~s) (plan v)]
+
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
 
@@ -193,17 +198,19 @@
 (defn get-ids [l]
   (map (fn [s] (edn/read-string (second s))) (remove #(= "," %) l)))
 
+(defn get-sym [s]
+  (symbol (edn/read-string (second s))))
 ;; XXX: next step, slurp it. next step: make it not insane.
 
 
-(def the-data [
+#_(def the-data [
              {'ROWID "Hans"   'x 0 'y 0 }
              {'ROWID "Joerg"  'x 4.8 'a 100}
              {'ROWID "Robert" 'x 2 }
              {'ROWID "Bogdan"  'a 33}
              ])
 
-#_(def the-data (io/slurp-csv "temp-data.csv"))
+(def the-data (io/slurp-csv "temp-data.csv"))
 
 (nth [:a :b :c] 2)
 (def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
@@ -220,6 +227,19 @@
 
     (.contains (first comparison-expr) (str (get row 'ROWID)))
     1.0
+
+    (= (first comparison-expr) hyp-string)
+    (let [[_ comparison-symbols col-sym-expr] comparison-expr
+          col (keyword (second  col-sym-expr ))
+          row-id (get row-id-mapping (str (get row 'ROWID)))
+          row (update-keys row keyword)
+          comparison (update-keys comparison-symbols keyword)]
+      (search/relevance-probability model
+                                    row
+                                    [comparison]
+                                    col
+                                    row-id
+                                    ["___HYPOTHETICAL_ROW___"]))
 
     :else
     (let [[ids col-sym-expr] comparison-expr
@@ -259,6 +279,7 @@
          'relation-eval relation-eval
          'row-search row-search
          'get-ids get-ids
+         'get-sym get-sym
          }})
 
 (defn eval
