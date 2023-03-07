@@ -69,6 +69,7 @@
     ;; how do I get the selection here right
     ;[:search-expr  _relevance _prob _to relation _under model _in _context _of s] `(~'iql/row-search  ~'row ~(plan model) (~'iql/relation-eval ~(relation-plan relation) {~(quote 'data) ~'data} {}) ~(plan s))
     [:search-expr  _similar _to comparison-expr _under model] `(~'iql/row-search  ~'row ~(plan model) ~(plan comparison-expr))
+    [:search-expr  _similar _to "(" comparison-expr ")" _under model] `(~'iql/row-search  ~'row ~(plan model) ~(plan comparison-expr))
     [:pos-comparison-expr  ids _in _context _of s]  [(plan ids) s]
     [:neg-comparison-expr _not ids _in _context _of s]  [negation-string [(plan ids) s]]
     [:comparison-conjunction  "(" left ")"  _ "(" right ")"] [and-string  (plan left) (plan right)]
@@ -212,7 +213,6 @@
 
 (def the-data (io/slurp-csv "temp-data.csv"))
 
-(nth [:a :b :c] 2)
 (def row-id-mapping (into {} (map-indexed (fn [i row] [(str (get row 'ROWID)) i]) the-data)))
 
 (defn row-search

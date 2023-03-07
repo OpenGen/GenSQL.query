@@ -246,13 +246,13 @@ ws ::= #'\s+'
 
 (* similarity *)
 
-search-expr ::= #'(?i)SIMILAR' ws #'(?i)TO' ws comparison-expr
-                ws #'(?i)UNDER' ws model-expr
+search-expr ::= #'(?i)SIMILAR' ws #'(?i)TO' ws comparison-expr-0 ws #'(?i)UNDER' ws model-expr
 
+<comparison-expr-0> ::= comparison-expr-1 | '(' ws? comparison-expr-1  ws? ')'
 
-<comparison-expr> ::= comparison-conjunction | pos-comparison-expr | neg-comparison-expr | hyp-row-comparison-expr
+<comparison-expr-1> ::= comparison-conjunction | pos-comparison-expr | neg-comparison-expr | hyp-row-comparison-expr
 
-comparison-conjunction ::= '(' ws? comparison-expr  ws? ')' ws #'(?i)AND' ws '(' ws? comparison-expr  ws? ')'
+comparison-conjunction ::= '(' ws? comparison-expr-1  ws? ')' ws #'(?i)AND' ws '(' ws? comparison-expr-1  ws? ')'
 
 pos-comparison-expr ::= id-list ws #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
 neg-comparison-expr ::= #'(?i)NOT' ws id-list ws #'(?i)IN' ws #'(?i)CONTEXT' ws #'(?i)OF' ws simple-symbol
