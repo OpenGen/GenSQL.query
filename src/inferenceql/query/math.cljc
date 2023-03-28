@@ -14,3 +14,6 @@
             top-val (nth sorted halfway)]
         (/ (+ bottom-val top-val)
            2)))))
+
+(defn percentile-in [v s]
+  (* 100.0 (/ (.indexOf (sort (conj s v)) v) (count s))))
