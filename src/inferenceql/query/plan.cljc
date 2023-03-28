@@ -222,10 +222,12 @@
                   (scalar/plan))]
     (select op sexpr)))
 
+
 (defn input-attr
   [node]
   (tree/match [node]
     [[:selection child & _]] (input-attr child)
+    [[:aggregation [:aggregation-fn-param _param-fn] "(" child "," v  ")"]] (literal/read child)
     [[:aggregation _aggregator "(" [:star & _] ")"]] nil
     [[:aggregation _aggregator "(" _distinct [:star & _] ")"]] nil
     [[:aggregation _aggregator "(" child ")"]] (literal/read child)
@@ -255,10 +257,14 @@
         projections (map selection->pair (tree/child-nodes (tree/get-node node :select-list)))]
     (extended-project op projections)))
 
+
+
 (defn aggregator
   [node]
   (tree/match [node]
     [[:selection child & _]] (aggregator child)
+    [[:aggregation [:aggregation-fn-param [tag _param-fn-name]] "(" _sym "," v ")"]] [(symbol tag) (scalar/plan v)]
+    [[:aggregation aggregation-fn "(" _sym ")"]] (aggregator aggregation-fn)
     [[:aggregation aggregation-fn "(" _sym ")"]] (aggregator aggregation-fn)
     [[:aggregation aggregation-fn "(" _distinct _sym ")"]] (aggregator aggregation-fn)
     [[:aggregation-fn [tag & _]]] (symbol tag)
@@ -535,14 +541,17 @@
         rel (into (vec rel-to) rel-from)]
     (relation/relation rel :attrs attributes)))
 
-(def ^:private agg-f
+
+(defn ^:private agg-f
+  [parameter]
   (-> {'count xforms/count
        'avg xforms/avg
        'sum (xforms/reduce +)
        'median query.xforms/median
        'std xforms/sd
        'max xforms/max
-       'min xforms/min}
+       'min xforms/min
+       'percentile_in (query.xforms/make-percentile parameter)}
       (update-vals #(comp (remove nil?) %))))
 
 (defn ^:private aggregation->xform
@@ -554,7 +563,9 @@
           (core/distinct)
           (map identity))
         (if aggregator
-          (agg-f aggregator)
+          (if (vector? aggregator)
+            ((agg-f (second aggregator))  (first aggregator))
+            ((agg-f nil) aggregator))
           xforms/last)))
 
 (defn ^:private default-aggregation

@@ -100,8 +100,13 @@ limit-clause ::= #'(?i)LIMIT' ws int
 
 (* aggregation *)
 
-aggregation ::= aggregation-fn ws? '(' (distinct-clause ws)? ws? (star / simple-symbol) ws? ')' (ws alias-clause)?
-aggregation-fn ::= count | avg | median | std | max | min | sum
+aggregation ::= aggregation-fn-0 ws? '(' (distinct-clause ws)? ws? (star / aggregation-target) ws? ')' (ws alias-clause)?
+
+<aggregation-target> ::= simple-symbol | simple-symbol ws? ',' ws? value
+
+<aggregation-fn-0>   ::= aggregation-fn |  aggregation-fn-param
+aggregation-fn       ::= count | avg | median | std | max | min | sum
+aggregation-fn-param ::= percentile_in
 
 count  ::= #'(?i)COUNT'
 avg    ::= #'(?i)AVG'
@@ -110,6 +115,8 @@ median ::= #'(?i)MEDIAN'
 max    ::= #'(?i)MAX'
 min    ::= #'(?i)MIN'
 sum    ::= #'(?i)SUM'
+
+percentile_in ::= #'(?i)percentile_in'
 
 (* scalar-expr *)
 
