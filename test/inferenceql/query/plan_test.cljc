@@ -195,6 +195,24 @@
       "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 0} {x 1}] 0.5
       "SELECT avg(DISTINCT x) FROM data" '[{x 0} {x 1} {x 1}] 0.5)))
 
+(deftest percentile_in
+  (are [query in out] (= out (->> (eval query {'data in})
+                                  (relation/tuples)
+                                  (map tuple/->vector)))
+    "SELECT percentile_in(x, 0) FROM data"            '[]                                                             '[[nil]]
+    "SELECT percentile_in(x, 0) FROM data"            '[{x 0} {x 1}]                                                  '[[0.0]]
+    "SELECT percentile_in(x, 0.0) FROM data"          '[{x 0.0} {x 1.0}]                                              '[[0.0]]
+    "SELECT percentile_in(x, 1) FROM data"            '[{x 0} {x 1}]                                                  '[[50.0]]
+    "SELECT percentile_in(x, 2) FROM data"            '[{x 0} {x 1}]                                                  '[[100.0]]
+    "SELECT percentile_in(x, 0) FROM data"            '[{x 0} {x -1}]                                                 '[[50.0]]
+    "SELECT percentile_in(x, 1) FROM data"            '[{x 0} {x -1}]                                                 '[[100.0]]
+    "SELECT percentile_in(x, 2) FROM data"            '[{x 0} {x 1} {x 3} {x 4}]                                      '[[50.0]]
+    "SELECT percentile_in(x, 1) FROM data"            '[{x 0} {x 2} {x 3} {x 4}]                                      '[[25.0]]
+    "SELECT percentile_in(x, 8) FROM data"            '[{x 0} {x 1} {x 2} {x 3} {x 4} {x 5} {x 6} {x 7} {x 9} {x 10}] '[[80.0]]
+    "SELECT percentile_in(x, 8) FROM data"            '[{x 10} {x 9} {x 7} {x 6} {x 5} {x 4} {x 3} {x 2} {x 1} {x 0}] '[[80.0]]
+    "SELECT percentile_in(x, 1) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}]                      '[[50.0] [0.0]]
+    "SELECT min(x), percentile_in(x, 1) FROM data"    '[{x 0} {x 2}]                                                  '[[0 50.0]]))
+
 (def mmix
   {:vars {:x :categorical
           :y :categorical}
