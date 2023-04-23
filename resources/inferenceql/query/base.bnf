@@ -180,7 +180,9 @@ join-expr-group ::= '(' join-expr ')'
 
 generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr
 
-(* conditioning, constraining, and events *)
+(* models, conditioning, constraining, and events *)
+
+generative-table-expr ::= #'(?i)GENERATIVE' ws #'(?i)TABLE' ws relation-expr
 
 distribution-event ::= distribution-event-0
 
