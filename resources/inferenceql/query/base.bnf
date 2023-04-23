@@ -178,7 +178,9 @@ join-expr-group ::= '(' join-expr ')'
 
 (* generate-expr *)
 
-generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr
+generate-expr ::= #'(?i)GENERATE' ws generate-list ws (under-clause | according-to-clause)
+under-clause ::= #'(?i)UNDER' ws model-expr
+according-to-clause ::= #'(?i)ACCORDING' ws #'(?i)TO' ws relation-expr
 
 (* conditioning, constraining, and events *)
 

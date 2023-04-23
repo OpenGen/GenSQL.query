@@ -6,11 +6,12 @@
             [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.environment :as env]
+            [inferenceql.query.generative-table :as generative-table]
             [inferenceql.query.literal :as literal]
-            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
             [net.cgrand.xforms :as xforms]))
@@ -71,10 +72,16 @@
      ::plan op}))
 
 (defn generate
-  [variables sexpr]
-  {::type :inferenceql.query.plan.type/generate
-   ::sexpr sexpr
-   ::variables variables})
+  [variables & {:keys [relation-plan model-sexpr]}]
+  (cond model-sexpr
+        {::type :inferenceql.query.plan.type/generate
+         ::sexpr model-sexpr
+         ::variables variables}
+
+        relation-plan
+        {::type :inferenceql.query.plan.type/generate
+         ::plan relation-plan
+         ::variables variables}))
 
 (defn limit
   [op limit]
@@ -206,15 +213,19 @@
 (defmethod plan-impl :generate-expr
   [node]
   (tree/match [node]
-    [[:generate-expr _generate generate-list _under model-expr]]
-    (let [sexpr (scalar/plan model-expr)
-          variables (case (tree/tag generate-list)
-                      :star
-                      '*
+    [[:generate-expr _generate generate-list clause]]
+    (let [variables (case (tree/tag generate-list)
+                      :star '*
+                      :variable-list (map variable-node->symbol (tree/child-nodes generate-list)))]
 
-                      :variable-list
-                      (map variable-node->symbol (tree/child-nodes generate-list)))]
-      (generate variables sexpr))))
+      (tree/match [clause]
+        [[:according-to-clause _according _to relation-expr]]
+        (let [relation-plan (plan relation-expr)]
+          (generate variables :relation-plan relation-plan))
+
+        [[:under-clause _under model-expr]]
+        (let [sexpr (scalar/plan model-expr)]
+          (generate variables :model-sexpr sexpr))))))
 
 (defmethod plan-impl :where-clause
   [node op]
@@ -514,8 +525,11 @@
 
 (defmethod eval :inferenceql.query.plan.type/generate
   [plan env bindings]
-  (let [{::keys [sexpr variables]} plan
-        model (scalar/eval sexpr env bindings)
+  (let [{::keys [plan sexpr variables]} plan
+        model (if sexpr
+                (scalar/eval sexpr env bindings)
+                (let [relation (eval plan env bindings)]
+                  (generative-table/generative-table relation)))
         variables (->> (if (= '* variables)
                          (gpm/variables model)
                          variables)
