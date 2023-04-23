@@ -8,6 +8,7 @@
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
             ;; [inferenceql.inference.search.crosscat :as crosscat]
+            #?(:clj [inferenceql.query.generative-table :as generative-table])
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
@@ -61,6 +62,11 @@
 
     [:model-expr child] (plan child)
     [:model-expr "(" child ")"] (plan child)
+
+    #?@(:clj [[:generative-table-expr _generative _table relation]
+              (let [query-plan (requiring-resolve 'inferenceql.query.plan/plan)]
+                `(~'iql/eval-relation-plan (~'quote ~(query-plan relation))))])
+
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
@@ -164,7 +170,9 @@
     (when-not (some nil? args)
       (apply f args))))
 
-(def namespaces
+(defn namespaces
+  #?(:clj [env bindings]
+     :cljs [])
   {'inferenceql.inference.gpm {}
    'clojure.core {'not not
                   '> (nil-safe (auto-unbox >))
@@ -178,6 +186,9 @@
                   '/ (nil-safe (auto-unbox /))}
    'iql {'prob prob
          'pdf pdf
+         #?@(:clj ['eval-relation-plan
+                   (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
+                     #(generative-table/generative-table (eval % env bindings)))])
          'condition condition
          'constrain constrain
          'mutual-info mutual-info
@@ -203,7 +214,8 @@
                        tuples)
         ;; FIXME write a function to produce this automatically
         ;; from `env`
-        opts {:namespaces namespaces
+        opts {:namespaces #?(:clj (namespaces env bindings)
+                             :cljs (namespaces))
               :bindings bindings}]
     (try (sci/eval-string (pr-str sexpr) opts)
          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex

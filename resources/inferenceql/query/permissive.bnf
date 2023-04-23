@@ -4,6 +4,7 @@
 (* model-expr *)
 
 model-expr ::= '(' ws? model-expr ws? ')'
+             | generative-table-expr
              | given-expr
              | conditioned-by-expr
              | constrained-by-expr
