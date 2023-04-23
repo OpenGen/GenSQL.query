@@ -3,14 +3,15 @@
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.math.combinatorics :as combinatorics]
+            [clojure.set :as set]
             [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.environment :as env]
             [inferenceql.query.literal :as literal]
-            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]
+            [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
             [net.cgrand.xforms :as xforms]))
@@ -622,11 +623,22 @@
   (let [{::keys [plan-1 plan-2]} plan
         rel-1 (eval plan-1 env bindings)
         rel-2 (eval plan-2 env bindings)
-        attrs (into []
-                    (core/distinct)
-                    (into (relation/attributes rel-1)
-                          (relation/attributes rel-2)))
-        tuples (sequence (map #(apply merge %))
+        attrs-rel-1 (apply sorted-set (relation/attributes rel-1))
+        attrs-rel-2 (apply sorted-set (relation/attributes rel-2))
+        attrs-both (set/intersection attrs-rel-1 attrs-rel-2)
+        attr-name (fn [name attr]
+                    (if (contains? attrs-both attr)
+                      (symbol (str name "." attr))
+                      attr))
+        attrs (vec
+               (concat (map #(attr-name (relation/name rel-1) %)
+                            attrs-rel-1)
+                       (map #(attr-name (relation/name rel-2) %)
+                            attrs-rel-2)))
+        tuples (sequence (map (fn [[tup1 tup2]]
+                                (tuple/tuple (merge (update-keys tup1 #(attr-name (tuple/name tup1) %))
+                                                    (update-keys tup2 #(attr-name (tuple/name tup2) %)))
+                                             :attributes attrs)))
                          (combinatorics/cartesian-product (relation/tuples rel-1)
                                                           (relation/tuples rel-2)))]
     (relation/relation tuples :attrs attrs)))
