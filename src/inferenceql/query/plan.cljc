@@ -544,10 +544,8 @@
   (let [plan-to (::plan plan)
         plan-from (::plan-from plan)
         rel-to (eval plan-to env bindings)
-        rel-from (eval plan-from env bindings)
-        attributes (relation/attributes rel-to)
-        rel (into (vec rel-to) rel-from)]
-    (relation/relation rel :attrs attributes)))
+        rel-from (eval plan-from env bindings)]
+    (into rel-from rel-to)))
 
 (def ^:private agg-f
   (-> {'count xforms/count
@@ -613,7 +611,7 @@
         f (reduce comp (map #(setting->f % sexpr env bindings)
                             settings))
         xf (map f)]
-    (relation/transduce rel xf)))
+    (relation/sequence xf rel)))
 
 (defmethod eval :inferenceql.query.plan.type/alter
   [plan env bindings]

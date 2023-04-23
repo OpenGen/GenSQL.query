@@ -115,7 +115,8 @@
 
 (deftest alter
   (let [data (relation/relation '[{x 0} {x 1} {x 2}] :attrs '[x])]
-    (is (= data (eval "ALTER data ADD y" {'data data}))))
+    (is (= (relation/tuples data)
+           (relation/tuples (eval "ALTER data ADD y" {'data data})))))
 
   (are [query in out] (= out (-> (eval query {'data (relation/relation [] :attrs in)})
                                  (relation/attributes)))
@@ -123,6 +124,14 @@
     "ALTER data ADD x" '[x]   '[x]
     "ALTER data ADD y" '[x]   '[x y]
     "ALTER data ADD z" '[x y] '[x y z]))
+
+(comment
+
+  (->> (eval "SELECT max(x) FROM data" {'data '[{x 3}]})
+       (relation/tuples)
+       (map tuple/->vector))
+
+  ,)
 
 (deftest aggregation-max
   (are [query in out] (= out (->> (eval query {'data in})
@@ -152,28 +161,28 @@
     "SELECT sum(x), sum(y) FROM data"    '[{x 1 y 1} {x 2 y 0}]                     '[[3 1]]
     "SELECT sum(x) FROM data GROUP BY y" '[{x 0 y 0} {x 1 y 1} {x 2 y 0} {x 3 y 1}] '[[2] [4]]))
 
-(deftest count
-  (testing "count(x)"
-    (are [query in out] (= out (->> (eval query {'data in})
-                                    (relation/tuples)
-                                    (map tuple/->vector)
-                                    (ffirst)))
-      "SELECT count(x) FROM data" '[] 0
-      "SELECT count(x) FROM data" '[{x 0}] 1
-      "SELECT count(x) FROM data" '[{x 0} {x 1}] 2
-      "SELECT count(x) FROM data" '[{x 0} {} {x 1}] 2
-      "SELECT count(x) FROM data" '[{x 0} {} {x 1}] 2
-      "SELECT count(x) FROM data" '[{} {x 0} {} {x 1} {}] 2))
+(deftest count-x
+  (are [query in out] (= out (->> (eval query {'data in})
+                                  (relation/tuples)
+                                  (map tuple/->vector)
+                                  (ffirst)))
+    "SELECT count(x) FROM data" '[] 0
+    "SELECT count(x) FROM data" '[{x 0}] 1
+    "SELECT count(x) FROM data" '[{x 0} {x 1}] 2
+    "SELECT count(x) FROM data" '[{x 0} {} {x 1}] 2
+    "SELECT count(x) FROM data" '[{x 0} {} {x 1}] 2
+    "SELECT count(x) FROM data" '[{} {x 0} {} {x 1} {}] 2))
 
-  (testing "count(*)"
-    (are [query in out] (= out (->> (eval query {'data in})
-                                    (relation/tuples)
-                                    (map tuple/->vector)
-                                    (ffirst)))
-      "SELECT count(*) FROM data" '[] 0
-      "SELECT count(*) FROM data" '[{}] 1
-      "SELECT count(*) FROM data" '[{} {}] 2
-      "SELECT count(*) FROM data" '[{} {} {}] 3)))
+(deftest count-*
+  (are [query in out] (= out (->> (eval query {'data in})
+                                  (relation/tuples)
+                                  (map tuple/->vector)
+                                  (ffirst)
+                                  ))
+    "SELECT count(*) FROM data" '[] 0
+    "SELECT count(*) FROM data" '[{}] 1
+    "SELECT count(*) FROM data" '[{} {}] 2
+    "SELECT count(*) FROM data" '[{} {} {}] 3))
 
 (deftest distinct
   (testing "DISTINCT"
@@ -208,17 +217,18 @@
 (def model (gpm/Multimixture mmix))
 
 (deftest generate
-  (testing "attributes"
-    (are [query attrs] (= attrs (relation/attributes (eval query {'model model})))
-      "GENERATE VAR x UNDER model" '[x]
-      "GENERATE VAR x, VAR y UNDER model" '[x y]
-      "GENERATE VAR y, VAR x UNDER model" '[y x]
-      "GENERATE VAR x, VAR y, VAR z UNDER model" '[x y z]))
-  (testing "values"
-    (let [rel (eval "GENERATE VAR x UNDER model" {'model model})]
-      (doseq [tup (relation/tuples (take 5 rel))]
-        (is (= '[x] (keys tup)))
-        (is (contains? #{"yes" "no"} (tuple/get tup 'x)))))))
+  (are [query attrs] (= attrs (relation/attributes (eval query {'model model})))
+    "GENERATE VAR x UNDER model" '[x]
+    "GENERATE VAR x, VAR y UNDER model" '[x y]
+    "GENERATE VAR y, VAR x UNDER model" '[y x]
+    "GENERATE VAR x, VAR y, VAR z UNDER model" '[x y z]))
+
+(deftest generate-values
+  (let [rel (eval "GENERATE VAR x UNDER model" {'model model})]
+    (prn "type" (type rel))
+    (doseq [tup (take 5 (relation/tuples rel))]
+      (is (= '[x] (keys tup)))
+      (is (contains? #{"yes" "no"} (tuple/get tup 'x))))))
 
 (deftest join
   (let [env '{a [{x 0} {x 1}]

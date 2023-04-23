@@ -24,3 +24,10 @@
                                         +
                                         (relation/tuples relation))]
     (->GenerativeTable relation normalizing-constant)))
+
+(comment
+
+  (require '[inferenceql.query.permissive :as permissive])
+  (permissive/q "SELECT * FROM (GENERATE * ACCORDING TO (probability, x, y) VALUES (0.7, true, \"hello\"), (0.3, false, \"world\") GIVEN y = \"hello\") LIMIT 10" (db/empty))
+
+  ,)

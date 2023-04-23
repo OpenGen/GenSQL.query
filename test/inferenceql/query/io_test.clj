@@ -5,7 +5,8 @@
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
-            [inferenceql.query.io :as io]))
+            [inferenceql.query.io :as io]
+            [inferenceql.query.relation :as relation]))
 
 (defn slurp-string
   [s]
@@ -115,4 +116,4 @@
       (let [s (string/join \newline
                            (-> (into ["x"] (repeat length "1.0"))
                                (assoc index "0.1")))]
-        (is (vector? (slurp-string s)))))))
+        (is (relation/relation? (slurp-string s)))))))
