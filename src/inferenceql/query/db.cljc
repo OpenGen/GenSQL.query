@@ -4,11 +4,12 @@
   (:refer-clojure :exclude [empty slurp])
   (:require #?(:clj [clojure.core :as clojure])
             #?(:clj [clojure.edn :as edn])
+            #?(:clj [inferenceql.inference.gpm :as gpm])
             [cognitect.anomalies :as-alias anomalies]))
 
 #?(:clj (defn slurp
           [x]
-          (-> (clojure/slurp x) (edn/read-string))))
+          (edn/read-string {:readers gpm/readers} (clojure/slurp x))))
 
 (defn empty
   []
