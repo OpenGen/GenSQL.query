@@ -12,11 +12,11 @@
 % clj -M -m inferenceql.query.main --help
 ```
 
-The command-line application currently only supports IQL-permissive queries.
+The command-line application currently supports IQL-strict and IQL-permissive queries, with strict the default.
 
 ### Clojure interface
 
-`inferenceql.query.permissive` and `inferenceql.query.permissive` each expose a function, `q`, which can be used to evaluate queries. `q` accepts two positional arguments:
+`inferenceql.query.strict` and `inferenceql.query.permissive` each expose a function, `q`, which can be used to evaluate queries. `q` accepts two positional arguments:
 
 1. a query to be evaluate, a string
 2. a database
