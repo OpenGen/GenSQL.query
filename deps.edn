@@ -1,4 +1,5 @@
-{:deps {cljs-bean/cljs-bean {:mvn/version "1.8.0"}
+{:deps {borkdude/dynaload {:mvn/version "0.3.5"}
+        cljs-bean/cljs-bean {:mvn/version "1.8.0"}
         instaparse/instaparse {:mvn/version "1.4.12"}
         medley/medley {:mvn/version "1.4.0"}
         metosin/muuntaja {:mvn/version "0.6.8"}
