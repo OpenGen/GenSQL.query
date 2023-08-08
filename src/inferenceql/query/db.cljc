@@ -1,15 +1,22 @@
 (ns inferenceql.query.db
   "This file defines functions for the creation, interrogation, and manipulation
   of InferenceQL databases."
-  (:refer-clojure :exclude [empty slurp])
+  (:refer-clojure :exclude [empty read-string slurp])
   (:require #?(:clj [clojure.core :as clojure])
-            #?(:clj [clojure.edn :as edn])
-            #?(:clj [inferenceql.inference.gpm :as gpm])
-            [cognitect.anomalies :as-alias anomalies]))
+            [borkdude.dynaload :as dynaload]
+            [clojure.edn :as edn]
+            [cognitect.anomalies :as-alias anomalies]
+            [inferenceql.inference.gpm :as gpm]))
+
+(defn read-string
+  [s]
+  (let [sppl-readers {'inferenceql.gpm.spe/SPE (dynaload/dynaload 'inferenceql.gpm.sppl/read-string)}
+        readers (merge gpm/readers sppl-readers)]
+    (edn/read-string {:readers readers} s)))
 
 #?(:clj (defn slurp
           [x]
-          (edn/read-string {:readers gpm/readers} (clojure/slurp x))))
+          (read-string (clojure/slurp x))))
 
 (defn empty
   []
