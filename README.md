@@ -12,7 +12,7 @@
 clj -M -m inferenceql.query.main --help
 ```
 
-The command-line application currently supports IQL-strict and IQL-permissive queries, with strict the default.
+The command-line application currently supports IQL-strict and IQL-permissive queries, with strict as the default.
 
 #### SPPL
 
