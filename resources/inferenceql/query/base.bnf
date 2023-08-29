@@ -20,6 +20,7 @@ relation-expr ::= '(' ws? relation-expr ws? ')'
                 | update-expr
                 | alter-expr
                 | join-expr
+                | generative-join-expr
                 | rename-expr
                 | with-expr
 
@@ -179,6 +180,10 @@ join-expr-group ::= '(' join-expr ')'
 (* generate-expr *)
 
 generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr
+
+(* generative-join-expr *)
+
+generative-join-expr ::= relation-expr ws #'(?i)GENERATIVE' ws #'(?i)JOIN' ws model-expr
 
 (* models, conditioning, constraining, and events *)
 
