@@ -134,6 +134,12 @@
    ::plan-2 op2
    ::condition condition})
 
+(defn generative-join
+  [op sexpr]
+  {::type :inferenceql.query.plan.type/generative-join
+   ::plan op
+   ::sexpr sexpr})
+
 (defn with
   [bindings op]
   {::type :inferenceql.query.plan.type/with
@@ -441,6 +447,13 @@
                 (plan rel-node-2)
                 (scalar/plan scalar-expr))))
 
+(defmethod plan-impl :generative-join-expr
+  [node]
+  (tree/match [node]
+    [[:generative-join-expr rel-node _generative _join model-expr]]
+    (generative-join (plan rel-node)
+                     (scalar/plan model-expr))))
+
 (defmethod plan-impl :with-expr
   [node]
   (let [expr-plan (fn expr-plan [node]
@@ -657,6 +670,18 @@
                          (combinatorics/cartesian-product (relation/tuples rel-1)
                                                           (relation/tuples rel-2)))]
     (relation/relation tuples :attrs attrs)))
+
+(defmethod eval :inferenceql.query.plan.type/generative-join
+  [plan env bindings]
+  (let [{::keys [plan sexpr]} plan
+        rel (eval plan env bindings)
+        tuples (sequence (mapcat (fn [row]
+                                   (let [rel (eval (generate '* sexpr)
+                                                   env
+                                                   (merge bindings row))]
+                                     (take 1 (relation/tuples rel)))))
+                         (relation/tuples rel))]
+    (relation/relation tuples)))
 
 (defmethod eval :inferenceql.query.plan.type/with
   [plan env bindings]
