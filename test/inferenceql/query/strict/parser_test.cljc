@@ -34,3 +34,9 @@
 (deftest join-invalid
   (are [s] (insta/failure? (parser/parse s))
     "data1 JOIN data2"))
+
+(deftest generative-join-valid
+  (are [s] (not (insta/failure? (parser/parse s)))
+    "data GENERATIVE JOIN model"
+    "data GENERATIVE JOIN model CONDITIONED BY VAR x = 0"
+    "data GENERATIVE JOIN model CONSTRAINED BY VAR x > 0"))
