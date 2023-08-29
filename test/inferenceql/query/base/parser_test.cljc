@@ -46,3 +46,6 @@
   (does-not-parse "\"\"\"" :string)
   (does-not-parse "\"x\"\"" :string)
   (does-not-parse "\"\"x\"" :string))
+
+(deftest parse-generative-join-success
+  (parses "table GENERATIVE JOIN model" :generative-join-expr))

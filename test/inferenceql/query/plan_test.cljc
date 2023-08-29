@@ -271,3 +271,27 @@
       "a INNER JOIN b ON a.x = b.y"
       '[{x 0 y 0}
         {x 1 y 1}])))
+
+(deftest generative-join-plan-strict
+  (are [s] (-> s
+               (strict.parser/parse)
+               (plan/plan)
+               (plan/plan?))
+    "table GENERATIVE JOIN model"
+    "table GENERATIVE JOIN model CONDITIONED BY VAR x = 0"
+    "table GENERATIVE JOIN model CONSTRAINED BY VAR x > 0"))
+
+(deftest generative-join-plan-permissive
+  (are [s] (-> s
+               (permissive.parser/parse)
+               (permissive/->strict)
+               (plan/plan)
+               (plan/plan?))
+    "table GENERATIVE JOIN model"
+    "table GENERATIVE JOIN model GIVEN x"))
+
+(deftest generative-join
+  (are [query tbl expected] (let [env {'table tbl 'model model}]
+                              (= expected (eval query env)))
+    "table GENERATIVE JOIN model CONDITIONED BY VAR x = x" '[{x "yes"}] '[{x "yes" y "yes"}]
+    "table GENERATIVE JOIN model CONDITIONED BY VAR x = x" '[{x "no"}] '[{x "no" y "no"}]))

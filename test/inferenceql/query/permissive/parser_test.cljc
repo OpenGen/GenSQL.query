@@ -28,3 +28,10 @@
     "model GIVEN VAR x = 0 OR VAR y = 0"
     "model GIVEN VAR x = 0 OR VAR y > 0"
     "model GIVEN VAR x > 0 OR VAR y = 0"))
+
+(deftest generative-join-valid
+  (are [s] (not (insta/failure? (parser/parse s)))
+    "data GENERATIVE JOIN model"
+    "data GENERATIVE JOIN model CONDITIONED BY x = 0"
+    "data GENERATIVE JOIN model CONSTRAINED BY x > 0"
+    "data GENERATIVE JOIN model GIVEN x = 0"))
