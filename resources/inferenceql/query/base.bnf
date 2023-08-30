@@ -215,7 +215,7 @@ density-event-and ::= density-event-1 (ws #'(?i)AND' ws density-event-1)+
 
 density-event-group ::= '(' ws? density-event ws? ')'
 
-conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED' ws #'(?i)BY' ws density-event
+conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED' ws #'(?i)BY' ws ('*' | density-event)
 
 incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model-expr
 
