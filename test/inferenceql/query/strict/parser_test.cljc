@@ -40,3 +40,8 @@
     "data GENERATIVE JOIN model"
     "data GENERATIVE JOIN model CONDITIONED BY VAR x = 0"
     "data GENERATIVE JOIN model CONSTRAINED BY VAR x > 0"))
+
+(deftest conditioned-by-valid
+  (are [s] (not (insta/failure? (parser/parse s)))
+    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY VAR x = x)"
+    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY *)"))

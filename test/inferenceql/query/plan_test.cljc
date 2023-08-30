@@ -290,8 +290,10 @@
     "table GENERATIVE JOIN model"
     "table GENERATIVE JOIN model GIVEN x"))
 
-(deftest generative-join
-  (are [query tbl expected] (let [env {'table tbl 'model model}]
-                              (= expected (eval query env)))
-    "table GENERATIVE JOIN model CONDITIONED BY VAR x = x" '[{x "yes"}] '[{x "yes" y "yes"}]
-    "table GENERATIVE JOIN model CONDITIONED BY VAR x = x" '[{x "no"}] '[{x "no" y "no"}]))
+#?(:clj (deftest generative-join
+          (are [query tbl expected] (let [env {'table tbl 'model model}]
+                                      (= expected (eval query env)))
+            "table GENERATIVE JOIN model CONDITIONED BY VAR x = x" '[{x "yes"}] '[{x "yes" y "yes"}]
+            "table GENERATIVE JOIN model CONDITIONED BY VAR x = x" '[{x "no"}] '[{x "no" y "no"}]
+            "table GENERATIVE JOIN model CONDITIONED BY *" '[{x "yes"}] '[{x "yes" y "yes"}]
+            "table GENERATIVE JOIN model CONDITIONED BY *" '[{x "no"}] '[{x "no" y "no"}])))
