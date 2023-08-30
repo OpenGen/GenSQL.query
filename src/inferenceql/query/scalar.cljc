@@ -67,6 +67,7 @@
               (let [query-plan (requiring-resolve 'inferenceql.query.plan/plan)]
                 `(~'iql/eval-relation-plan (~'quote ~(query-plan relation))))])
 
+    [:conditioned-by-expr model _conditioned _by "*"]   `(~'iql/condition-all ~(plan model))
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
@@ -102,6 +103,16 @@
     (cond-> model
       (every? some? (vals conditions))
       (gpm/condition conditions))))
+
+(defn condition-all
+  [model bindings]
+  (let [conditions (reduce (fn [conditions variable]
+                             (cond-> conditions
+                               (contains? bindings variable)
+                               (assoc variable (get bindings variable))))
+                           {}
+                           (map symbol (gpm/variables model)))]
+    (condition model conditions)))
 
 (defn constrain
   [model event]
@@ -189,6 +200,7 @@
          #?@(:clj ['eval-relation-plan
                    (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
                      #(generative-table/generative-table (eval % env bindings)))])
+         #?@(:clj ['condition-all #(condition-all % bindings)])
          'condition condition
          'constrain constrain
          'mutual-info mutual-info
