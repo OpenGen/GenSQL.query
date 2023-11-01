@@ -675,11 +675,11 @@
   [plan env bindings]
   (let [{::keys [plan sexpr]} plan
         rel (eval plan env bindings)
-        tuples (sequence (mapcat (fn [row]
-                                   (let [rel (eval (generate '* sexpr)
-                                                   env
-                                                   (merge bindings row))]
-                                     (take 1 (relation/tuples rel)))))
+        tuples (sequence (map (fn [row]
+                                (let [rel (eval (generate '* sexpr)
+                                                env
+                                                (merge bindings row))]
+                                  (merge row (first (relation/tuples rel))))))
                          (relation/tuples rel))]
     (relation/relation tuples)))
 
