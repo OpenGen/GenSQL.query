@@ -5,6 +5,7 @@
             [clojure.math.combinatorics :as combinatorics]
             [clojure.set :as set]
             [clojure.string :as string]
+            [clojure.zip :as zip]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.environment :as env]
             [inferenceql.query.literal :as literal]
@@ -15,6 +16,59 @@
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
             [net.cgrand.xforms :as xforms]))
+
+(defn make-node
+  [_node children]
+  (apply list children))
+
+(defn condition-node?
+  [x]
+  (and (coll? x)
+       (= 'iql/condition (first x))))
+
+(defn constrain-node?
+  [x]
+  (and (coll? x)
+       (= 'iql/constrain (first x))))
+
+(defn add-prune
+  [sexp variables]
+  (let [root (zip/zipper coll? seq make-node sexp)]
+    (loop [loc root]
+      (let [current-node (zip/node loc)]
+        (if (or (condition-node? current-node)
+                (constrain-node? current-node))
+          (recur (-> loc zip/down zip/right))
+          (-> loc
+              (zip/edit (fn [model-symbol]
+                          `(~'iql/prune ~model-symbol ~variables)))
+              (zip/root)))))))
+
+(defn given-variables
+  [sexpr]
+  (tree/match [sexpr]
+    [(['iql/condition model conditions] :seq)]
+    (into (set (keys conditions))
+          (given-variables model))
+
+    [(['iql/constrain model constraints] :seq)]
+    (into (set (into #{}
+                     (comp (filter keyword?)
+                           (remove #{:> :>= := :<= :< :is :is-not}))
+                     (tree-seq coll? seq constraints)))
+          (given-variables model))
+
+    [(_model :guard symbol?)]
+    #{}))
+
+(defn independent?
+  [model var1 var2]
+  (let [views (-> model (:views) (vals))
+        dependent? (fn [view]
+                     (let [variables (-> view (:columns) (keys) (set))]
+                       (and (contains? variables var1)
+                            (contains? variables var2))))]
+    (not (some dependent? views))))
 
 (defn relation-node?
   [node]
@@ -220,7 +274,10 @@
                       '*
 
                       :variable-list
-                      (map variable-node->symbol (tree/child-nodes generate-list)))]
+                      (map variable-node->symbol (tree/child-nodes generate-list)))
+          sexpr (if (= '* variables)
+                  sexpr
+                  (add-prune sexpr (into #{} (map keyword) variables)))]
       (generate variables sexpr))))
 
 (defmethod plan-impl :where-clause
@@ -710,3 +767,27 @@
                               (rest binding-plans)))
                      bindings))]
     (eval plan env bindings)))
+
+(comment
+
+  (require '[portal.api :as portal])
+  (portal/open {:theme :portal.colors/gruvbox})
+  (add-tap #'portal/submit)
+
+  (require )
+  (def model (gpm/read-string (slurp "/Users/zane/projects/inferenceql.experiments/domain/satellites/clojurecat/sample.0.edn")))
+  (tap> model)
+
+  (require '[inferenceql.inference.gpm :as gpm]
+           '[inferenceql.query.db :as db]
+           '[inferenceql.query.permissive :as permissive])
+
+  (permissive/q "SELECT * FROM (GENERATE Contractor, Country_of_Contractor UNDER model GIVEN Apogee_km = 1000) LIMIT 1"
+                (-> (db/empty) (db/with-model 'model model)))
+
+  (plan (permissive/parse "SELECT * FROM (GENERATE Contractor, Country_of_Contractor UNDER model GIVEN Apogee_km = 1000) LIMIT 1"))
+
+  (permissive/q "SELECT * FROM (GENERATE Perigee_km UNDER model GIVEN Apogee_km > 1000 AND Perigee_km > 1000) LIMIT 1"
+                (-> (db/empty) (db/with-model 'model model)))
+
+  ,)

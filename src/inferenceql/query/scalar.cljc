@@ -1,14 +1,15 @@
 (ns inferenceql.query.scalar
   (:refer-clojure :exclude [eval])
-  (:require [clojure.core.match :as match]
+  (:require ;; [inferenceql.inference.search.crosscat :as crosscat]
+            #?(:clj [inferenceql.query.generative-table :as generative-table])
+            [clojure.core.match :as match]
             [clojure.edn :as edn]
             [clojure.math :as math]
             [clojure.walk :as walk]
             [cognitect.anomalies :as-alias anomalies]
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
-            ;; [inferenceql.inference.search.crosscat :as crosscat]
-            #?(:clj [inferenceql.query.generative-table :as generative-table])
+            [inferenceql.inference.gpm.crosscat :as crosscat]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
@@ -181,6 +182,14 @@
     (when-not (some nil? args)
       (apply f args))))
 
+(defn traced-prune
+  [model vars]
+  (tap> [:model model])
+  (tap> [:vars vars])
+  (let [pruned-model (crosscat/prune model vars)]
+    (tap> [:pruned-model pruned-model])
+    pruned-model))
+
 (defn namespaces
   #?(:clj [env bindings]
      :cljs [])
@@ -204,6 +213,7 @@
          'condition condition
          'constrain constrain
          'mutual-info mutual-info
+         'prune traced-prune
          'approx-mutual-info approx-mutual-info
          ;; 'incorporate incorporate
          }})
