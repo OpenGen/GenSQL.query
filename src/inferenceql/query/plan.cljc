@@ -774,7 +774,6 @@
   (portal/open {:theme :portal.colors/gruvbox})
   (add-tap #'portal/submit)
 
-  (require )
   (def model (gpm/read-string (slurp "/Users/zane/projects/inferenceql.experiments/domain/satellites/clojurecat/sample.0.edn")))
   (tap> model)
 
@@ -784,6 +783,11 @@
 
   (permissive/q "SELECT * FROM (GENERATE Contractor, Country_of_Contractor UNDER model GIVEN Apogee_km = 1000) LIMIT 1"
                 (-> (db/empty) (db/with-model 'model model)))
+
+  (permissive/q "SELECT PROBABILITY OF Contractor = \"Lockheed Martin\" AND Country_of_Contractor = \"China (PR)\" UNDER model AS probability FROM (Apogee_km) VALUES (1000), (2000), (3000)"
+                (-> (db/empty) (db/with-model 'model model)))
+
+  (plan (permissive/parse  "SELECT PROBABILITY OF Contractor = \"Lockheed Martin\" AND Country_of_Contractor = \"China (PR)\" UNDER model AS probability FROM (Apogee_km) VALUES (1000), (2000), (3000)"))
 
   (plan (permissive/parse "SELECT * FROM (GENERATE Contractor, Country_of_Contractor UNDER model GIVEN Apogee_km = 1000) LIMIT 1"))
 

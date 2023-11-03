@@ -15,6 +15,21 @@
             [inferenceql.query.tuple :as tuple]
             [sci.core :as sci]))
 
+(defn traced-prune
+  [model vars]
+  (tap> [:model model])
+  (tap> [:vars vars])
+  (let [pruned-model (crosscat/prune model vars)]
+    (tap> [:pruned-model pruned-model])
+    pruned-model))
+
+(defn event-variables
+  [event]
+  (keep #(tree/match [%]
+           [[:variable _var [:simple-symbol sym]]] sym
+           :else nil)
+        (tree-seq coll? seq event)))
+
 (defn plan
   [node]
   (match/match (into (empty node)
@@ -55,8 +70,17 @@
 
     [:density-event-group "(" child ")"] (plan child)
 
-    [:probability-expr _prob          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
-    [:density-expr     _prob _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
+    [:probability-expr _prob _of event _under model]
+    (do (tap> [:event event])
+        (let [variables (into #{} (map keyword) (event-variables event))]
+          (tap> [:event-variables variables])
+          `(~'iql/prob (~'iql/prune ~(plan model) ~variables) ~(plan event))))
+
+    [:density-expr _prob _density _of event _under model]
+    (do (tap> [:event event])
+        (let [variables (into #{} (map keyword) (event-variables event))]
+          (tap> [:event-variables variables])
+          `(~'iql/pdf (~'iql/prune ~(plan model) ~variables) ~(plan event))))
 
     [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
     [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
@@ -182,13 +206,6 @@
     (when-not (some nil? args)
       (apply f args))))
 
-(defn traced-prune
-  [model vars]
-  (tap> [:model model])
-  (tap> [:vars vars])
-  (let [pruned-model (crosscat/prune model vars)]
-    (tap> [:pruned-model pruned-model])
-    pruned-model))
 
 (defn namespaces
   #?(:clj [env bindings]
@@ -250,3 +267,19 @@
                                   symbol sym
                                   :env bindings}))))
              (throw ex))))))
+
+
+(comment
+
+  (event-variables event)
+
+  (def event
+    [:density-event
+     [:density-event-eq
+      [:variable "VAR" [:ws " "] [:simple-symbol "Contractor"]]
+      [:ws " "]
+      "="
+      [:ws " "]
+      [:scalar-expr [:value [:string "\"Lockheed Martin\""]]]]])
+
+  ,)
