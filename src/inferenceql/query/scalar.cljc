@@ -19,7 +19,7 @@
   [model vars]
   (tap> [:model model])
   (tap> [:vars vars])
-  (let [pruned-model (crosscat/prune model vars)]
+  (let [pruned-model (gpm/prune model vars)]
     (tap> [:pruned-model pruned-model])
     pruned-model))
 
