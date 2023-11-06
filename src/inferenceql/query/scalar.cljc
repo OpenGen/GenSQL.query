@@ -221,14 +221,14 @@
                   '- (nil-safe (auto-unbox -))
                   '* (nil-safe (auto-unbox *))
                   '/ (nil-safe (auto-unbox /))}
-   'iql {'prob prob
-         'pdf pdf
+   'iql {'prob (memoize prob)
+         'pdf (memoize pdf)
          #?@(:clj ['eval-relation-plan
                    (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
                      #(generative-table/generative-table (eval % env bindings)))])
          #?@(:clj ['condition-all #(condition-all % bindings)])
-         'condition condition
-         'constrain constrain
+         'condition (memoize condition)
+         'constrain (memoize constrain)
          'mutual-info mutual-info
          'prune traced-prune
          'approx-mutual-info approx-mutual-info
