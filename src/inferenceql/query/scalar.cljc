@@ -17,10 +17,7 @@
 
 (defn traced-prune
   [model vars]
-  (tap> [:model model])
-  (tap> [:vars vars])
   (let [pruned-model (gpm/prune model vars)]
-    (tap> [:pruned-model pruned-model])
     pruned-model))
 
 (defn event-variables
@@ -206,7 +203,10 @@
     (when-not (some nil? args)
       (apply f args))))
 
-
+(def mem-prob (memoize prob))
+(def mem-pdf (memoize pdf))
+(def mem-condition (memoize condition))
+(def mem-constrain (memoize constrain))
 (defn namespaces
   #?(:clj [env bindings]
      :cljs [])
@@ -221,14 +221,14 @@
                   '- (nil-safe (auto-unbox -))
                   '* (nil-safe (auto-unbox *))
                   '/ (nil-safe (auto-unbox /))}
-   'iql {'prob (memoize prob)
-         'pdf (memoize pdf)
+   'iql {'prob mem-prob
+         'pdf mem-pdf
          #?@(:clj ['eval-relation-plan
                    (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
                      #(generative-table/generative-table (eval % env bindings)))])
          #?@(:clj ['condition-all #(condition-all % bindings)])
-         'condition (memoize condition)
-         'constrain (memoize constrain)
+         'condition mem-condition
+         'constrain mem-constrain
          'mutual-info mutual-info
          'prune traced-prune
          'approx-mutual-info approx-mutual-info
