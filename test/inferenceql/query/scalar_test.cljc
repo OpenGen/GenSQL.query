@@ -186,3 +186,15 @@
         env {'model model}]
     (eval "APPROXIMATE MUTUAL INFORMATION OF VAR x WITH VAR y UNDER model" env)
     (is (= 1000 @simulate-count))))
+
+(deftest eval-transforms
+  (are [s env expected] (= expected
+                           (try (eval s env)
+                                (catch #?(:clj Exception :cljs :default) e
+                                  :error)))
+    "log(x)" '{x 1} 0.0
+    "log(1)" '{} 0.0
+    "log(0.5)" '{} -0.6931471805599453 ; spot check
+    "log(x)" '{x 0.8} -0.2231435513142097 ; spot check
+    "log(x) - log(y)" '{x 0.5 y 0.2} 0.916290731874155; spot check
+    "log(x)" '{} :error))
