@@ -1,4 +1,4 @@
-<scalar-expr-6> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr | mutual-info-expr | approx-mutual-info-expr
+<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr | mutual-info-expr | approx-mutual-info-expr
 
 (* model-expr *)
 

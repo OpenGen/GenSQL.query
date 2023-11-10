@@ -32,6 +32,8 @@
     [:expr-multiplication left _ right] `(~'*   ~(plan left) ~(plan right))
     [:expr-division       left _ right] `(~'/   ~(plan left) ~(plan right))
 
+    [:expr-function-call-log _log child _] `(~'log ~(plan child))
+
     [:expr-binop left [:binop [:is _]]       right] `(~'=         ~(plan left) ~(plan right))
     [:expr-binop left [:binop [:is-not & _]] right] `(~'not=      ~(plan left) ~(plan right))
     [:expr-binop left [:binop s]             right] `(~(symbol s) ~(plan left) ~(plan right))
@@ -194,7 +196,8 @@
                   '+ (nil-safe (auto-unbox +))
                   '- (nil-safe (auto-unbox -))
                   '* (nil-safe (auto-unbox *))
-                  '/ (nil-safe (auto-unbox /))}
+                  '/ (nil-safe (auto-unbox /))
+                  'log (nil-safe (auto-unbox math/log))}
    'iql {'prob prob
          'pdf pdf
          #?@(:clj ['eval-relation-plan
