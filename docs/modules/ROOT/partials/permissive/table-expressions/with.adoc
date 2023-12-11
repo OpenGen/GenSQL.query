@@ -8,5 +8,6 @@ The `+WITH+` keyword allows you to bind names to values for the lifetime of a qu
 ----
 WITH (satellites_model GIVEN Users = "Military") AS military_model:
   SELECT PROBABILITY OF Apogee_km UNDER military_model
+  FROM satellites
 ----
 ====
