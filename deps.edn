@@ -18,7 +18,8 @@
         ring-cors/ring-cors {:mvn/version "0.1.13"}
         ring/ring-core {:mvn/version "1.9.5"}
         ring/ring-jetty-adapter {:mvn/version "1.9.5"}
-        tech.tablesaw/tablesaw-core {:mvn/version "0.43.1"}}
+        tech.tablesaw/tablesaw-core {:mvn/version "0.43.1"}
+        io.github.inferenceql/inferenceql.gpm.sppl {:git/sha "52f8316e094b3644709dccde8f0a935f9b55f187"}}
  :paths ["src" "resources"]
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.13"}
