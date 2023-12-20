@@ -12,6 +12,7 @@
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.tuple :as tuple]
+            [medley.core :as medley]
             [sci.core :as sci]))
 
 (defn plan
@@ -101,9 +102,10 @@
 
 (defn condition
   [model conditions]
-  (let [conditions (update-keys conditions keyword)]
+  (let [conditions (-> (medley/filter-vals some? conditions)
+                       (update-keys keyword))]
     (cond-> model
-      (every? some? (vals conditions))
+      (seq conditions)
       (gpm/condition conditions))))
 
 (defn condition-all
@@ -116,16 +118,50 @@
                            (map symbol (gpm/variables model)))]
     (condition model conditions)))
 
+(defn operation?
+  "Given an event form, returns `true` if the form is an operation."
+  [x]
+  (seq? x))
+
+(defn operands
+  "Given an operation, returns the operands for that operation."
+  [operation]
+  (rest operation))
+
+(defn operator
+  "Given an operation, returns the operator for that operation."
+  [operation]
+  (first operation))
+
+(defn variable?
+  "Returns `true` if `x` is a form that represents a variable."
+  [x]
+  (symbol? x))
+
+(defn strip-nils
+  [event]
+  (walk/postwalk (fn [form]
+                   (if-not (operation? form)
+                     form
+                     (let [nil-count (count (filter nil? form))
+                           value-count (count (remove (some-fn variable? nil?) form))]
+                       (cond (zero? nil-count) form
+                             (zero? value-count) nil
+                             :else (remove nil? form)))))
+                 event))
+
 (defn constrain
   [model event]
-  (let [event (inference-event event)]
+  (let [event (-> event
+                  (strip-nils)
+                  (inference-event))]
     (cond-> model
-      (empty? (filter nil? (tree-seq seqable? seq event)))
+      (some? event)
       (gpm/constrain event
-                     {:operation? seq?
-                      :operands rest
-                      :operator first
-                      :variable? symbol?}))))
+                     {:operation? operation?
+                      :operands operands
+                      :operator operator
+                      :variable? variable?}))))
 
 (defn mutual-info
   [model event-a event-b]
