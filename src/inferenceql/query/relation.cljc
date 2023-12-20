@@ -65,8 +65,6 @@
   argument."
   [rel coll]
   (let [f (fn [tuple]
-            tuple
-            (meta tuple)
             (->> (zipmap (map second coll)
                          (map #((first %) tuple)
                               coll))
