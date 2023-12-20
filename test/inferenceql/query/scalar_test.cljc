@@ -1,10 +1,16 @@
 (ns inferenceql.query.scalar-test
   (:refer-clojure :exclude [eval])
   (:require [clojure.test :refer [are deftest is]]
+            #?(:clj [inferenceql.inference.gpm.conditioned :as conditioned]
+               :cljs [inferenceql.inference.gpm.conditioned :as conditioned :refer [ConditionedGPM]])
+            #?(:clj [inferenceql.inference.gpm.constrained :as constrained]
+               :cljs [inferenceql.inference.gpm.constrained :as constrained :refer [ConstrainedGPM]])
             [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.strict.parser :as parser]
-            [inferenceql.query.tuple :as tuple]))
+            [inferenceql.query.tuple :as tuple])
+  #?(:clj (:import [inferenceql.inference.gpm.conditioned ConditionedGPM]
+                   [inferenceql.inference.gpm.constrained ConstrainedGPM])))
 
 (defn plan
   [s & {:keys [start] :or {start :scalar-expr}}]
@@ -99,7 +105,7 @@
 (deftest eval-symbol-env
   (are [s env expected] (= expected
                            (try (eval s env)
-                                (catch #?(:clj Exception :cljs :default) e
+                                (catch #?(:clj Exception :cljs :default) _
                                   :error)))
     "x" '{x 0} 0
     "x" '{} :error))
@@ -198,3 +204,21 @@
     "log(x)" '{x 0.8} -0.2231435513142097 ; spot check
     "log(x) - log(y)" '{x 0.5 y 0.2} 0.916290731874155; spot check
     "log(x)" '{} :error))
+
+(deftest condition
+  (let [model (reify gpm.proto/Condition
+                (condition [gpm conditions]
+                  (conditioned/condition gpm conditions)))
+        conditioned? #(instance? ConditionedGPM %)]
+    (is (conditioned? (scalar/condition model '{x 0})))
+    (is (not (conditioned? (scalar/condition model {}))))
+    (is (not (conditioned? (scalar/condition model '{x nil}))))))
+
+(deftest constrain
+  (let [model (reify gpm.proto/Constrain
+                (constrain [gpm event opts]
+                  (constrained/constrain gpm event opts)))
+        constrained? #(instance? ConstrainedGPM %)]
+    (is (constrained? (scalar/constrain model '(> x 0))))
+    (is (not (constrained? (scalar/constrain model nil))))
+    (is (not (constrained? (scalar/constrain model '(> x nil)))))))
