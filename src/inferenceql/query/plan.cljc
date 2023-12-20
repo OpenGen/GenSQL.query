@@ -676,10 +676,9 @@
   (let [{::keys [plan sexpr]} plan
         rel (eval plan env bindings)
         tuples (sequence (map (fn [row]
-                                (let [rel (eval (generate '* sexpr)
-                                                env
-                                                (merge bindings row))]
-                                  (merge row (first (relation/tuples rel))))))
+                                (let [model (scalar/eval sexpr env bindings row)
+                                      variables (gpm/variables model)]
+                                  (merge row (gpm/simulate model variables {})))))
                          (relation/tuples rel))]
     (relation/relation tuples)))
 
