@@ -2,6 +2,8 @@ include::partial$base/table-expressions/preamble.adoc[]
 
 include::partial$permissive/table-expressions/generate.adoc[]
 
+include::partial$permissive/table-expressions/generative-join.adoc[]
+
 include::partial$base/table-expressions/insert.adoc[]
 
 include::partial$base/table-expressions/update.adoc[]
