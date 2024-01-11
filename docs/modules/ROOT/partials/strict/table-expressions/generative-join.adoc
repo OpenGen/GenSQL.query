@@ -1,0 +1,11 @@
+=== `+GENERATIVE JOIN+`
+
+The `+GENERATIVE JOIN+` expression evaluates to a table by combining a model and a table. Like a join in SQL, a generative join returns a new, larger table. Unlike a join between two tables in SQL, a generative join takes a data table and joins it with conditional samples from a model.
+
+[example]
+====
+[source,iql]
+----
+satellites GENERATIVE JOIN satellites_model CONDITIONED BY VAR Users = Users AND VAR Apogee_km = Apogee_km AND  VAR Perigee_km = Perigee_km
+----
+====
