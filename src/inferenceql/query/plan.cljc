@@ -233,6 +233,7 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (input-attr child)
+    [[:scalar-expr-group child]] (input-attr child)
     [[:aggregation _aggregator "(" [:star & _] ")"]] nil
     [[:aggregation _aggregator "(" _distinct [:star & _] ")"]] nil
     [[:aggregation _aggregator "(" child ")"]] (literal/read child)
@@ -308,7 +309,9 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (column-selection? child)
+    [[:scalar-expr-group "(" child ")"]] (column-selection? child)
     [[:scalar-expr [:simple-symbol _]]] true
+    [[:scalar-expr child]] (column-selection? child)
     :else false))
 
 (defn ^:private aggregation-plan
