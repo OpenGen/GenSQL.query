@@ -11,6 +11,7 @@
                 ::name name}))
 
 (defn name
+  "Returns the name of a tuple."
   [tup]
   (-> tup meta ::name))
 
@@ -31,6 +32,7 @@
   [tup]
   (merge tup
          (when-let [name (name tup)]
+           ;; sets the namespace of all keys to the tuple name
            (update-keys tup
                         #(symbol (string/join "."
                                               [(clojure/name name)

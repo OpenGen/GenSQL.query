@@ -16,6 +16,7 @@
             [sci.core :as sci]))
 
 (defn plan
+  "Given a parse tree/node, returns an execution plan."
   [node]
   (match/match (into (empty node)
                      (remove tree/whitespace?)
@@ -248,6 +249,8 @@
          }})
 
 (defn eval
+  "Evaluates a scalar-based sexpr given the environment, bindings, and
+   (optional) tuples/rows."
   [sexpr env bindings & tuples]
   (let [env (merge env bindings)
         tuple-map (fn [tuple]
