@@ -6,7 +6,8 @@
             [borkdude.dynaload :as dynaload]
             [clojure.edn :as edn]
             [cognitect.anomalies :as-alias anomalies]
-            [inferenceql.inference.gpm :as gpm]))
+            [inferenceql.inference.gpm :as gpm]
+            [inferenceql.query.string :as q.string]))
 
 (defn read-string
   [s]
@@ -47,13 +48,13 @@
 (defn with-table
   "Adds a table with key `k` to the database. Turns k into a symbol."
   [db k table]
-  (let [sym (symbol (name k))]
+  (let [sym (q.string/safe-symbol (name k))]
     (assoc-in db [:iql/tables sym] table)))
 
 (defn with-model
   "Adds a model with key `k` to the database. Turns k into a symbol."
   [db k model]
-  (let [sym (symbol (name k))]
+  (let [sym (q.string/safe-symbol (name k))]
     (assoc-in db [:iql/models sym] model)))
 
 (defn env

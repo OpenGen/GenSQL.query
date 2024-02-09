@@ -12,6 +12,7 @@
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.strict.parser :as parser]
+            [inferenceql.query.string :as q.string]
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
             [net.cgrand.xforms :as xforms]))
@@ -247,8 +248,7 @@
     [[:selection "(" child ")"]] (output-attr child)
     [[:selection _ [:alias-clause _as sym-node]]] (literal/read sym-node)
     [[:selection child]] (-> (parser/unparse child)
-                             (string/replace #"\s" "")
-                             (symbol))))
+                             (q.string/safe-symbol))))
 
 (defn ^:private selection-plan
   [node op]
@@ -268,7 +268,7 @@
     [[:selection child & _]] (aggregator child)
     [[:aggregation aggregation-fn "(" _sym ")"]] (aggregator aggregation-fn)
     [[:aggregation aggregation-fn "(" _distinct _sym ")"]] (aggregator aggregation-fn)
-    [[:aggregation-fn [tag & _]]] (symbol tag)
+    [[:aggregation-fn [tag & _]]] (symbol tag)              ; No need to munge agg fns.
     [[:scalar-expr _]] nil))
 
 (defn selections
@@ -373,9 +373,9 @@
 (defmethod plan-impl :order-by-clause
   [node op]
   (match/match (vec (tree/child-nodes node))
-    [[:simple-symbol s]]           (sort op (symbol s) :ascending)
-    [[:simple-symbol s] [:asc  _]] (sort op (symbol s) :ascending)
-    [[:simple-symbol s] [:desc _]] (sort op (symbol s) :descending)))
+    [[:simple-symbol s]]           (sort op (q.string/safe-symbol s) :ascending)
+    [[:simple-symbol s] [:asc  _]] (sort op (q.string/safe-symbol s) :ascending)
+    [[:simple-symbol s] [:desc _]] (sort op (q.string/safe-symbol s) :descending)))
 
 (defmethod plan-impl :select-expr
   [node]
@@ -534,8 +534,8 @@
                          (gpm/variables model)
                          variables)
                        (map keyword))
-        attrs (map symbol variables)
-        samples (map #(update-keys % symbol)
+        attrs (map q.string/safe-symbol variables)
+        samples (map #(update-keys % q.string/safe-symbol)
                      (repeatedly #(gpm/simulate model variables {})))]
     (relation/relation samples :attrs attrs)))
 
@@ -641,7 +641,7 @@
         attrs-both (set/intersection attrs-rel-1 attrs-rel-2)
         attr-name (fn [name attr]
                     (if (contains? attrs-both attr)
-                      (symbol (str name "." attr))
+                      (symbol (str name "." attr))          ; MD: NOT namespaced as is
                       attr))
         attrs (vec
                (concat (map #(attr-name (relation/name rel-1) %)
