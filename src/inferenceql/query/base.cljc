@@ -9,6 +9,7 @@
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.statement :as statement]
+            [inferenceql.query.string :as q.string]
             [instaparse.core :as insta]))
 
 (defn query
@@ -51,8 +52,8 @@
   - parse - a parsing function"
   [s db parse]
   (when-let [rel (query s (atom db) parse)]
-    (let [keywordize-keys #(update-keys % keyword)
+    (let [keywordize-keys #(update-keys % q.string/safe-keyword)
           kw-rel (map keywordize-keys rel)
-          kw-attrs (map keyword (relation/attributes rel))]
+          kw-attrs (map q.string/safe-keyword (relation/attributes rel))]
       (with-meta kw-rel
         {:iql/columns kw-attrs}))))
