@@ -46,3 +46,9 @@ inferenceql.query.js.query("SELECT *", [{x: 0}, {x: 1}, {x: 2}], {model: ...})
 ```
 
 The JavaScript interface currently only supports IQL-strict queries.
+
+### Development
+
+#### Testing
+
+Make sure babashka is installed. Then run the tests via `bb test`. Dialect-specific tests can be run with `bb test:clj` and `bb test:cljs`. 

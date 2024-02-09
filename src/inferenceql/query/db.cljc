@@ -45,11 +45,13 @@
                     {::anomalies/category ::anomalies/incorrect}))))
 
 (defn with-table
+  "Adds a table with key `k` to the database. Turns k into a symbol."
   [db k table]
   (let [sym (symbol (name k))]
     (assoc-in db [:iql/tables sym] table)))
 
 (defn with-model
+  "Adds a model with key `k` to the database. Turns k into a symbol."
   [db k model]
   (let [sym (symbol (name k))]
     (assoc-in db [:iql/models sym] model)))
