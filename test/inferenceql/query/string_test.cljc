@@ -42,3 +42,33 @@
     "ABC" "ABC" "xY"
     "aBc" "aBc" "Xy"
     "AbC" "AbC" "xY"))
+
+(deftest munge-roundtrip
+  (are [orig] (= orig (string/demunge (string/munge orig)))
+    "abc"
+    "ABC"
+    "has-dash"
+    "has space"
+    "I'd buy that for a dollar!"
+    "[weird sql quoting syntax]"
+    "`~!@#$%^&*(){}[];:\\\",.?_-+="
+    :foo-bar
+    :foo/bar
+    'moop
+    'moop/bloop))
+
+(deftest munge-idempotency
+  ;; Ensures that calling munge twice on the same string is the same as calling it once
+  (are [orig] (= (string/munge orig) (string/munge (string/munge orig)))
+    "abc"
+    "ABC"
+    "has-dash"
+    "has space"
+    "I'd buy that for a dollar!"
+    "[weird sql quoting syntax]"
+    "`~!@#$%^&*(){}[];:\\\",.?_-+="
+    :foo-bar
+    :foo/bar
+    'moop
+    'moop/bloop))
+
