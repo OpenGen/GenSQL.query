@@ -89,6 +89,9 @@
   [event]
   (walk/postwalk (fn [x]
                    (cond (vector? x) (seq x)
+                         ; NB: do not munge kws here, could potentially have
+                         ; keyword ops like :<, :<=, etc. Identifiers already
+                         ; munged in `plan`.
                          (keyword? x) (symbol x)
                          :else x))
                  event))
