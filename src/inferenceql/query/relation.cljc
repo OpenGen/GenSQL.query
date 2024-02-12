@@ -8,7 +8,8 @@
 ;; These are not sequence functions, so the primary argument comes first.
 
 (defn relation
-  "Produces a relation from a sequence of maps."
+  "Produces a relation from a sequence of maps. "
+  ;;Returns the same collection, but w/ name and attr metadata attached.
   [coll & {:keys [attrs name]}]
   (let [attrs (or attrs
                   (into []
