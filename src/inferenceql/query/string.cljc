@@ -64,16 +64,25 @@
   "Extra chars to demunge"
   (set/map-invert munge-map))
 
+#?(:cljs
+   (defn js-regex-escape
+     "Escapes special chars in a string for literal matching in a regex.
+
+     Based off TC39 proposal for RegExp.escape."
+     [s]
+     (string/replace s #"[\\^$*+?.()|\[\]{}]" "\\$&")))
+
 (defn ^:private key-matching-regex
   "Generates a regex that matches every key in a map.
 
    \\Q and \\E are used to quote special chars for literal matches in Java regexes"
   [m]
   (re-pattern
-    (str
-      "\\Q"
-      (string/join "\\E|\\Q" (keys m))
-      "\\E")))
+    #?(:clj (str
+              "\\Q"
+              (string/join "\\E|\\Q" (keys m))
+              "\\E")
+       :cljs (string/join "" (mapv js-regex-escape (keys m))))))
 
 (def ^:private munge-regex (key-matching-regex munge-map))
 (def ^:private demunge-regex (key-matching-regex demunge-map))
