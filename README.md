@@ -51,4 +51,6 @@ The JavaScript interface currently only supports IQL-strict queries.
 
 #### Testing
 
-Make sure babashka is installed. Then run the tests via `bb test`. Dialect-specific tests can be run with `bb test:clj` and `bb test:cljs`. 
+Make sure [babashka](https://github.com/babashka/babashka) is installed. Then 
+run the tests via `bb test`. Dialect-specific tests can be run with 
+`bb test:clj` and `bb test:cljs`. 

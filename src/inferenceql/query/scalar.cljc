@@ -250,7 +250,7 @@
 
 (defn eval
   "Evaluates a scalar-based sexpr given the environment, bindings, and
-   (optional) tuples/rows."
+  (optional) tuples/rows."
   [sexpr env bindings & tuples]
   (let [env (merge env bindings)
         tuple-map (fn [tuple]
