@@ -9,6 +9,7 @@
             [inferenceql.inference.gpm :as gpm]
             ;; [inferenceql.inference.search.crosscat :as crosscat]
             #?(:clj [inferenceql.query.generative-table :as generative-table])
+            [inferenceql.query.literal :as literal]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.string :as q.string]
@@ -77,8 +78,7 @@
     [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
     [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
-    [:value [:null _]] nil
-    [:value [_ child]] (edn/read-string child)
+    [:value child] (literal/read child)
 
     [:variable _var child] (keyword (plan child))
     [:variable-list & variables] (map plan variables)
@@ -288,7 +288,7 @@
                (when-not (contains? attributes sym)
                  (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
                                  {::anomalies/category ::anomalies/incorrect
-                                  symbol sym
-                                  :sexpr sexpr
-                                  :env bindings}))))
+                                  symbol               (pr-str sym)
+                                  :sexpr               (pr-str sexpr)
+                                  :env                 bindings}))))
              (throw ex))))))
