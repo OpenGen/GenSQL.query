@@ -243,7 +243,7 @@
                           :parameters  {:x {"yes" 0.0 "no" 1.0}
                                         :y {"yes" 0.0 "no" 1.0}}}]]})
         q1 (comp first vals first #(q %1 %2 %3))]
-    (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = \"yes\" UNDER model CONDITIONED BY VAR x = x) FROM data;"
+    (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = 'yes' UNDER model CONDITIONED BY VAR x = x) FROM data;"
                    (with-meta [{}] {:iql/columns [:x :y]})
                    {:model model})))))
 
@@ -251,11 +251,11 @@
   (let [rows [{}]
         models {:model simple-model}
         q1 (comp first vals first #(q % rows models))]
-    (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"no\"  UNDER model)                              FROM data LIMIT 1")))
-    (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model)                              FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model CONDITIONED BY VAR y=\"yes\") FROM data LIMIT 1")))
-    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"no\"  UNDER model CONDITIONED BY VAR y=\"no\")  FROM data LIMIT 1")))
-    (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x=\"yes\" UNDER model CONDITIONED BY VAR y=\"no\")  FROM data LIMIT 1")))))
+    (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF VAR x='no'  UNDER model)                              FROM data LIMIT 1")))
+    (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF VAR x='yes' UNDER model)                              FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x='yes' UNDER model CONDITIONED BY VAR y='yes') FROM data LIMIT 1")))
+    (is (= 1.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x='no'  UNDER model CONDITIONED BY VAR y='no')  FROM data LIMIT 1")))
+    (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x='yes' UNDER model CONDITIONED BY VAR y='no')  FROM data LIMIT 1")))))
 
 (deftest density-of-rows
   (let [models {:model simple-model}
@@ -466,11 +466,11 @@
 (deftest conditioned-by
   (testing "generate"
     (let [q #(q % (with-meta [] {:iql/columns [:y]}) {:model simple-model})]
-      (doseq [result (q "SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = \"yes\") LIMIT 10")]
+      (doseq [result (q "SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = 'yes') LIMIT 10")]
         (is (= {:x "yes"} (select-keys result [:x]))))
-      (doseq [result (q "WITH \"yes\" AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
+      (doseq [result (q "WITH 'yes' AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
         (is (= {:x "yes"} (select-keys result [:x]))))
-      (doseq [result (q "WITH \"yes\" AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
+      (doseq [result (q "WITH 'yes' AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
         (is (= {:x "yes"} (select-keys result [:x]))))))
 
   (let [q (fn [query rows]
@@ -480,12 +480,12 @@
                 (first)))]
     (testing "logpdf"
       (testing "condition present"
-        (is (= 0.0 (q "SELECT PROBABILITY DENSITY OF VAR x = \"yes\" UNDER model CONDITIONED BY VAR y = y FROM data"
+        (is (= 0.0 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY VAR y = y FROM data"
                       [{:y "no"}]))))
       (testing "condition missing"
         (testing "in select"
-          (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = \"yes\" UNDER model CONDITIONED BY VAR y = y FROM data"
+          (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY VAR y = y FROM data"
                          (with-meta [{}]
                            {:iql/columns [:x :y]})))))
         (testing "in with"
-          (is (= 0.0 (q "WITH model CONDITIONED BY VAR y = \"no\" AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data" [{:x "yes"}]))))))))
+          (is (= 0.0 (q "WITH model CONDITIONED BY VAR y = 'no' AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data" [{:x "yes"}]))))))))
