@@ -32,7 +32,7 @@
   [tup]
   (merge tup
          (when-let [name (name tup)]
-           ;; sets the namespace of all keys to the tuple name
+           ;; Sets the namespace of all keys to the tuple name
            (update-keys tup
                         #(symbol (string/join "."
                                               [(clojure/name name)
