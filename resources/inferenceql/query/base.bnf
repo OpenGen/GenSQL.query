@@ -236,15 +236,16 @@ is-not ::= #'(?i)IS' ws #'(?i)NOT'
 
 (* literals *)
 
-value         ::= float | int | bool | string | null
-bool          ::= #'true|false'
-float         ::= #'-?\d+\.\d+(E-?\d+)?'
-int           ::= #'-?\d+'
-nat           ::= #'\d+'
-simple-symbol ::= #'(?!G__)[^0-9\s][\w\-\_\?\.]*'
-string        ::= #'\"([^\"]*)\"'
-null          ::= #'(?i)NULL'
+value            ::= float | int | bool | string | null
+bool             ::= #'true|false'
+float            ::= #'-?\d+\.\d+(E-?\d+)?'
+int              ::= #'-?\d+'
+nat              ::= #'\d+'
+simple-symbol    ::= #'(?!G__)[^0-9\s][\w\-\_\?\.]*'
+string           ::= <"'"> #"[^']*" <"'">
+null             ::= #'(?i)NULL'
 
 (* whitespace *)
 
 ws ::= #'\s+'
+(* TODO: add SQL "--" and "/* */" comments *)

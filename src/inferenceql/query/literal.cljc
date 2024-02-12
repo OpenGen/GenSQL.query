@@ -6,7 +6,7 @@
             [inferenceql.query.relation :as relation]))
 
 (defn read
-  "Recursively walks a parse tree and replaces strings of literals with their
+  "Recursively walks a parse tree and replaces nodes of literals with their
   Clojure equivalents."
   [node]
   (match/match [(into (empty node)
@@ -19,7 +19,7 @@
     [[:int s]]           (edn/read-string s)
     [[:nat s]]           (edn/read-string s)
     [[:simple-symbol s]] (edn/read-string s)
-    [[:string s]]        (edn/read-string s)
+    [[:string s]]        (edn/read-string (str \" s \"))
 
     [[:null _]] nil
     [nil] nil
