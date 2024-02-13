@@ -35,8 +35,8 @@
     (string/starts-with? (name tag) "distribution-event")
     false))
 
-(def simple-symbol-list?
-  (tree/tag-pred :simple-symbol-list))
+(def identifier-list?
+  (tree/tag-pred :identifier-list))
 
 (defn model-expr
   "Takes a model node and an event node and produces a new model-expr node."
@@ -51,25 +51,25 @@
         (throw (ex-info (str "Cannot generate model expression for event")
                         {:event event}))))
 
-(defn symbol->variable
-  "Returns the variable node equivalent of a simple symbol node."
+(defn identifier->variable
+  "Returns the variable node equivalent of an identifier node."
   [node]
   [:variable "VAR" ws node])
 
-(defn symbol-list->variable-list
+(defn identifier-list->variable-list
   [node]
   (into [:variable-list]
-        (map (fif symbol->variable (tree/tag-pred :simple-symbol)))
+        (map (fif identifier->variable (tree/tag-pred :identifier)))
         (rest node)))
 
-(defn symbol->density-event-eq
+(defn identifier->density-event-eq
   "Given a simple symbol node for returns the density event for when the
   variable of that name equals the value held by that symbol in the
   environment."
   [node]
-  (if-not (= :simple-symbol (tree/tag node))
+  (if-not (= :identifier (tree/tag node))
     node
-    (let [variable (symbol->variable node)
+    (let [variable (identifier->variable node)
           scalar-expr-node [:scalar-expr node]]
       [:density-event-eq variable ws "=" ws scalar-expr-node])))
 
@@ -84,20 +84,20 @@
   [node]
   (match/match [(vec (remove tree/whitespace? node))]
     [[:density-event-eq ([:simple-symbol _] :as sym) equals scalar-expr]]
-    [:density-event-eq (symbol->variable sym) ws equals ws [:scalar-expr scalar-expr]]
+    [:density-event-eq (identifier->variable sym) ws equals ws [:scalar-expr scalar-expr]]
 
     [[:density-event-eq scalar-expr equals ([:simple-symbol _] :as sym)]]
-    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (symbol->variable sym)]
+    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (identifier->variable sym)]
 
     [[:distribution-event-binop ([:simple-symbol _] :as sym) binop scalar-expr]]
-    [:distribution-event-binop (symbol->variable sym) ws binop ws [:scalar-expr scalar-expr]]
+    [:distribution-event-binop (identifier->variable sym) ws binop ws [:scalar-expr scalar-expr]]
 
     [[:distribution-event-binop scalar-expr binop ([:simple-symbol _] :as sym)]]
-    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (symbol->variable sym)]
+    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (identifier->variable sym)]
 
-    [[:generate-expr generate [:simple-symbol-list & nodes] under model]]
+    [[:generate-expr generate [:identifier-list & nodes] under model]]
     (let [variable-list (into [:variable-list]
-                              (map (fif symbol->variable (tree/tag-pred :simple-symbol)))
+                              (map (fif identifier->variable (tree/tag-pred :simple-symbol)))
                               nodes)]
       [:generate-expr generate ws variable-list ws under ws model])
 
@@ -119,13 +119,13 @@
     [:probability-expr prob ws of ws [:distribution-event event] ws under ws model]
 
     [[:mutual-info-expr mutual info
-      of (of-list :guard simple-symbol-list?)
-      with (with-list :guard simple-symbol-list?)
+      of (of-list :guard identifier-list?)
+      with (with-list :guard identifier-list?)
       under model]]
     (let [approx (query.string/match-case "approximate" mutual)]
       [:approx-mutual-info-expr approx ws mutual ws info ws
-       of ws (symbol-list->variable-list of-list) ws
-       with ws (symbol-list->variable-list with-list) ws
+       of ws (identifier-list->variable-list of-list) ws
+       with ws (identifier-list->variable-list with-list) ws
        under ws model])
 
     [[:mutual-info-expr mutual info
@@ -138,19 +138,19 @@
      under ws model]
 
     [[:given-expr [:model-expr model] _given events]]
-    (transduce (map symbol->density-event-eq)
+    (transduce (map identifier->density-event-eq)
                (completing model-expr)
                model
                (tree/child-nodes events))
 
     [[:standalone-event-conjunction & _]]
     (and-node :density-event-and
-              (map symbol->density-event-eq
+              (map identifier->density-event-eq
                    (tree/child-nodes node)))
 
     [[:standalone-event-list & _]]
     (and-node :density-event-and
-              (map symbol->density-event-eq
+              (map identifier->density-event-eq
                    (tree/child-nodes node)))
 
     :else

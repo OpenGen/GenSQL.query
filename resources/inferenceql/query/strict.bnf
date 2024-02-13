@@ -1,4 +1,10 @@
-<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value | probability-expr | density-expr | mutual-info-expr | approx-mutual-info-expr
+<scalar-expr-7> ::= scalar-expr-group
+                  | identifier
+                  | value
+                  | probability-expr
+                  | density-expr
+                  | mutual-info-expr
+                  | approx-mutual-info-expr
 
 (* model-expr *)
 
@@ -6,7 +12,7 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | generative-table-expr
              | conditioned-by-expr
              | constrained-by-expr
-             | simple-symbol
+             | identifier
 
 (* events *)
 
