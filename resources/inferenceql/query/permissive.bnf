@@ -1,5 +1,5 @@
 <scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr | mutual-info-expr
-<scalar-expr-7> ::= scalar-expr-group | simple-symbol | value
+<scalar-expr-7> ::= scalar-expr-group | identifier | value
 
 (* model-expr *)
 
@@ -8,7 +8,7 @@ model-expr ::= '(' ws? model-expr ws? ')'
              | given-expr
              | conditioned-by-expr
              | constrained-by-expr
-             | simple-symbol
+             | identifier
 
 (* permissive event *)
 
@@ -18,15 +18,15 @@ model-expr ::= '(' ws? model-expr ws? ')'
 density-event-list ::= density-event (ws? ',' ws? density-event)*
 distribution-event-list ::= distribution-event (ws? ',' ws? distribution-event)*
 
-distribution-event-binop ::= simple-symbol ws? binop ws? scalar-expr-3
-                           / scalar-expr-3 ws? binop ws? simple-symbol
+distribution-event-binop ::= identifier ws? binop ws? scalar-expr-3
+                           / scalar-expr-3 ws? binop ws? identifier
 
-density-event-eq ::= simple-symbol ws? '=' ws? scalar-expr-3
-                   / scalar-expr-3 ws? '=' ws? simple-symbol
+density-event-eq ::= identifier ws? '=' ws? scalar-expr-3
+                   / scalar-expr-3 ws? '=' ws? identifier
 
 standalone-event-list ::= standalone-event (ws? ',' ws? standalone-event)*
-<standalone-event> ::= standalone-event-conjunction / simple-symbol
-standalone-event-conjunction ::= simple-symbol (ws #'(?i)AND' ws simple-symbol)+
+<standalone-event> ::= standalone-event-conjunction / identifier
+standalone-event-conjunction ::= identifier (ws #'(?i)AND' ws identifier)+
 
 (* given *)
 
@@ -35,7 +35,7 @@ given-event-list ::= given-event (ws? ',' ws? given-event)*
 given-event-conjunction ::= given-event (ws #'(?i)AND' ws given-event)+
 
 <given-event> ::= (density-event-eq / distribution-event-binop)
-                | simple-symbol
+                | identifier
 
 (* overrides *)
 
@@ -45,13 +45,13 @@ probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
 
 (* generate-expr *)
 
-<generate-list> ::= star / simple-symbol-list
+<generate-list> ::= star / identifier-list
 
 (* mutual-information-expr *)
 
 mutual-info-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
-                     ws #'(?i)OF' ws simple-symbol-list
-                     ws #'(?i)WITH' ws simple-symbol-list
+                     ws #'(?i)OF' ws identifier-list
+                     ws #'(?i)WITH' ws identifier-list
                      ws #'(?i)UNDER' ws model-expr
                    | #'(?i)MUTUAL' ws #'(?i)INFORMATION'
                      ws #'(?i)OF' ws distribution-event

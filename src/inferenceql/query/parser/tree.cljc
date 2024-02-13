@@ -111,7 +111,8 @@
 (defn alias
   [node]
   (match/match node
-    [:alias-clause _as _ws [:simple-symbol s]] (query.string/safe-symbol s)
+    [:alias-clause _as _ws [_id [:simple-symbol s]]] (symbol s)
+    [:alias-clause _as _ws [_id [:delimited-symbol s]]] (query.string/safe-symbol s)
     :else (recur (get-node node :alias-clause))))
 
 (defn remove

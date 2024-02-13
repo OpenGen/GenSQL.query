@@ -12,7 +12,7 @@ statement ::= create-table-stmt
 
 relation-expr ::= '(' ws? relation-expr ws? ')'
                 | relation-expr ';'
-                | simple-symbol
+                | identifier
                 | select-expr
                 | generate-expr
                 | insert-expr
@@ -32,29 +32,29 @@ command ::= quit-command
 
 quit-command ::= 'quit'
 
-import-command ::= 'import' ws path ws simple-symbol
+import-command ::= 'import' ws path ws identifier
 
-export-command ::= 'export' ws path ws simple-symbol
+export-command ::= 'export' ws path ws identifier
 
 path ::= #'[^\s]+'
 
 (* delete *)
 
-create-table-stmt ::= #'(?i)CREATE' ws #'(?i)TABLE' ws simple-symbol ws #'(?i)AS' ws relation-expr
+create-table-stmt ::= #'(?i)CREATE' ws #'(?i)TABLE' ws identifier ws #'(?i)AS' ws relation-expr
 
-create-model-stmt ::= #'(?i)CREATE' ws #'(?i)MODEL' ws simple-symbol ws #'(?i)AS' ws model-expr
+create-model-stmt ::= #'(?i)CREATE' ws #'(?i)MODEL' ws identifier ws #'(?i)AS' ws model-expr
 
-drop-table-stmt ::= #'(?i)DROP' ws #'(?i)TABLE' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
+drop-table-stmt ::= #'(?i)DROP' ws #'(?i)TABLE' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws identifier
 
-drop-model-stmt ::= #'(?i)DROP' ws #'(?i)MODEL' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws simple-symbol
+drop-model-stmt ::= #'(?i)DROP' ws #'(?i)MODEL' (ws #'(?i)IF' ws #'(?i)EXISTS')? ws identifier
 
-insert-stmt ::= #'(?i)INSERT' ws #'(?i)INTO' ws simple-symbol ws relation-expr
+insert-stmt ::= #'(?i)INSERT' ws #'(?i)INTO' ws identifier ws relation-expr
 
-update-stmt ::= #'(?i)UPDATE' ws simple-symbol
+update-stmt ::= #'(?i)UPDATE' ws identifier
                 ws #'(?i)SET' ws update-settings
                 (ws #'(?i)WHERE' ws scalar-expr)?
 
-alter-stmt ::= #'(?i)ALTER' ws simple-symbol ws #'(?i)ADD' ws simple-symbol
+alter-stmt ::= #'(?i)ALTER' ws identifier ws #'(?i)ADD' ws identifier
 
 (* with-expr *)
 
@@ -84,15 +84,15 @@ star ::= '*'
 
 selection ::= (scalar-expr | aggregation) (ws alias-clause)?
 
-alias-clause ::= #'(?i)AS' ws simple-symbol
+alias-clause ::= #'(?i)AS' ws identifier
 
 from-clause ::= #'(?i)FROM' ws relation-expr (ws? alias-clause)?
 
 where-clause ::= #'(?i)WHERE' ws scalar-expr
 
-group-by-clause ::= #'(?i)GROUP' ws #'(?i)BY' ws simple-symbol (ws? "," ws? simple-symbol)*
+group-by-clause ::= #'(?i)GROUP' ws #'(?i)BY' ws identifier (ws? "," ws? identifier)*
 
-order-by-clause ::= #'(?i)ORDER' ws #'(?i)BY' ws simple-symbol (ws (asc | desc))?
+order-by-clause ::= #'(?i)ORDER' ws #'(?i)BY' ws identifier (ws (asc | desc))?
 
 asc  ::= #'(?i)ASC'
 desc ::= #'(?i)DESC'
@@ -101,7 +101,7 @@ limit-clause ::= #'(?i)LIMIT' ws int
 
 (* aggregation *)
 
-aggregation ::= aggregation-fn ws? '(' (distinct-clause ws)? ws? (star / simple-symbol) ws? ')' (ws alias-clause)?
+aggregation ::= aggregation-fn ws? '(' (distinct-clause ws)? ws? (star / identifier) ws? ')' (ws alias-clause)?
 aggregation-fn ::= count | avg | median | std | max | min | sum
 
 count  ::= #'(?i)COUNT'
@@ -147,9 +147,9 @@ scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 
 insert-expr ::= #'(?i)INSERT' ws #'(?i)INTO' ws relation-expr ws relation-expr
 
-relation-value ::= '(' ws? simple-symbol-list ws? ')' ws #'(?i)VALUES' ws value-lists
+relation-value ::= '(' ws? identifier-list ws? ')' ws #'(?i)VALUES' ws value-lists
 
-simple-symbol-list ::= simple-symbol (ws? ',' ws simple-symbol)*
+identifier-list ::= identifier (ws? ',' ws identifier)*
 value-list ::= '(' ws? value (ws? ',' ws? value)* ws? ')'
 value-lists ::= value-lists-full | value-lists-sparse
 value-lists-full ::= value-list (ws? ',' ws? value-list)*
@@ -161,11 +161,11 @@ update-expr ::= #'(?i)UPDATE' ws relation-expr
                 ws #'(?i)SET' ws update-settings
                 (ws #'(?i)WHERE' ws scalar-expr)?
 update-settings ::= update-setting (ws? ',' ws? update-setting)*
-update-setting ::= simple-symbol ws? '=' ws? scalar-expr
+update-setting ::= identifier ws? '=' ws? scalar-expr
 
 (* alter-expr *)
 
-alter-expr ::= #'(?i)ALTER' ws relation-expr ws #'(?i)ADD' ws simple-symbol
+alter-expr ::= #'(?i)ALTER' ws relation-expr ws #'(?i)ADD' ws identifier
 
 (* rename-expr *)
 
@@ -224,7 +224,7 @@ conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED' ws #'(?i)BY' ws ('*' | 
 
 incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model-expr
 
-variable ::= #'(?i)VAR' ws simple-symbol
+variable ::= #'(?i)VAR' ws identifier
 
 variable-list ::= variable (ws? ',' ws? variable)*
 
@@ -241,7 +241,9 @@ bool             ::= #'true|false'
 float            ::= #'-?\d+\.\d+(E-?\d+)?'
 int              ::= #'-?\d+'
 nat              ::= #'\d+'
+identifier       ::= simple-symbol | delimited-symbol
 simple-symbol    ::= #'(?!G__)[^0-9\s][\w\-\_\?\.]*'
+delimited-symbol ::= <'"'> #'[^\"]+' <'"'>
 string           ::= <"'"> #"[^']*" <"'">
 null             ::= #'(?i)NULL'
 
