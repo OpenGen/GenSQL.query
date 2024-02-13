@@ -3,7 +3,8 @@
   (:require [clojure.core.match :as match]
             [clojure.edn :as edn]
             [inferenceql.query.parser.tree :as tree]
-            [inferenceql.query.relation :as relation]))
+            [inferenceql.query.relation :as relation]
+            [inferenceql.query.string :as q.string]))
 
 (defn read
   "Recursively walks a parse tree and replaces nodes of literals with their
@@ -14,12 +15,13 @@
                       node)]
     [[:value child]] (read child)
 
-    [[:bool s]]          (edn/read-string s)
-    [[:float s]]         (edn/read-string s)
-    [[:int s]]           (edn/read-string s)
-    [[:nat s]]           (edn/read-string s)
-    [[:simple-symbol s]] (edn/read-string s)
-    [[:string s]]        (edn/read-string (str \" s \"))
+    [[:bool s]]             (edn/read-string s)
+    [[:float s]]            (edn/read-string s)
+    [[:int s]]              (edn/read-string s)
+    [[:nat s]]              (edn/read-string s)
+    [[:simple-symbol s]]    (edn/read-string s)
+    [[:delimited-symbol s]] (edn/read-string (q.string/safe-symbol s))
+    [[:string s]]           (edn/read-string (str \" s \"))
 
     [[:null _]] nil
     [nil] nil
@@ -28,7 +30,7 @@
     [[:relation-expr child _semicolon]] (read child)
     [[:value-lists child]] (read child)
 
-    [[:simple-symbol-list & children]]
+    [[:identifier-list & children]]
     (map read (filter tree/branch? children))
 
     [[:value-lists-full & children]]
