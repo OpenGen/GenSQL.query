@@ -247,4 +247,11 @@ null          ::= #'(?i)NULL'
 
 (* whitespace *)
 
-ws ::= #'\s+'
+ws ::= (#'\s+' | comment)+
+comment ::= simple-comment | bracketed-comment
+simple-comment ::= #"--[^\n]*(?:\n|$)"
+bracketed-comment ::= #"\/\*.*?\*\/"
+
+(* reserved words *)
+(* TODO: add reserved words to exclude from simple symbols *)
+

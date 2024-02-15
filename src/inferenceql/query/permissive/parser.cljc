@@ -10,11 +10,19 @@
   (str (io/inline-file "inferenceql/query/base.bnf")
        (io/inline-file "inferenceql/query/permissive.bnf")))
 
+(def whitespace-or-comments
+  (insta/parser
+    "ws ::= (#'\\s+' | comment)+
+     comment ::= simple-comment | bracketed-comment
+     simple-comment ::= #'--[^\n]*(?:\n|$)'
+     bracketed-comment ::= #'\\/\\*.*?\\*\\/'"))
+
 (def parse
   "An instaparse parser for IQL SQL queries. The grammar is inlined at macro
   expansion time so that it can be used in the ClojureScript context where we
   don't have access to file resources."
-  (insta/parser bnf))
+  (insta/parser bnf
+                :auto-whitespace whitespace-or-comments))
 
 (def non-terminals (set (keys (combinators/ebnf bnf))))
 
