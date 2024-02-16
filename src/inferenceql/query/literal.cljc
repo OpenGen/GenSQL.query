@@ -19,6 +19,7 @@
     [[:float s]]            (edn/read-string s)
     [[:int s]]              (edn/read-string s)
     [[:nat s]]              (edn/read-string s)
+    [[:identifier child]]   (read child)
     [[:simple-symbol s]]    (edn/read-string s)
     [[:delimited-symbol s]] (edn/read-string (q.string/safe-symbol s))
     [[:string s]]           (edn/read-string (str \" s \"))
