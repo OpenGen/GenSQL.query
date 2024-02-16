@@ -1,5 +1,5 @@
 (ns inferenceql.query.string
-  (:refer-clojure :exclude [munge])
+  (:refer-clojure :exclude [munge demunge])
   (:require [clojure.set :as set]
             [clojure.string :as string]))
 
@@ -37,17 +37,17 @@
    ;;"+" "_PLUS_"
    ;;">" "_GT_"
    ;;"<" "_LT_"
-   "=" "_EQ_"
+   ;;"=" "_EQ_"
    "~" "_TILDE_"
-   "!" "_BANG_"
+   ;;"!" "_BANG_"
    "@" "_CIRCA_"
    "#" "_SHARP_"
-   "'" "_SINGLEQUOTE_"
+   ;;"'" "_SINGLEQUOTE_"
    "\"" "_DOUBLEQUOTE_"
    "%" "_PERCENT_"
    "^" "_CARET_"
    "&" "_AMPERSAND_"
-   "*" "_STAR_"
+   ;;"*" "_STAR_"
    "|" "_BAR_"
    "(" "_LPAREN_"
    ")" "_RPAREN_"
@@ -83,7 +83,7 @@
               "\\Q"
               (string/join "\\E|\\Q" (keys m))
               "\\E")
-       :cljs (string/join "" (mapv js-regex-escape (keys m))))))
+       :cljs (string/join "|" (mapv js-regex-escape (keys m))))))
 
 (def ^:private munge-regex (key-matching-regex munge-map))
 (def ^:private demunge-regex (key-matching-regex demunge-map))
