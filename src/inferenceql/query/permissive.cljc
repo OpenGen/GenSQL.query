@@ -83,21 +83,21 @@
 (defn strict-node
   [node]
   (match/match [(vec (remove tree/whitespace? node))]
-    [[:density-event-eq ([:simple-symbol _] :as sym) equals scalar-expr]]
-    [:density-event-eq (identifier->variable sym) ws equals ws [:scalar-expr scalar-expr]]
+    [[:density-event-eq ([:identifier _] :as id) equals scalar-expr]]
+    [:density-event-eq (identifier->variable id) ws equals ws [:scalar-expr scalar-expr]]
 
-    [[:density-event-eq scalar-expr equals ([:simple-symbol _] :as sym)]]
-    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (identifier->variable sym)]
+    [[:density-event-eq scalar-expr equals ([:identifier _] :as id)]]
+    [:density-event-eq [:scalar-expr scalar-expr] ws equals ws (identifier->variable id)]
 
-    [[:distribution-event-binop ([:simple-symbol _] :as sym) binop scalar-expr]]
-    [:distribution-event-binop (identifier->variable sym) ws binop ws [:scalar-expr scalar-expr]]
+    [[:distribution-event-binop ([:identifier _] :as id) binop scalar-expr]]
+    [:distribution-event-binop (identifier->variable id) ws binop ws [:scalar-expr scalar-expr]]
 
-    [[:distribution-event-binop scalar-expr binop ([:simple-symbol _] :as sym)]]
-    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (identifier->variable sym)]
+    [[:distribution-event-binop scalar-expr binop ([:identifier _] :as id)]]
+    [:distribution-event-binop [:scalar-expr scalar-expr] ws binop ws (identifier->variable id)]
 
     [[:generate-expr generate [:identifier-list & nodes] under model]]
     (let [variable-list (into [:variable-list]
-                              (map (fif identifier->variable (tree/tag-pred :simple-symbol)))
+                              (map (fif identifier->variable (tree/tag-pred :identifier)))
                               nodes)]
       [:generate-expr generate ws variable-list ws under ws model])
 

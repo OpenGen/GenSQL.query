@@ -202,7 +202,7 @@
   [_ op]
   op)
 
-(defmethod plan-impl :simple-symbol
+(defmethod plan-impl :identifier
   [node]
   (let [sym (literal/read node)]
     (lookup sym)))
@@ -308,7 +308,7 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (column-selection? child)
-    [[:scalar-expr [:simple-symbol _]]] true
+    [[:scalar-expr [:identifier _]]] true
     :else false))
 
 (defn ^:private aggregation-plan
@@ -358,8 +358,8 @@
 (defmethod plan-impl :rename-expr
   [node]
   (tree/match [node]
-    [[:rename-expr relation-expr [:alias-clause _as simple-symbol]]]
-    (rename (plan relation-expr) (literal/read simple-symbol))))
+    [[:rename-expr relation-expr [:alias-clause _as identifier]]]
+    (rename (plan relation-expr) (literal/read identifier))))
 
 (defmethod plan-impl :limit-clause
   [node op]
@@ -373,9 +373,12 @@
 (defmethod plan-impl :order-by-clause
   [node op]
   (match/match (vec (tree/child-nodes node))
-    [[:simple-symbol s]]           (sort op (query.string/safe-symbol s) :ascending)
-    [[:simple-symbol s] [:asc  _]] (sort op (query.string/safe-symbol s) :ascending)
-    [[:simple-symbol s] [:desc _]] (sort op (query.string/safe-symbol s) :descending)))
+    [[_id [:simple-symbol s]]]           (sort op (symbol s) :ascending)
+    [[_id [:simple-symbol s]] [:asc  _]] (sort op (symbol s) :ascending)
+    [[_id [:simple-symbol s]] [:desc _]] (sort op (symbol s) :descending)
+    [[_id [:delimited-symbol s]]]           (sort op (query.string/safe-symbol s) :ascending)
+    [[_id [:delimited-symbol s]] [:asc  _]] (sort op (query.string/safe-symbol s) :ascending)
+    [[_id [:delimited-symbol s]] [:desc _]] (sort op (query.string/safe-symbol s) :descending)))
 
 (defmethod plan-impl :select-expr
   [node]
