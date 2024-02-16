@@ -83,7 +83,9 @@
     [:variable _var child] (keyword (plan child))
     [:variable-list & variables] (map plan variables)
 
-    [:simple-symbol s] (query.string/safe-symbol s)))
+    [:identifier child] (plan child)
+    [:delimited-symbol s] (query.string/safe-symbol s)
+    [:simple-symbol s] (symbol s)))
 
 (defn inference-event
   [event]
