@@ -78,7 +78,8 @@
           header-row (map name columns)
           cells (map (apply juxt columns) result)
           table (into [header-row] cells)]
-      (csv/write-csv *out* table))))
+      (csv/write-csv *out* table)
+      (flush))))
 
 (defn make-eval
   "Returns a function that evaluates queries in the context of a database."
