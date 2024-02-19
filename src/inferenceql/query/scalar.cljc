@@ -288,7 +288,7 @@
                (when-not (contains? attributes sym)
                  (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
                                  {::anomalies/category ::anomalies/incorrect
-                                  symbol               (pr-str sym)
-                                  :sexpr               (pr-str sexpr)
-                                  :env                 bindings}))))
+                                  symbol (pr-str sym)
+                                  :sexpr (pr-str sexpr)
+                                  :env bindings}))))
              (throw ex))))))
