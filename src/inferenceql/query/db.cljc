@@ -58,6 +58,8 @@
     (assoc-in db [:iql/models sym] model)))
 
 (defn env
+  "A map used for SCI lookup of attrs/relations."
+  ;; FIXME: Check for, or handle, name collisions between models and tables.
   [db]
   (merge (:iql/tables db)
          (:iql/models db)))
