@@ -44,7 +44,7 @@
   function that turns a string into a parse tree must be provided as the third
   argument.
 
-  Keywordizes the result's keys and its attributes.
+  Demunges the result's keys and its attributes.
 
   Params:
   - s - a query string
@@ -52,8 +52,8 @@
   - parse - a parsing function"
   [s db parse]
   (when-let [rel (query s (atom db) parse)]
-    (let [keywordize-keys #(update-keys % query.string/safe-keyword)
-          kw-rel (map keywordize-keys rel)
-          kw-attrs (map query.string/safe-keyword (relation/attributes rel))]
+    (let [demunge-keys #(update-keys % (fn [k] (-> k str query.string/demunge)))
+          kw-rel (map demunge-keys rel)
+          kw-attrs (map #(-> % str query.string/demunge) (relation/attributes rel))]
       (with-meta kw-rel
         {:iql/columns kw-attrs}))))
