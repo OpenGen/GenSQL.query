@@ -80,7 +80,7 @@
 
     [:value child] (literal/read child)
 
-    [:variable _var child] (keyword (plan child))
+    [:variable _var child] (str (plan child))
     [:variable-list & variables] (map plan variables)
 
     [:identifier child] (plan child)
@@ -105,13 +105,13 @@
 
 (defn pdf
   [model event]
-  (let [event (update-keys event keyword)]
+  (let [event (update-keys event str)]
     (math/exp (gpm/logpdf model event {}))))
 
 (defn condition
   [model conditions]
   (let [conditions (-> (medley/filter-vals some? conditions)
-                       (update-keys keyword))]
+                       (update-keys str))]
     (cond-> model
       (seq conditions)
       (gpm/condition conditions))))

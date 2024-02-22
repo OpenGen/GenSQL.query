@@ -536,7 +536,7 @@
         variables (->> (if (= '* variables)
                          (gpm/variables model)
                          variables)
-                       (map keyword))
+                       (map str))
         attrs (map query.string/safe-symbol variables)
         samples (map #(update-keys % query.string/safe-symbol)
                      (repeatedly #(gpm/simulate model variables {})))]
