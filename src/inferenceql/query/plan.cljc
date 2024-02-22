@@ -12,7 +12,7 @@
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.strict.parser :as parser]
-            [inferenceql.query.string :as q.string]
+            [inferenceql.query.string :as query.string]
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
             [net.cgrand.xforms :as xforms]))
@@ -245,10 +245,10 @@
   relation."
   [node]
   (tree/match [node]
-    [[:selection "(" child ")"]] (output-attr child)
-    [[:selection _ [:alias-clause _as sym-node]]] (literal/read sym-node)
-    [[:selection child]] (-> (parser/unparse child)
-                             (q.string/safe-symbol))))
+              [[:selection "(" child ")"]] (output-attr child)
+              [[:selection _ [:alias-clause _as sym-node]]] (literal/read sym-node)
+              [[:selection child]] (-> (parser/unparse child)
+                                       (query.string/safe-symbol))))
 
 (defn ^:private selection-plan
   [node op]
@@ -373,9 +373,9 @@
 (defmethod plan-impl :order-by-clause
   [node op]
   (match/match (vec (tree/child-nodes node))
-    [[:simple-symbol s]]           (sort op (q.string/safe-symbol s) :ascending)
-    [[:simple-symbol s] [:asc  _]] (sort op (q.string/safe-symbol s) :ascending)
-    [[:simple-symbol s] [:desc _]] (sort op (q.string/safe-symbol s) :descending)))
+    [[:simple-symbol s]]           (sort op (query.string/safe-symbol s) :ascending)
+    [[:simple-symbol s] [:asc  _]] (sort op (query.string/safe-symbol s) :ascending)
+    [[:simple-symbol s] [:desc _]] (sort op (query.string/safe-symbol s) :descending)))
 
 (defmethod plan-impl :select-expr
   [node]
@@ -534,8 +534,8 @@
                          (gpm/variables model)
                          variables)
                        (map keyword))
-        attrs (map q.string/safe-symbol variables)
-        samples (map #(update-keys % q.string/safe-symbol)
+        attrs (map query.string/safe-symbol variables)
+        samples (map #(update-keys % query.string/safe-symbol)
                      (repeatedly #(gpm/simulate model variables {})))]
     (relation/relation samples :attrs attrs)))
 
