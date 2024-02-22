@@ -9,7 +9,7 @@
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.permissive.parser :as parser]
             [inferenceql.query.sequence :as sequence]
-            [inferenceql.query.string :as q.string]))
+            [inferenceql.query.string :as query.string]))
 
 (def ^:private ws [:ws " "])
 
@@ -112,7 +112,7 @@
                    (tree/child-nodes node)))
 
     [[:probability-expr prob of (event :guard density-event?) under model]]
-    (let [density (q.string/match-case "density" prob)]
+    (let [density (query.string/match-case "density" prob)]
       [:density-expr prob ws density ws of ws [:density-event event] ws under ws model])
 
     [[:probability-expr prob of (event :guard distribution-event?) under model]]
@@ -122,7 +122,7 @@
       of (of-list :guard simple-symbol-list?)
       with (with-list :guard simple-symbol-list?)
       under model]]
-    (let [approx (q.string/match-case "approximate" mutual)]
+    (let [approx (query.string/match-case "approximate" mutual)]
       [:approx-mutual-info-expr approx ws mutual ws info ws
        of ws (symbol-list->variable-list of-list) ws
        with ws (symbol-list->variable-list with-list) ws
