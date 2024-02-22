@@ -12,7 +12,7 @@
             [inferenceql.query.literal :as literal]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
-            [inferenceql.query.string :as q.string]
+            [inferenceql.query.string :as query.string]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]
             [sci.core :as sci]))
@@ -83,7 +83,7 @@
     [:variable _var child] (keyword (plan child))
     [:variable-list & variables] (map plan variables)
 
-    [:simple-symbol s] (q.string/safe-symbol s)))
+    [:simple-symbol s] (query.string/safe-symbol s)))
 
 (defn inference-event
   [event]
@@ -121,7 +121,7 @@
                                (contains? bindings variable)
                                (assoc variable (get bindings variable))))
                            {}
-                           (map q.string/safe-symbol (gpm/variables model)))]
+                           (map query.string/safe-symbol (gpm/variables model)))]
     (condition model conditions)))
 
 (defn operation?
@@ -262,7 +262,7 @@
                     (merge (zipmap (tuple/attributes tuple)
                                    (repeat nil))
                            (when-let [tuple-name (tuple/name tuple)]
-                             (zipmap (map #(q.string/safe-symbol (str tuple-name "." %))
+                             (zipmap (map #(query.string/safe-symbol (str tuple-name "." %))
                                           (tuple/attributes tuple))
                                      (repeat nil)))
                            env
@@ -280,11 +280,7 @@
          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
            (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
                                      (ex-message ex))]
-             ;; if the error message says the symbol couldn't be resolved in the
-             ;; SCI bindings, it's checked against the tuple's attrs, if any,
-             ;; and if found there, the exception is suppressed. Why? Should
-             ;; the attributes be added to the SCI bindings so it's found?
-             (let [sym (q.string/safe-symbol sym)]
+             (let [sym (query.string/safe-symbol sym)]
                (when-not (contains? attributes sym)
                  (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
                                  {::anomalies/category ::anomalies/incorrect

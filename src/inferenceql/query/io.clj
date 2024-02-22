@@ -6,7 +6,7 @@
             [clojure.java.io :as io]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.relation :as relation]
-            [inferenceql.query.string :as q.string]))
+            [inferenceql.query.string :as query.string]))
 
 (set! *warn-on-reflection* true)
 
@@ -32,7 +32,7 @@
                          (.usingOptions (-> (CsvReadOptions/builderFromString csv-string)
                                             (.sample false))))
         columns (.columnNames table)
-        attrs (map q.string/safe-symbol columns)
+        attrs (map query.string/safe-symbol columns)
         row (Row. table)
         coll (loop [i 0
                     rows (transient [])]
@@ -41,7 +41,7 @@
                  (do (.at row i)
                      (let [row (reduce (fn [m ^String column]
                                          (let [value (.getObject row column)
-                                               attr (q.string/safe-symbol column)]
+                                               attr (query.string/safe-symbol column)]
                                            (cond-> m
                                              (not (contains? #{"" nil} value))
                                              (assoc attr value))))
@@ -56,7 +56,7 @@
   [rel x]
   (let [coll (relation/->vector rel)
         [attr-row & tuple-rows] coll
-        csv-data (into [(mapv q.string/demunge attr-row)]
+        csv-data (into [(mapv query.string/demunge attr-row)]
                        tuple-rows)]
     (with-open [writer (io/writer x)]
       (csv/write-csv writer csv-data))))
