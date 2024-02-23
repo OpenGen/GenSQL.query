@@ -9,10 +9,10 @@
                                   (tuple/tuple m :name name)
                                   (tuple/tuple m))
                                 (tuple/->map)))
-    '{} '{} nil
-    '{} '{} 'data
-    '{x 0} '{x 0} nil
-    '{x 0 data.x 0} '{x 0} 'data ) )
+    {} {} nil
+    {} {} "data"
+    {"x" 0} {"x" 0} nil
+    {"x" 0 "data.x" 0} {"x" 0} "data" ) )
 
 (deftest get
   (are [expected m name attr] (= expected
@@ -20,9 +20,9 @@
                                        (tuple/tuple m :name name)
                                        (tuple/tuple m))
                                      (tuple/get attr)))
-    nil {} nil 'x
-    nil {} 'data 'x
-    0 '{x 0} nil 'x
-    0 '{x 0} 'data 'x
-    0 '{x 0 y 1} nil 'x
-    0 '{x 0 y 1} 'data 'x))
+    nil {} nil "x"
+    nil {} "data" "x"
+    0 {"x" 0} nil "x"
+    0 {"x" 0} "data" "x"
+    0 {"x" 0 "y" 1} nil "x"
+    0 {"x" 0 "y" 1} "data" "x"))

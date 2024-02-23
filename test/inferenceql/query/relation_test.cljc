@@ -4,5 +4,5 @@
             [inferenceql.query.relation :as relation]))
 
 (deftest name
-  (is (= 'x (relation/name (relation/relation [] :name 'x))))
+  (is (= "x" (relation/name (relation/relation [] :name "x"))))
   (is (= nil (relation/name (relation/relation [])))))

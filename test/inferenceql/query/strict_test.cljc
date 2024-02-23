@@ -20,17 +20,17 @@
    (q query data {}))
   ([query data models]
    (let [relation (fn [coll]
-                    (let [tuples (mapv #(update-keys % symbol)
+                    (let [tuples (mapv #(update-keys % str)
                                        coll)]
                       (if-let [columns (-> coll meta :iql/columns)]
-                        (relation/relation tuples :attrs (map symbol columns))
+                        (relation/relation tuples :attrs (map str columns))
                         (relation/relation tuples))))
-         models (update-keys models symbol)
+         models (update-keys models str)
          data (relation data)
          db (-> (reduce-kv db/with-model
                            (db/empty)
                            models)
-                (db/with-table 'data data))]
+                (db/with-table "data" data))]
      (strict/q query db))))
 
 (def simple-mmix
@@ -245,11 +245,11 @@
         q1 (comp first vals first #(q %1 %2 %3))]
     (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = 'yes' UNDER model CONDITIONED BY VAR x = x) FROM data;"
                    (with-meta [{}] {:iql/columns ["x" "y"]})
-                   {:model model})))))
+                   {"model" model})))))
 
 (deftest density-of-bindings
   (let [rows [{}]
-        models {:model simple-model}
+        models {"model" simple-model}
         q1 (comp first vals first #(q % rows models))]
     (is (= 0.25 (q1 "SELECT (PROBABILITY DENSITY OF VAR x='no'  UNDER model)                              FROM data LIMIT 1")))
     (is (= 0.75 (q1 "SELECT (PROBABILITY DENSITY OF VAR x='yes' UNDER model)                              FROM data LIMIT 1")))
@@ -258,7 +258,7 @@
     (is (= 0.0  (q1 "SELECT (PROBABILITY DENSITY OF VAR x='yes' UNDER model CONDITIONED BY VAR y='no')  FROM data LIMIT 1")))))
 
 (deftest density-of-rows
-  (let [models {:model simple-model}
+  (let [models {"model" simple-model}
         q1 (comp first vals first #(q %1 %2 models))]
     (are [expected x] (= expected
                          (q1 "SELECT (PROBABILITY DENSITY OF VAR x = x UNDER model) FROM data"
@@ -280,7 +280,7 @@
 (deftest generate-generates-correct-columns
   (testing "generate"
     (let [model simple-model
-          q #(q % [] {:model model})]
+          q #(q % [] {"model" model})]
       (testing "with star "
         (doseq [result (q "SELECT * FROM (GENERATE * UNDER model) LIMIT 10")]
           (is (= #{"x" "y"} (set (keys result))))))
@@ -450,7 +450,7 @@
                        CONDITIONED BY color AND flip
                        AS prob)
                FROM data;"
-        result (q query data {:model model})
+        result (q query data {"model" model})
         uniq-probs (sort (distinct (map :prob result)))
         [low-p high-p] uniq-probs]
     ;; Our model has two views. The :label column gets incorporated into
@@ -465,14 +465,14 @@
 
 (deftest conditioned-by
   (testing "generate"
-    (let [q #(q % (with-meta [] {:iql/columns ["y"]}) {:model simple-model})]
+    (let [q #(q % (with-meta [] {:iql/columns ["y"]}) {"model" simple-model})]
       (doseq [result (q "SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = 'yes') LIMIT 10")]
         (is (= {"x" "yes"} (select-keys result ["x"]))))
       (doseq [result (q "WITH 'yes' AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
         (is (= {"x" "yes"} (select-keys result ["x"]))))))
 
   (let [q (fn [query rows]
-            (-> (q query rows {:model simple-model})
+            (-> (q query rows {"model" simple-model})
                 (first)
                 (vals)
                 (first)))]

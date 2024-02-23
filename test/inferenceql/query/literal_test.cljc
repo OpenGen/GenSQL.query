@@ -9,32 +9,39 @@
             [inferenceql.query.strict.parser :as parser]
             [inferenceql.query.relation :as relation]))
 
-(def gen-symbol
+(def gen-identifier
   (->> (gen/tuple gen/char-alpha
                   (gen/fmap string/join
                             (gen/vector (gen/frequency [[20 gen/char-alphanumeric]
+                                                        [1 (gen/return \#)]
+                                                        [1 (gen/return \$)]
+                                                        [1 (gen/return \%)]
+                                                        [1 (gen/return \&)]
+                                                        [1 (gen/return \ )]
+                                                        [1 (gen/return \()]
+                                                        [1 (gen/return \))]
                                                         [1 (gen/return \-)]]))))
        (gen/fmap #(apply str %))
        (gen/such-that #(not (string/starts-with? % "G__")))
-       (gen/fmap symbol)))
+       #_(gen/fmap symbol)))
 
 (deftest read-relation-metadata
   (let [rel (literal/read (parser/parse "(x, y) VALUES (0, 1)" :start :relation-value))]
     (is (relation/relation? rel))
-    (is (= '(x y) (relation/attributes rel)))))
+    (is (= ["x" "y"] (relation/attributes rel)))))
 
 (deftest read-relation-value
   (are [x s] (= x (literal/read (parser/parse s :start :relation-value)))
-    '({x 0})                        "(x) VALUES (0)"
-    '({x 0} {x 1})                  "(x) VALUES (0), (1)"
-    '({x 0, y 1})                   "(x, y) VALUES (0, 1)"
-    '({x 0, y 1} {x 2, y 3})        "(x, y) VALUES (0, 1), (2, 3)"
-    '({x 0})                        "(x) VALUES ... 0: (0) ..."
-    '({x 0, y 1})                   "(x, y) VALUES ... 0: (0, 1) ..."
-    '({} {x 1})                     "(x) VALUES ... 1: (1) ..."
-    '({} {x 1, y 2})                "(x, y) VALUES ... 1: (1, 2) ..."
-    '({} {x 1} {} {x 3})            "(x) VALUES ... 1: (1), 3: (3) ..."
-    '({} {x 1, y 2} {} {x 3, y 4})  "(x, y) VALUES ... 1: (1, 2), 3: (3, 4) ..."))
+    [{"x" 0}]                             "(x) VALUES (0)"
+    [{"x" 0} {"x" 1}]                     "(x) VALUES (0), (1)"
+    [{"x" 0, "y" 1}]                      "(x, y) VALUES (0, 1)"
+    [{"x" 0, "y" 1} {"x" 2, "y" 3}]       "(x, y) VALUES (0, 1), (2, 3)"
+    [{"x" 0}]                             "(x) VALUES ... 0: (0) ..."
+    [{"x" 0, "y" 1}]                      "(x, y) VALUES ... 0: (0, 1) ..."
+    [{} {"x" 1}]                          "(x) VALUES ... 1: (1) ..."
+    [{} {"x" 1, "y" 2}]                   "(x, y) VALUES ... 1: (1, 2) ..."
+    [{} {"x" 1} {} {"x" 3}]               "(x) VALUES ... 1: (1), 3: (3) ..."
+    [{} {"x" 1, "y" 2} {} {"x" 3, "y" 4}] "(x, y) VALUES ... 1: (1, 2), 3: (3, 4) ..."))
 
 (defn parse-and-eval
   [& args]
@@ -51,10 +58,9 @@
     (let [s (pr-str n)]
       (is (= n (parse-and-eval s :start :int))))))
 
-(defspec symbol-evaluation
-  (prop/for-all [sym gen-symbol]
-    (let [s (pr-str sym)]
-      (is (= sym (parse-and-eval s :start :simple-symbol))))))
+(defspec id-evaluation
+  (prop/for-all [s gen-identifier]
+    (is (= s (parse-and-eval (str "\"" s "\"") :start :identifier)))))
 
 ;; Float parsing is a bit different in CLJS. Among other things, whole-numbered
 ;; floats are printed without a decimal point. Someone should come back and try
