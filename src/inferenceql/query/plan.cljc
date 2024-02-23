@@ -172,14 +172,21 @@
     ([node _op] (tree/tag node))))
 
 (defn plan
+  "Returns a query plan for the provided parse tree node. The 2-arity version is
+  used when the plan that provides the input relation is generated from a node
+  elsewhere in the parse tree, as is the case with \"SELECT\" subclauses."
   ([node]
-   (with-meta (plan-impl node)
-     {::parser/node node}))
+   (let [pln (with-meta (plan-impl node)
+                        {::parser/node node})]
+     (tap> #:plan{:node node :plan pln})
+     pln))
   ([node op]
-   (if (some? node)
-     (with-meta (plan-impl node op)
-       {::parser/node node})
-     op)))
+   (let [pln (if (some? node)
+               (with-meta (plan-impl node op)
+                          {::parser/node node})
+               op)]
+     (tap> #:plan{:node node :plan pln :op op})
+     pln)))
 
 (defn node
   [plan]
