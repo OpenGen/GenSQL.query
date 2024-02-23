@@ -6,7 +6,6 @@
             [clojure.core :as clojure]
             [clojure.string :as string]
             [clojure.walk :as walk]
-            [inferenceql.query.string :as query.string]
             [net.cgrand.macrovich :as macrovich]))
 
 (defn branch?
@@ -111,8 +110,7 @@
 (defn alias
   [node]
   (match/match node
-    [:alias-clause _as _ws [_id [:simple-symbol s]]] (symbol s)
-    [:alias-clause _as _ws [_id [:delimited-symbol s]]] (query.string/safe-symbol s)
+    [:alias-clause _as _ws [_id [(:or :simple-symbol :delimited-symbol) s]]] (str s)
     :else (recur (get-node node :alias-clause))))
 
 (defn remove

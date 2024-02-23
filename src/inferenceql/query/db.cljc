@@ -6,8 +6,7 @@
             [borkdude.dynaload :as dynaload]
             [clojure.edn :as edn]
             [cognitect.anomalies :as-alias anomalies]
-            [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.string :as query.string]))
+            [inferenceql.inference.gpm :as gpm]))
 
 (defn read-string
   [s]
@@ -46,16 +45,16 @@
                     {::anomalies/category ::anomalies/incorrect}))))
 
 (defn with-table
-  "Adds a table with key `k` to the database. Turns k into a symbol."
+  "Adds a table with key `k` to the database. Turns k into a string."
   [db k table]
-  (let [sym (query.string/safe-symbol (name k))]
-    (assoc-in db [:iql/tables sym] table)))
+  (let [table-name (name k)]                                ; TODO: keep using `name`?
+    (assoc-in db [:iql/tables table-name] table)))
 
 (defn with-model
-  "Adds a model with key `k` to the database. Turns k into a symbol."
+  "Adds a model with key `k` to the database. Turns k into a string."
   [db k model]
-  (let [sym (query.string/safe-symbol (name k))]
-    (assoc-in db [:iql/models sym] model)))
+  (let [model-name (name k)]                                ; TODO: keep using `name`?
+    (assoc-in db [:iql/models model-name] model)))
 
 (defn env
   "A map used for SCI lookup of attrs/relations."

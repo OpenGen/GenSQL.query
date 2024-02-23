@@ -5,8 +5,7 @@
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [inferenceql.inference.gpm :as gpm]
-            [inferenceql.query.relation :as relation]
-            [inferenceql.query.string :as query.string]))
+            [inferenceql.query.relation :as relation]))
 
 (set! *warn-on-reflection* true)
 
@@ -32,7 +31,7 @@
                          (.usingOptions (-> (CsvReadOptions/builderFromString csv-string)
                                             (.sample false))))
         columns (.columnNames table)
-        attrs (map query.string/safe-symbol columns)
+        attrs (seq columns)
         row (Row. table)
         coll (loop [i 0
                     rows (transient [])]
@@ -40,11 +39,10 @@
                  (persistent! rows)
                  (do (.at row i)
                      (let [row (reduce (fn [m ^String column]
-                                         (let [value (.getObject row column)
-                                               attr (query.string/safe-symbol column)]
+                                         (let [value (.getObject row column)]
                                            (cond-> m
                                              (not (contains? #{"" nil} value))
-                                             (assoc attr value))))
+                                             (assoc column value))))
                                        {}
                                        columns)]
                        (recur (inc i) (conj! rows row))))))]
@@ -54,9 +52,6 @@
   "Attempts to write a collection to a location. x is coerced to a writer as per
   `io/writer`."
   [rel x]
-  (let [coll (relation/->vector rel)
-        [attr-row & tuple-rows] coll
-        csv-data (into [(mapv query.string/demunge attr-row)]
-                       tuple-rows)]
+  (let [coll (relation/->vector rel)]
     (with-open [writer (io/writer x)]
-      (csv/write-csv writer csv-data))))
+      (csv/write-csv writer coll))))
