@@ -16,6 +16,13 @@
             [medley.core :as medley]
             [sci.core :as sci]))
 
+
+(defn id-node->str
+  "Returns the string representation of an identifier node."
+  [node]
+  (-> node tree/only-child-node (nth 1)))
+
+
 (defn plan
   "Given a parse tree/node, returns an execution plan."
   [node]
@@ -39,7 +46,7 @@
 
     [:expr-binop left [:binop [:is _]]       right] `(~'=         ~(plan left) ~(plan right))
     [:expr-binop left [:binop [:is-not & _]] right] `(~'not=      ~(plan left) ~(plan right))
-    ;; MUST not munge below, binops aren't identifiers.
+    ;; MUST not str-ify below, binops aren't identifiers.
     [:expr-binop left [:binop s]             right] `(~(symbol s) ~(plan left) ~(plan right))
 
     [:distribution-event child] (plan child)
@@ -79,20 +86,17 @@
 
     [:value child] (literal/read child)
 
-    [:variable _var child] (str (plan child))
+    [:variable _var child] (id-node->str child)
     [:variable-list & variables] (map plan variables)
 
     [:identifier child] (plan child)
-    [:delimited-symbol s] s
-    [:simple-symbol s] s))
+    [:delimited-symbol s] (list 'get 'iql-bindings s)
+    [:simple-symbol s] (list 'get 'iql-bindings s)))
 
 (defn inference-event
   [event]
   (walk/postwalk (fn [x]
                    (cond (vector? x) (seq x)
-                         ;; NB: Do not munge kws here, could potentially have
-                         ;; keyword ops like :<, :<=, etc. Identifiers already
-                         ;; munged in `plan`.
                          (keyword? x) (symbol x)
                          :else x))
                  event))
@@ -257,6 +261,7 @@
 (defn eval
   "Evaluates a scalar-based sexpr given the environment, bindings, and
   (optional) tuples/rows."
+  ;; TODO: Use a SCI ctx for environment shared across tuples?
   [sexpr env bindings & tuples]
   (tap> #:scalar.eval{:in-env env :in-bindings bindings
                       :sexpr (pr-str sexpr) :tuple-sample (take 3 tuples)})
@@ -278,19 +283,20 @@
         ;; from `env`
         opts {:namespaces #?(:clj (namespaces env bindings)
                              :cljs (namespaces))
-              :bindings bindings}]
+              :bindings (merge bindings
+                               {'iql-bindings bindings})}]
     (try (let [sci-result (sci/eval-string (pr-str sexpr) opts)]
            (tap> #:scalar.eval{:opts opts
                                :result sci-result})
            sci-result)
 
          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
-           (if-let [[_ id] (re-find #"Could not resolve symbol: (.+)$"
-                                     (ex-message ex))]
+           (if-let [[_ id] (re-find #"Could not resolve identifier: (.+)$"
+                                    (ex-message ex))]
              (when-not (contains? attributes id)
-               (throw (ex-info (str "Could not resolve symbol: " (pr-str id))
+               (throw (ex-info (str "Could not resolve identifier: " (pr-str id))
                                {::anomalies/category ::anomalies/incorrect
-                                symbol (pr-str id)
+                                :identifier (pr-str id)
                                 :sexpr (pr-str sexpr)
                                 :env bindings})))
              (throw ex))))))

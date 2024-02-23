@@ -12,26 +12,26 @@
     :else false))
 
 (defn drop-table
-  [db sym]
-  (if-not (db/get-table db sym)
+  [db id]
+  (if-not (db/get-table db id)
     db
-    (update db :iql/tables dissoc sym)))
+    (update db :iql/tables dissoc id)))
 
 (defn safe-drop-table
-  [db sym]
-  (when (db/safe-get-table db sym)
-    (update db :iql/tables dissoc sym)))
+  [db id]
+  (when (db/safe-get-table db id)
+    (update db :iql/tables dissoc id)))
 
 (defn drop-model
-  [db sym]
-  (if-not (db/get-model db sym)
+  [db id]
+  (if-not (db/get-model db id)
     db
-    (update db :iql/models dissoc sym)))
+    (update db :iql/models dissoc id)))
 
 (defn safe-drop-model
-  [db sym]
-  (when (db/safe-get-model db sym)
-    (update db :iql/models dissoc sym)))
+  [db id]
+  (when (db/safe-get-model db id)
+    (update db :iql/models dissoc id)))
 
 (defn execute
   [node db]
@@ -48,57 +48,57 @@
     [[:statement child]]
     (execute child db)
 
-    [[:create-table-stmt _create _table sym-node _as expr]]
-    (let [sym (literal/read sym-node)
+    [[:create-table-stmt _create _table id-node _as expr]]
+    (let [id (literal/read id-node)
           plan (plan/plan expr)
           env (db/env @db)
           out (plan/eval plan env {})]
-      (swap! db db/with-table sym out))
+      (swap! db db/with-table id out))
 
-    [[:create-model-stmt _create _model sym-node _as expr]]
-    (let [sym (literal/read sym-node)
+    [[:create-model-stmt _create _model id-node _as expr]]
+    (let [id (literal/read id-node)
           plan (scalar/plan expr)
           env (db/env @db)
           out (scalar/eval plan env {})]
-      (swap! db db/with-table sym out))
+      (swap! db db/with-table id out))
 
-    [[:drop-table-stmt _drop _table sym-node]]
-    (let [sym (literal/read sym-node)]
-      (swap! db safe-drop-table sym))
+    [[:drop-table-stmt _drop _table id-node]]
+    (let [id (literal/read id-node)]
+      (swap! db safe-drop-table id))
 
-    [[:drop-table-stmt _drop _table _if _exists sym-node]]
-    (let [sym (literal/read sym-node)]
-      (swap! db drop-table sym))
+    [[:drop-table-stmt _drop _table _if _exists id-node]]
+    (let [id (literal/read id-node)]
+      (swap! db drop-table id))
 
-    [[:drop-model-stmt _drop _model sym-node]]
-    (let [sym (literal/read sym-node)]
-      (swap! db safe-drop-model sym))
+    [[:drop-model-stmt _drop _model id-node]]
+    (let [id (literal/read id-node)]
+      (swap! db safe-drop-model id))
 
-    [[:drop-model-stmt _drop _model _if _exists sym-node]]
-    (let [sym (literal/read sym-node)]
-      (swap! db drop-model sym))
+    [[:drop-model-stmt _drop _model _if _exists id-node]]
+    (let [id (literal/read id-node)]
+      (swap! db drop-model id))
 
-    [[:insert-stmt insert into sym-node & rest]]
-    (let [sym (literal/read sym-node)
-          expr `[:insert-expr ~insert ~into ~sym-node ~@rest]
+    [[:insert-stmt insert into id-node & rest]]
+    (let [id (literal/read id-node)
+          expr `[:insert-expr ~insert ~into ~id-node ~@rest]
           plan (plan/plan expr)
           env (db/env @db)
           out (plan/eval plan env {})]
-      (swap! db db/with-table sym out))
+      (swap! db db/with-table id out))
 
-    [[:update-stmt update sym-node & rest]]
-    (let [sym (literal/read sym-node)
-          expr `[:update-expr ~update ~sym-node ~@rest]
+    [[:update-stmt update id-node & rest]]
+    (let [id (literal/read id-node)
+          expr `[:update-expr ~update ~id-node ~@rest]
           plan (plan/plan expr)
           env (db/env @db)
           out (plan/eval plan env {})]
-      (swap! db db/with-table sym out))
+      (swap! db db/with-table id out))
 
-    [[:alter-stmt alter sym-node & rest]]
-    (let [sym (literal/read sym-node)
-          expr `[:alter-expr ~alter ~sym-node ~@rest]
+    [[:alter-stmt alter id-node & rest]]
+    (let [id (literal/read id-node)
+          expr `[:alter-expr ~alter ~id-node ~@rest]
           plan (plan/plan expr)
           env (db/env @db)
           out (plan/eval plan env {})]
-      (swap! db db/with-table sym out)))
+      (swap! db db/with-table id out)))
   nil)

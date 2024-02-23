@@ -24,12 +24,12 @@
     [:quit-command _quit]
     (System/exit 0)
 
-    [:import-command _import [:path path] sym-node]
-    (let [sym (literal/read sym-node)
+    [:import-command _import [:path path] id-node]
+    (let [id (literal/read id-node)
           table (io/slurp-csv (parser/unparse path))]
-      (swap! db db/with-table sym table))
+      (swap! db db/with-table id table))
 
-    [:export-command _import [:path path] sym-node]
-    (let [sym (literal/read sym-node)
-          table (db/safe-get-table @db sym)]
+    [:export-command _import [:path path] id-node]
+    (let [id (literal/read id-node)
+          table (db/safe-get-table @db id)]
       (io/spit-csv table path))))

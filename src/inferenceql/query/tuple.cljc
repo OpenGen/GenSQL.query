@@ -6,6 +6,7 @@
             [medley.core :as medley]))
 
 (defn tuple
+  "Prepares a map to act as a tuple."
   [m & {:keys [attrs name]}]
   (with-meta m {::attributes attrs
                 ::name name}))
@@ -34,9 +35,9 @@
          (when-let [name (name tup)]
            ;; Sets the namespace of all keys to the tuple name
            (update-keys tup
-                        #(symbol (string/join "."
-                                              [(clojure/name name)
-                                               (clojure/name %)]))))))
+                        #(string/join "."
+                                      [(clojure/name name)
+                                       (clojure/name %)])))))
 
 (defn attributes
   "Returns the attributes of a tuple."

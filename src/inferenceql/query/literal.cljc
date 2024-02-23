@@ -6,8 +6,8 @@
             [inferenceql.query.relation :as relation]))
 
 (defn read
-  "Recursively walks a parse tree and replaces nodes of literals with their
-  Clojure equivalents."
+  "Returns Clojure data representing a parse node.
+  Can be bools, ints, floats, strings, lists, etc."
   [node]
   (match/match [(into (empty node)
                       (remove tree/whitespace?)
