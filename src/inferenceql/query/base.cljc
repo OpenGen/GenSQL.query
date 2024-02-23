@@ -28,6 +28,9 @@
           (plan/relation-node? node-or-failure)
           (let [plan (plan/plan node-or-failure)
                 env (db/env @db)]
+            (tap> #:base.query{:node node-or-failure
+                               :plan plan
+                               :env env})
             (plan/eval plan env {}))
 
           (statement/statement-node? node-or-failure)
