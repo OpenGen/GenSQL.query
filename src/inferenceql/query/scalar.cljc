@@ -258,6 +258,8 @@
   "Evaluates a scalar-based sexpr given the environment, bindings, and
   (optional) tuples/rows."
   [sexpr env bindings & tuples]
+  (tap> #:scalar.eval{:in-env env :in-bindings bindings
+                      :sexpr (pr-str sexpr) :tuple-sample (take 3 tuples)})
   (let [env (merge env bindings)
         tuple-map (fn [tuple]
                     (merge (zipmap (tuple/attributes tuple)
@@ -277,7 +279,11 @@
         opts {:namespaces #?(:clj (namespaces env bindings)
                              :cljs (namespaces))
               :bindings bindings}]
-    (try (sci/eval-string (pr-str sexpr) opts)
+    (try (let [sci-result (sci/eval-string (pr-str sexpr) opts)]
+           (tap> #:scalar.eval{:opts opts
+                               :result sci-result})
+           sci-result)
+
          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
            (if-let [[_ id] (re-find #"Could not resolve symbol: (.+)$"
                                      (ex-message ex))]
