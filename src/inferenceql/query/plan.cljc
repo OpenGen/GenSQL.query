@@ -52,9 +52,9 @@
 ;;; plan
 
 (defn lookup
-  [sym]
+  [id]
   {::type :inferenceql.query.plan.type/lookup
-   ::env/name sym})
+   ::env/name id})
 
 (defn select
   [op sexpr]
@@ -210,8 +210,8 @@
 
 (defmethod plan-impl :identifier
   [node]
-  (let [sym (literal/read node)]
-    (lookup sym)))
+  (let [id (literal/read node)]
+    (lookup id)))
 
 (defn variable-node->symbol
   [node]
@@ -252,7 +252,7 @@
   [node]
   (tree/match [node]
               [[:selection "(" child ")"]] (output-attr child)
-              [[:selection _ [:alias-clause _as sym-node]]] (literal/read sym-node)
+              [[:selection _ [:alias-clause _as id-node]]] (literal/read id-node)
               [[:selection child]] (parser/unparse child)))
 
 (defn ^:private selection-plan
@@ -271,9 +271,9 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (aggregator child)
-    [[:aggregation aggregation-fn "(" _sym ")"]] (aggregator aggregation-fn)
-    [[:aggregation aggregation-fn "(" _distinct _sym ")"]] (aggregator aggregation-fn)
-    [[:aggregation-fn [tag & _]]] (symbol tag)              ; No need to munge agg fns.
+    [[:aggregation aggregation-fn "(" _id ")"]] (aggregator aggregation-fn)
+    [[:aggregation aggregation-fn "(" _distinct _id ")"]] (aggregator aggregation-fn)
+    [[:aggregation-fn [tag & _]]] (symbol tag)              ; Must not str-ify agg fns.
     [[:scalar-expr _]] nil))
 
 (defn selections
@@ -287,8 +287,8 @@
   [node]
   (tree/match [node]
     [[:selection child & _]] (distinct? child)
-    [[:aggregation _fn _o-paren _sym _c-paren]] false
-    [[:aggregation _fn _o-paren _distinct _sym _c-paren]] true
+    [[:aggregation _fn _o-paren _id _c-paren]] false
+    [[:aggregation _fn _o-paren _distinct _id _c-paren]] true
     :else false))
 
 (defn ^:private aggregation
@@ -323,7 +323,7 @@
                     selections))
     (grouping op
               (map aggregation selections)
-              (map scalar/plan (tree/child-nodes group-by-node)))))
+              (map scalar/id-node->str (tree/child-nodes group-by-node)))))
 
 (defn scalar-expr?
   [node]
@@ -400,10 +400,10 @@
   [node]
   (let [settings->map (fn [node]
                         (match/match node
-                          [:update-setting symbol-node _= scalar-node]
-                          (let [sym (literal/read symbol-node)
+                          [:update-setting id-node _= scalar-node]
+                          (let [id (literal/read id-node)
                                 plan (scalar/plan scalar-node)]
-                            {sym plan})))
+                            {id plan})))
         [rel-node settings-node where-node] (tree/child-nodes node)
         rel-plan (plan rel-node)
         settings (into {} (map settings->map (tree/child-nodes settings-node)))]
@@ -565,9 +565,14 @@
 
 (defn ^:private aggregation->xform
   [{::keys [aggregator distinct input-attr]}]
-  (comp (if input-attr
+  (comp (cond
+          (string? input-attr)
+          (map #(get % input-attr))
+
+          (or (symbol? input-attr) (keyword? input-attr))
           (map input-attr)
-          (map identity))
+
+          :else (map identity))
         (if distinct
           (core/distinct)
           (map identity))
@@ -645,7 +650,7 @@
         attrs-both (set/intersection attrs-rel-1 attrs-rel-2)
         attr-name (fn [name attr]
                     (if (contains? attrs-both attr)
-                      (symbol (str name "." attr))          ; MD: NOT namespaced as is
+                      (str name "." attr)
                       attr))
         attrs (vec
                (concat (map #(attr-name (relation/name rel-1) %)
@@ -683,7 +688,7 @@
                                 (let [model (scalar/eval sexpr env bindings row)
                                       variables (gpm/variables model)
                                       extension (update-keys (gpm/simulate model variables {})
-                                                             symbol)]
+                                                             str)]
                                   (merge row extension))))
                          (relation/tuples rel))]
     (relation/relation tuples)))

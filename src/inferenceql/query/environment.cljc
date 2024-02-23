@@ -4,27 +4,29 @@
             [cognitect.anomalies :as-alias anomalies]))
 
 (defn get
-  "Look up a symbol in an environment."
-  [env bindings sym]
+  "Look up an identifier in an environment. Returns ::not-found if missing."
+  [env bindings id]
   (let [env (merge env bindings)]
-    (clojure/get env sym)))
+    (clojure/get env id ::not-found)))
 
 (defn has?
-  "Returns true if a symbol exists in an environment."
-  [env bindings sym]
+  "Returns true if an identifier exists in an environment."
+  [env bindings id]
   (let [env (merge env bindings)]
-    (contains? env sym)))
+    (contains? env id)))
 
 (defn safe-get
-  "Look up a symbol in the given environment."
-  [env bindings sym]
-  (if (has? env bindings sym)
-    (get env bindings sym)
-    (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
-                    {::anomalies/category ::anomalies/incorrect
-                     :symbol sym
-                     :env env
-                     :bindings bindings}))))
+  "Look up an identifier in the given environment. Throws an exception if not
+  found."
+  [env bindings id]
+  (let [result (get env bindings id)]
+    (if (= result ::not-found)
+      (throw (ex-info (str "Could not resolve identifier: " (pr-str id))
+                      {::anomalies/category ::anomalies/incorrect
+                       :identifier id
+                       :env env
+                       :bindings bindings}))
+      result)))
 
 (defn env?
   "Returns `true` if `x` is an environment."
