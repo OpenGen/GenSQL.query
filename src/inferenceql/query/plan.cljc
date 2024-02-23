@@ -12,7 +12,6 @@
             [inferenceql.query.relation :as relation]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.strict.parser :as parser]
-            [inferenceql.query.string :as query.string]
             [inferenceql.query.tuple :as tuple]
             [inferenceql.query.xforms :as query.xforms]
             [net.cgrand.xforms :as xforms]))
@@ -247,8 +246,7 @@
   (tree/match [node]
               [[:selection "(" child ")"]] (output-attr child)
               [[:selection _ [:alias-clause _as sym-node]]] (literal/read sym-node)
-              [[:selection child]] (-> (parser/unparse child)
-                                       (query.string/safe-symbol))))
+              [[:selection child]] (parser/unparse child)))
 
 (defn ^:private selection-plan
   [node op]
@@ -373,12 +371,9 @@
 (defmethod plan-impl :order-by-clause
   [node op]
   (match/match (vec (tree/child-nodes node))
-    [[_id [:simple-symbol s]]]           (sort op (symbol s) :ascending)
-    [[_id [:simple-symbol s]] [:asc  _]] (sort op (symbol s) :ascending)
-    [[_id [:simple-symbol s]] [:desc _]] (sort op (symbol s) :descending)
-    [[_id [:delimited-symbol s]]]           (sort op (query.string/safe-symbol s) :ascending)
-    [[_id [:delimited-symbol s]] [:asc  _]] (sort op (query.string/safe-symbol s) :ascending)
-    [[_id [:delimited-symbol s]] [:desc _]] (sort op (query.string/safe-symbol s) :descending)))
+    [[_id [(:or :simple-symbol :delimited-symbol) s]]]           (sort op s :ascending)
+    [[_id [(:or :simple-symbol :delimited-symbol) s]] [:asc  _]] (sort op s :ascending)
+    [[_id [(:or :simple-symbol :delimited-symbol) s]] [:desc _]] (sort op s :descending)))
 
 (defmethod plan-impl :select-expr
   [node]
@@ -537,10 +532,9 @@
                          (gpm/variables model)
                          variables)
                        (map str))
-        attrs (map query.string/safe-symbol variables)
-        samples (map #(update-keys % query.string/safe-symbol)
+        samples (map #(update-keys % str)
                      (repeatedly #(gpm/simulate model variables {})))]
-    (relation/relation samples :attrs attrs)))
+    (relation/relation samples :attrs variables)))
 
 (defmethod eval :inferenceql.query.plan.type/insert
   [plan env bindings]
