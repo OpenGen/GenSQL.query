@@ -8,7 +8,6 @@
             [inferenceql.inference.gpm.proto :as gpm.proto]
             [inferenceql.query.scalar :as scalar]
             [inferenceql.query.strict.parser :as parser]
-            [inferenceql.query.string :as q.string]
             [inferenceql.query.tuple :as tuple])
   #?(:clj (:import [inferenceql.inference.gpm.conditioned ConditionedGPM]
                    [inferenceql.inference.gpm.constrained ConstrainedGPM])))
@@ -19,15 +18,14 @@
       (scalar/plan)))
 
 (deftest plan-symbol
-  (is (= 'x (plan "x")))
-  (is (= 'x (plan "\"x\"")))
+  (is (= "x" (plan "x")))
+  (is (= "x" (plan "\"x\"")))
 
   (testing "delimited"
     (let [s "%^$#@!%^"]
-      (is (= (q.string/safe-symbol s)
-             (plan (str \" s \")))))
+      (is (= s (plan (str \" s \")))))
 
-    (are [s] (= (q.string/safe-symbol s) (plan (str \" s \")))
+    (are [s] (= s (plan (str \" s \")))
       "x"
       " oddity"
       "mazzy*"

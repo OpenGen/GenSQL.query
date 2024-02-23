@@ -9,7 +9,6 @@
             [inferenceql.query.plan :as plan]
             [inferenceql.query.relation :as relation]
             [inferenceql.query.statement :as statement]
-            [inferenceql.query.string :as query.string]
             [instaparse.core :as insta]))
 
 (defn query
@@ -52,8 +51,8 @@
   - parse - a parsing function"
   [s db parse]
   (when-let [rel (query s (atom db) parse)]
-    (let [demunge-keys #(update-keys % (fn [k] (-> k str query.string/demunge)))
-          kw-rel (map demunge-keys rel)
-          kw-attrs (map #(-> % str query.string/demunge) (relation/attributes rel))]
-      (with-meta kw-rel
-        {:iql/columns kw-attrs}))))
+    (let [stringify-keys #(update-keys % str)
+          str-rel (map stringify-keys rel)
+          str-attrs (map str (relation/attributes rel))]
+      (with-meta str-rel
+        {:iql/columns str-attrs}))))

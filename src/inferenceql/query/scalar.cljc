@@ -12,7 +12,6 @@
             [inferenceql.query.literal :as literal]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.relation :as relation]
-            [inferenceql.query.string :as query.string]
             [inferenceql.query.tuple :as tuple]
             [medley.core :as medley]
             [sci.core :as sci]))
@@ -84,8 +83,8 @@
     [:variable-list & variables] (map plan variables)
 
     [:identifier child] (plan child)
-    [:delimited-symbol s] (query.string/safe-symbol s)
-    [:simple-symbol s] (symbol s)))
+    [:delimited-symbol s] s
+    [:simple-symbol s] s))
 
 (defn inference-event
   [event]
@@ -123,7 +122,7 @@
                                (contains? bindings variable)
                                (assoc variable (get bindings variable))))
                            {}
-                           (map query.string/safe-symbol (gpm/variables model)))]
+                           (map str (gpm/variables model)))]
     (condition model conditions)))
 
 (defn operation?
@@ -264,7 +263,7 @@
                     (merge (zipmap (tuple/attributes tuple)
                                    (repeat nil))
                            (when-let [tuple-name (tuple/name tuple)]
-                             (zipmap (map #(query.string/safe-symbol (str tuple-name "." %))
+                             (zipmap (map #(str tuple-name "." %)
                                           (tuple/attributes tuple))
                                      (repeat nil)))
                            env
@@ -280,13 +279,12 @@
               :bindings bindings}]
     (try (sci/eval-string (pr-str sexpr) opts)
          (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
-           (if-let [[_ sym] (re-find #"Could not resolve symbol: (.+)$"
+           (if-let [[_ id] (re-find #"Could not resolve symbol: (.+)$"
                                      (ex-message ex))]
-             (let [sym (query.string/safe-symbol sym)]
-               (when-not (contains? attributes sym)
-                 (throw (ex-info (str "Could not resolve symbol: " (pr-str sym))
-                                 {::anomalies/category ::anomalies/incorrect
-                                  symbol (pr-str sym)
-                                  :sexpr (pr-str sexpr)
-                                  :env bindings}))))
+             (when-not (contains? attributes id)
+               (throw (ex-info (str "Could not resolve symbol: " (pr-str id))
+                               {::anomalies/category ::anomalies/incorrect
+                                symbol (pr-str id)
+                                :sexpr (pr-str sexpr)
+                                :env bindings})))
              (throw ex))))))

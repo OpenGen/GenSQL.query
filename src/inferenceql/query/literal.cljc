@@ -3,8 +3,7 @@
   (:require [clojure.core.match :as match]
             [clojure.edn :as edn]
             [inferenceql.query.parser.tree :as tree]
-            [inferenceql.query.relation :as relation]
-            [inferenceql.query.string :as q.string]))
+            [inferenceql.query.relation :as relation]))
 
 (defn read
   "Recursively walks a parse tree and replaces nodes of literals with their
@@ -20,8 +19,8 @@
     [[:int s]]              (edn/read-string s)
     [[:nat s]]              (edn/read-string s)
     [[:identifier child]]   (read child)
-    [[:simple-symbol s]]    (edn/read-string s)
-    [[:delimited-symbol s]] (edn/read-string (q.string/safe-symbol s))
+    [[:simple-symbol s]]    (edn/read-string (str \" s \"))
+    [[:delimited-symbol s]] (edn/read-string (str \" s \"))
     [[:string s]]           (edn/read-string (str \" s \"))
 
     [[:null _]] nil
