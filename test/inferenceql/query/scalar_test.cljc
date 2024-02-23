@@ -17,15 +17,15 @@
   (-> (parser/parse s :start start)
       (scalar/plan)))
 
-(deftest plan-symbol
-  (is (= "x" (plan "x")))
-  (is (= "x" (plan "\"x\"")))
+(deftest plan-identifier
+  (is (= '(get iql-bindings "x") (plan "x")))
+  (is (= '(get iql-bindings "x") (plan "\"x\"")))
 
   (testing "delimited"
-    (let [s "%^$#@!%^"]
-      (is (= s (plan (str \" s \")))))
+    (let [s "!@#$%^&*"]
+      (is (= (list 'get 'iql-bindings s) (plan (str \" s \")))))
 
-    (are [s] (= s (plan (str \" s \")))
+    (are [s] (= `(~'get ~'iql-bindings ~s)  (plan (str \" s \")))
       "x"
       " oddity"
       "mazzy*"
@@ -37,102 +37,104 @@
 
 (deftest plan-operator
   (are [s sexpr] (= sexpr (plan s))
-    "x or y" '(or x y)
-    "x and y" '(and x y)
-    "not x" '(not x)
-    "x > y" '(> x y)
-    "x >= y" '(>= x y)
-    "x = 0" '(= x 0)
-    "x <= y" '(<= x y)
-    "x < y" '(< x y)
-    "x + y" '(+ x y)
-    "x - y" '(- x y)
-    "x * y" '(* x y)
-    "x / y" '(/ x y))
+    "x or y" '(or (get iql-bindings "x") (get iql-bindings "y"))
+    "x and y" '(and (get iql-bindings "x") (get iql-bindings "y"))
+    "not x" '(not (get iql-bindings "x"))
+    "x > y" '(> (get iql-bindings "x") (get iql-bindings "y"))
+    "x >= y" '(>= (get iql-bindings "x") (get iql-bindings "y"))
+    "x = 0" '(= (get iql-bindings "x") 0)
+    "x <= y" '(<= (get iql-bindings "x") (get iql-bindings "y"))
+    "x < y" '(< (get iql-bindings "x") (get iql-bindings "y"))
+    "x + y" '(+ (get iql-bindings "x") (get iql-bindings "y"))
+    "x - y" '(- (get iql-bindings "x") (get iql-bindings "y"))
+    "x * y" '(* (get iql-bindings "x") (get iql-bindings "y"))
+    "x / y" '(/ (get iql-bindings "x") (get iql-bindings "y")))
 
   (testing "delimited interaction"
     (are [s sexpr] (= sexpr (plan s))
-      "\"~x\" or y" '(or _TILDE_x y)
-      "\"~x\" and y" '(and _TILDE_x y)
-      "not \"~x\"" '(not _TILDE_x)
-      "\"~x\" > y" '(> _TILDE_x y)
-      "\"~x\" >= y" '(>= _TILDE_x y)
-      "\"~x\" = 0" '(= _TILDE_x 0)
-      "\"~x\" <= y" '(<= _TILDE_x y)
-      "\"~x\" < y" '(< _TILDE_x y)
-      "\"~x\" + y" '(+ _TILDE_x y)
-      "\"~x\" - y" '(- _TILDE_x y)
-      "\"~x\" * y" '(* _TILDE_x y)
-      "\"~x\" / y" '(/ _TILDE_x y))))
+      "\"~x\" or y" '(or (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" and y" '(and (get iql-bindings "~x") (get iql-bindings "y"))
+      "not \"~x\"" '(not (get iql-bindings "~x"))
+      "\"~x\" > y" '(> (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" >= y" '(>= (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" = 0" '(= (get iql-bindings "~x") 0)
+      "\"~x\" <= y" '(<= (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" < y" '(< (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" + y" '(+ (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" - y" '(- (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" * y" '(* (get iql-bindings "~x") (get iql-bindings "y"))
+      "\"~x\" / y" '(/ (get iql-bindings "~x") (get iql-bindings "y")))))
 
 (deftest plan-operator-precedence-same
   (are [s sexpr] (= sexpr (plan s))
-    "x or y or z" '(or (or x y) z)
-    "x and y and z" '(and (and x y) z)
-    "x + y + z" '(+ (+ x y) z)
-    "x - y - z" '(- (- x y) z)
-    "x * y * z" '(* (* x y) z)
-    "x / y / z" '(/ (/ x y) z)
-    "x > y > z" '(> (> x y) z)
-    "x >= y >= z" '(>= (>= x y) z)
-    "x = y = z" '(= (= x y) z)
-    "x <= y <= z" '(<= (<= x y) z)
-    "x < y < z" '(< (< x y) z)
-    "x is y is z" '(= (= x y) z)
-    "\"x \" is \"y \" is \"z \"" '(= (= x_SPACE_ y_SPACE_) z_SPACE_)))
+    "x or y or z" '(or (or (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x and y and z" '(and (and (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x + y + z" '(+ (+ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x - y - z" '(- (- (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x * y * z" '(* (* (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x / y / z" '(/ (/ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x > y > z" '(> (> (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x >= y >= z" '(>= (>= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x = y = z" '(= (= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x <= y <= z" '(<= (<= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x < y < z" '(< (< (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x is y is z" '(= (= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "\"x \" is \"y \" is \"z \"" '(= (= (get iql-bindings "x ") (get iql-bindings "y ")) (get iql-bindings "z "))))
 
 (deftest plan-operator-precedence-different
   (are [s sexpr] (= sexpr (plan s))
-    "x and y or z" '(or (and x y) z)
-    "x or y and z" '(or x (and y z))
-    "not x and y" '(and (not x) y)
-    "not x or y" '(or (not x) y)
-    "not x = y" '(not (= x y))
-    "x = y + z" '(= x (+ y z))
-    "x + y = z" '(= (+ x y) z)
-    "x + y * z" '(+ x (* y z))
-    "x * y + z" '(+ (* x y) z)
-    "\" x\" * y + z" '(+ (* _SPACE_x y) z)))
+    "x and y or z" '(or (and (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x or y and z" '(or (get iql-bindings "x") (and (get iql-bindings "y") (get iql-bindings "z")))
+    "not x and y" '(and (not (get iql-bindings "x")) (get iql-bindings "y"))
+    "not x or y" '(or (not (get iql-bindings "x")) (get iql-bindings "y"))
+    "not x = y" '(not (= (get iql-bindings "x") (get iql-bindings "y")))
+    "x = y + z" '(= (get iql-bindings "x") (+ (get iql-bindings "y") (get iql-bindings "z")))
+    "x + y = z" '(= (+ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x + y * z" '(+ (get iql-bindings "x") (* (get iql-bindings "y") (get iql-bindings "z")))
+    "x * y + z" '(+ (* (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "\" x\" * y + z" '(+ (* (get iql-bindings " x") (get iql-bindings "y")) (get iql-bindings "z"))))
+
 
 (deftest plan-operator-group
   (are [s sexpr] (= sexpr (plan s))
-    "x and (y or z)" '(and x (or y z))
-    "(x or y) and z" '(and (or x y) z)
-    "(not x) and y" '(and (not x) y)
-    "(not x) or y" '(or (not x) y)
-    "(not x) = y" '(= (not x) y)
-    "(x = y) + z" '(+ (= x y) z)
-    "x + (y = z)" '(+ x (= y z))
-    "(x + y) * z" '(* (+ x y) z)
-    "x * (y + z)" '(* x (+ y z))
-    "\"x%\" * (y + z)" '(* x_PERCENT_ (+ y z))))
+    "x and (y or z)" '(and (get iql-bindings "x") (or (get iql-bindings "y") (get iql-bindings "z")))
+    "(x or y) and z" '(and (or (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "(not x) and y" '(and (not (get iql-bindings "x")) (get iql-bindings "y"))
+    "(not x) or y" '(or (not (get iql-bindings "x")) (get iql-bindings "y"))
+    "(not x) = y" '(= (not (get iql-bindings "x")) (get iql-bindings "y"))
+    "(x = y) + z" '(+ (= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x + (y = z)" '(+ (get iql-bindings "x") (= (get iql-bindings "y") (get iql-bindings "z")))
+    "(x + y) * z" '(* (+ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
+    "x * (y + z)" '(* (get iql-bindings "x") (+ (get iql-bindings "y") (get iql-bindings "z")))
+    "\"x%\" * (y + z)" '(* (get iql-bindings "x%") (+ (get iql-bindings "y") (get iql-bindings "z")))))
+
 
 (deftest plan-distribution-event
   (are [s sexpr] (= sexpr (plan s :start :distribution-event))
-    "VAR x = 0" [:= :x 0]
-    "VAR x = 0 OR VAR y = 1" [:or [:= :x 0] [:= :y 1]]
-    "VAR x = 0 OR VAR y = 1 OR VAR z = 2" [:or [:or [:= :x 0] [:= :y 1]] [:= :z 2]]
-    "(VAR x = 0)" [:= :x 0]
-    "(VAR x = 0 OR VAR y = 1)" [:or [:= :x 0] [:= :y 1]]
-    "VAR \"x:\" = 0" [:= :x_COLON_ 0]
-    "(VAR \"x$\" = 0 OR VAR y = 1)" [:or [:= :x_DOLLAR_ 0] [:= :y 1]]))
+    "VAR x = 0" [:= "x" 0]
+    "VAR x = 0 OR VAR y = 1" [:or [:= "x" 0] [:= "y" 1]]
+    "VAR x = 0 OR VAR y = 1 OR VAR z = 2" [:or [:or [:= "x" 0] [:= "y" 1]] [:= "z" 2]]
+    "(VAR x = 0)" [:= "x" 0]
+    "(VAR x = 0 OR VAR y = 1)" [:or [:= "x" 0] [:= "y" 1]]
+    "VAR \"x:\" = 0" [:= "x:" 0]
+    "(VAR \"x$\" = 0 OR VAR y = 1)" [:or [:= "x$" 0] [:= "y" 1]]))
 
 (deftest plan-density-event
   (are [s sexpr] (= sexpr (plan s :start :density-event))
-    "VAR x = 0" {:x 0}
-    "(VAR x = 0)" {:x 0}
-    "VAR x = 0 AND VAR y = 1" {:x 0 :y 1}
-    "(VAR x = 0) AND VAR y = 1" {:x 0 :y 1}
-    "VAR x = 0 AND (VAR y = 1)" {:x 0 :y 1}
-    "(VAR x = 0 AND VAR y = 1)" {:x 0 :y 1}
-    "VAR x = 0 AND VAR y = 1 AND VAR z = 2" {:x 0 :y 1 :z 2}
-    "(VAR x = 0) AND VAR y = 1 AND VAR z = 2" {:x 0 :y 1 :z 2}
-    "VAR x = 0 AND (VAR y = 1) AND VAR z = 2" {:x 0 :y 1 :z 2}
-    "VAR x = 0 AND VAR y = 1 AND (VAR z = 2)" {:x 0 :y 1 :z 2}
-    "(VAR x = 0 AND VAR y = 1) AND VAR z = 2" {:x 0 :y 1 :z 2}
-    "VAR x = 0 AND (VAR y = 1 AND VAR z = 2)" {:x 0 :y 1 :z 2}
-    "(VAR x = 0 AND VAR y = 1 AND VAR z = 2)" {:x 0 :y 1 :z 2}
-    "(VAR \"|x\" = 0 AND VAR y = 1 AND VAR z = 2)" {:_BAR_x 0 :y 1 :z 2}))
+    "VAR x = 0" {"x" 0}
+    "(VAR x = 0)" {"x" 0}
+    "VAR x = 0 AND VAR y = 1" {"x" 0 "y" 1}
+    "(VAR x = 0) AND VAR y = 1" {"x" 0 "y" 1}
+    "VAR x = 0 AND (VAR y = 1)" {"x" 0 "y" 1}
+    "(VAR x = 0 AND VAR y = 1)" {"x" 0 "y" 1}
+    "VAR x = 0 AND VAR y = 1 AND VAR z = 2" {"x" 0 "y" 1 "z" 2}
+    "(VAR x = 0) AND VAR y = 1 AND VAR z = 2" {"x" 0 "y" 1 "z" 2}
+    "VAR x = 0 AND (VAR y = 1) AND VAR z = 2" {"x" 0 "y" 1 "z" 2}
+    "VAR x = 0 AND VAR y = 1 AND (VAR z = 2)" {"x" 0 "y" 1 "z" 2}
+    "(VAR x = 0 AND VAR y = 1) AND VAR z = 2" {"x" 0 "y" 1 "z" 2}
+    "VAR x = 0 AND (VAR y = 1 AND VAR z = 2)" {"x" 0 "y" 1 "z" 2}
+    "(VAR x = 0 AND VAR y = 1 AND VAR z = 2)" {"x" 0 "y" 1 "z" 2}
+    "(VAR \"|x\" = 0 AND VAR y = 1 AND VAR z = 2)" {"|x" 0 "y" 1 "z" 2}))
 
 (defn eval
   [expr env & tuples]
@@ -143,17 +145,17 @@
                            (try (eval s env)
                                 (catch #?(:clj Exception :cljs :default) _
                                   :error)))
-    "x" '{x 0} 0
-    "x" '{} :error))
+    "x" {"x" 0} 0
+    "x" {} :error))
 
 (deftest eval-symbol-tuple
   (are [expected s env m attrs name] (let [tuple (tuple/tuple m :name name :attrs attrs)]
                                        (= expected (eval s env tuple)))
-    nil "x" '{} '{} '[x] 'data
-    nil "data.x" '{} '{} '[x] 'data
-    0 "x" '{x 0} '{} '[x] 'data
-    0 "x" '{} '{x 0} '[x] 'data
-    0 "data.x" '{} '{x 0} '[x] 'data))
+    nil "x" {} {} ["x"] "data"
+    nil "data.x" {} {} ["x"] "data"
+    0 "x" {"x" 0} {} ["x"] "data"
+    0 "x" {} {"x" 0} ["x"] "data"
+    0 "data.x" {} {"x" 0} ["x"] "data"))
 
 (deftest eval-operator-no-env
   (are [expected s] (= expected (eval s {}))
@@ -178,26 +180,26 @@
                            (try (eval s env)
                                 (catch #?(:clj Exception :cljs :default) _
                                   :error)))
-    0 "x" '{x 0}
-    :error "x" '{}
+    0 "x" {"x" 0}
+    :error "x" {}
 
-    true "x IS 0" '{x 0}
-    false "x IS 0" '{x 1}
-    true "0 IS x" '{x 0}
-    false "0 IS x" '{x 1}
+    true "x IS 0" {"x" 0}
+    false "x IS 0" {"x" 1}
+    true "0 IS x" {"x" 0}
+    false "0 IS x" {"x" 1}
 
-    false "x IS NOT 0" '{x 0}
-    true "x IS NOT 0" '{x 1}
-    false "0 IS NOT x" '{x 0}
-    true    "0 IS NOT x"    '{x 1}
+    false "x IS NOT 0" {"x" 0}
+    true "x IS NOT 0" {"x" 1}
+    false "0 IS NOT x" {"x" 0}
+    true  "0 IS NOT x" {"x" 1}
 
-    :error "x IS NULL" '{}
-    false "x IS NOT NULL" '{x nil}
-    false "x IS NOT NULL" '{x nil}
-    false "x IS NULL" '{x 0}
-    true "x IS NOT NULL" '{x 0}
+    :error "x IS NULL" {}
+    false "x IS NOT NULL" {"x" nil}
+    false "x IS NOT NULL" {"x" nil}
+    false "x IS NULL" {"x" 0}
+    true "x IS NOT NULL" {"x" 0}
 
-    true "\"x \" IS NOT NULL" '{x_SPACE_ 0}))
+    true "\"x \" IS NOT NULL" {"x " 0}))
 
 (deftest eval-operator-tuple
   (are [expected s env m attrs] (= expected
@@ -205,19 +207,19 @@
                                      (try (eval s env tuple)
                                           (catch #?(:clj Exception :cljs :default) _
                                             :error))))
-    true "x IS NULL" '{x nil} '{} '[x]
-    true "x IS NULL" '{} '{x nil} '[x]
+    true "x IS NULL" {"x" nil} {} ["x"]
+    true "x IS NULL" {} {"x" nil} ["x"]
 
-    1 "x + 1" '{} '{x 0} '[x]
-    nil "x + 1" '{} '{} '[x]
+    1 "x + 1" {} {"x" 0} ["x"]
+    nil "x + 1" {} {} ["x"]
 
-    nil "\"|x\" + 1" '{} '{} '[_BAR_x]))
+    nil "\"|x\" + 1" {} {} ["|x"]))
 
 (deftest eval-mutual-info
   (let [model (reify gpm.proto/MutualInfo
                 (mutual-info [_ _ _]
                   7))
-        env {'model model}]
+        env {"model" model}]
     (is (= 7 (eval "MUTUAL INFORMATION OF VAR x > 0 WITH VAR x < 0 UNDER model" env)))
     (is (= 7 (eval "MUTUAL INFORMATION OF VAR \"#x\" > 0 WITH VAR \"#x\" < 0 UNDER model" env)))))
 
@@ -230,7 +232,7 @@
 
                 (logpdf [_this _targets _constraints]
                   0))
-        env {'model model}]
+        env {"model" model}]
     (eval "APPROXIMATE MUTUAL INFORMATION OF VAR x WITH VAR y UNDER model" env)
     (is (= 1000 @simulate-count))))
 
@@ -239,22 +241,22 @@
                            (try (eval s env)
                                 (catch #?(:clj Exception :cljs :default) e
                                   :error)))
-    "log(x)" '{x 1} 0.0
-    "log(\"#x\")" '{_SHARP_x 1} 0.0
-    "log(1)" '{} 0.0
-    "log(0.5)" '{} -0.6931471805599453 ; spot check
-    "log(x)" '{x 0.8} -0.2231435513142097 ; spot check
-    "log(x) - log(y)" '{x 0.5 y 0.2} 0.916290731874155; spot check
-    "log(x)" '{} :error))
+    "log(x)" {"x" 1} 0.0
+    "log(\"#x\")" {"#x" 1} 0.0
+    "log(1)" {} 0.0
+    "log(0.5)" {} -0.6931471805599453 ; spot check
+    "log(x)" {"x" 0.8} -0.2231435513142097 ; spot check
+    "log(x) - log(y)" {"x" 0.5 "y" 0.2} 0.916290731874155; spot check
+    "log(x)" {} :error))
 
 (deftest condition
   (let [model (reify gpm.proto/Condition
                 (condition [gpm conditions]
                   (conditioned/condition gpm conditions)))
         conditioned? #(instance? ConditionedGPM %)]
-    (is (conditioned? (scalar/condition model '{x 0})))
+    (is (conditioned? (scalar/condition model {"x" 0})))
     (is (not (conditioned? (scalar/condition model {}))))
-    (is (not (conditioned? (scalar/condition model '{x nil}))))))
+    (is (not (conditioned? (scalar/condition model {"x" nil}))))))
 
 (deftest constrain
   (let [model (reify gpm.proto/Constrain
