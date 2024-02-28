@@ -39,6 +39,23 @@
       (plan/plan)
       (plan/eval env {})))
 
+(deftest lookup
+  (are [query env expected] (= expected
+                               (try (eval query env)
+                                    (catch #?(:clj Exception :cljs :default) _
+                                      :error)))
+    "SELECT * FROM data" {} :error
+    "SELECT * FROM data" {"data" []} []
+    "SELECT * FROM data" {"data" [{"x" 0}]} [{"x" 0}]
+    "SELECT * FROM data AS d" {"data" []} []
+    "SELECT * FROM data AS d" {"d" []} :error
+    "INSERT INTO data (x) VALUES (0)" {} :error
+    "INSERT INTO data (x) VALUES (0)" {"data" {}} [{"x" 0}]
+    "UPDATE data SET x=1" {} :error
+    "UPDATE data SET x=1" {"data" []} []
+    "ALTER data ADD x" {} :error
+    "ALTER data ADD x" {"data" []} []))
+
 (deftest values
   (are [query rel] (= rel (eval query {}))
     "(x) VALUES (0)"               [{"x" 0}]
@@ -224,7 +241,7 @@
 
 (deftest join
   (let [env {"a" [{"x" 0} {"x" 1}]
-              "b" [{"y" 0} {"y" 1}]}]
+             "b" [{"y" 0} {"y" 1}]}]
     (are [query expected] (= expected (eval query env))
       "a CROSS JOIN b"
       [{"x" 0 "y" 0}
