@@ -1,10 +1,13 @@
 (ns inferenceql.query.plan
+  "Generates and evaluates plans at the relation level for queries, commands,
+  and statements.
+
+  NB: Does not use SCI."
   (:refer-clojure :exclude [alias alter distinct distinct? eval sort type update])
   (:require [clojure.core :as core]
             [clojure.core.match :as match]
             [clojure.math.combinatorics :as combinatorics]
             [clojure.set :as set]
-            [clojure.string :as string]
             [inferenceql.inference.gpm :as gpm]
             [inferenceql.query.environment :as env]
             [inferenceql.query.literal :as literal]
@@ -693,6 +696,7 @@
                          (relation/tuples rel))]
     (relation/relation tuples)))
 
+;; NB: Only place bindings are set in IQL
 (defmethod eval :inferenceql.query.plan.type/with
   [plan env bindings]
   (let [{::keys [plan] binding-plans ::bindings} plan
@@ -707,16 +711,3 @@
                      bindings))]
     (eval plan env bindings)))
 
-(defmethod eval :inferenceql.query.plan.type/with
-  [plan env bindings]
-  (let [{::keys [plan] binding-plans ::bindings} plan
-        bindings (loop [bindings bindings
-                        binding-plans binding-plans]
-                   (if-let [[attr plan] (first binding-plans)]
-                     (let [v (if (plan? plan)
-                               (eval plan env bindings)
-                               (scalar/eval plan env bindings))]
-                       (recur (assoc bindings attr v)
-                              (rest binding-plans)))
-                     bindings))]
-    (eval plan env bindings)))

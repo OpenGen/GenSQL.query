@@ -18,14 +18,14 @@
       (scalar/plan)))
 
 (deftest plan-identifier
-  (is (= '(get iql-bindings "x") (plan "x")))
-  (is (= '(get iql-bindings "x") (plan "\"x\"")))
+  (is (= '(iql/safe-get iql-bindings "x") (plan "x")))
+  (is (= '(iql/safe-get iql-bindings "x") (plan "\"x\"")))
 
   (testing "delimited"
     (let [s "!@#$%^&*"]
-      (is (= (list 'get 'iql-bindings s) (plan (str \" s \")))))
+      (is (= (list 'iql/safe-get 'iql-bindings s) (plan (str \" s \")))))
 
-    (are [s] (= `(~'get ~'iql-bindings ~s)  (plan (str \" s \")))
+    (are [s] (= `(~'iql/safe-get ~'iql-bindings ~s)  (plan (str \" s \")))
       "x"
       " oddity"
       "mazzy*"
@@ -37,76 +37,76 @@
 
 (deftest plan-operator
   (are [s sexpr] (= sexpr (plan s))
-    "x or y" '(or (get iql-bindings "x") (get iql-bindings "y"))
-    "x and y" '(and (get iql-bindings "x") (get iql-bindings "y"))
-    "not x" '(not (get iql-bindings "x"))
-    "x > y" '(> (get iql-bindings "x") (get iql-bindings "y"))
-    "x >= y" '(>= (get iql-bindings "x") (get iql-bindings "y"))
-    "x = 0" '(= (get iql-bindings "x") 0)
-    "x <= y" '(<= (get iql-bindings "x") (get iql-bindings "y"))
-    "x < y" '(< (get iql-bindings "x") (get iql-bindings "y"))
-    "x + y" '(+ (get iql-bindings "x") (get iql-bindings "y"))
-    "x - y" '(- (get iql-bindings "x") (get iql-bindings "y"))
-    "x * y" '(* (get iql-bindings "x") (get iql-bindings "y"))
-    "x / y" '(/ (get iql-bindings "x") (get iql-bindings "y")))
+    "x or y" '(or (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x and y" '(and (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "not x" '(not (iql/safe-get iql-bindings "x"))
+    "x > y" '(> (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x >= y" '(>= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x = 0" '(= (iql/safe-get iql-bindings "x") 0)
+    "x <= y" '(<= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x < y" '(< (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x + y" '(+ (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x - y" '(- (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x * y" '(* (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y"))
+    "x / y" '(/ (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")))
 
   (testing "delimited interaction"
     (are [s sexpr] (= sexpr (plan s))
-      "\"~x\" or y" '(or (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" and y" '(and (get iql-bindings "~x") (get iql-bindings "y"))
-      "not \"~x\"" '(not (get iql-bindings "~x"))
-      "\"~x\" > y" '(> (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" >= y" '(>= (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" = 0" '(= (get iql-bindings "~x") 0)
-      "\"~x\" <= y" '(<= (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" < y" '(< (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" + y" '(+ (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" - y" '(- (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" * y" '(* (get iql-bindings "~x") (get iql-bindings "y"))
-      "\"~x\" / y" '(/ (get iql-bindings "~x") (get iql-bindings "y")))))
+      "\"~x\" or y" '(or (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" and y" '(and (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "not \"~x\"" '(not (iql/safe-get iql-bindings "~x"))
+      "\"~x\" > y" '(> (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" >= y" '(>= (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" = 0" '(= (iql/safe-get iql-bindings "~x") 0)
+      "\"~x\" <= y" '(<= (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" < y" '(< (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" + y" '(+ (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" - y" '(- (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" * y" '(* (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y"))
+      "\"~x\" / y" '(/ (iql/safe-get iql-bindings "~x") (iql/safe-get iql-bindings "y")))))
 
 (deftest plan-operator-precedence-same
   (are [s sexpr] (= sexpr (plan s))
-    "x or y or z" '(or (or (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x and y and z" '(and (and (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x + y + z" '(+ (+ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x - y - z" '(- (- (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x * y * z" '(* (* (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x / y / z" '(/ (/ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x > y > z" '(> (> (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x >= y >= z" '(>= (>= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x = y = z" '(= (= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x <= y <= z" '(<= (<= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x < y < z" '(< (< (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x is y is z" '(= (= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "\"x \" is \"y \" is \"z \"" '(= (= (get iql-bindings "x ") (get iql-bindings "y ")) (get iql-bindings "z "))))
+    "x or y or z" '(or (or (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x and y and z" '(and (and (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x + y + z" '(+ (+ (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x - y - z" '(- (- (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x * y * z" '(* (* (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x / y / z" '(/ (/ (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x > y > z" '(> (> (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x >= y >= z" '(>= (>= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x = y = z" '(= (= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x <= y <= z" '(<= (<= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x < y < z" '(< (< (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x is y is z" '(= (= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "\"x \" is \"y \" is \"z \"" '(= (= (iql/safe-get iql-bindings "x ") (iql/safe-get iql-bindings "y ")) (iql/safe-get iql-bindings "z "))))
 
 (deftest plan-operator-precedence-different
   (are [s sexpr] (= sexpr (plan s))
-    "x and y or z" '(or (and (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x or y and z" '(or (get iql-bindings "x") (and (get iql-bindings "y") (get iql-bindings "z")))
-    "not x and y" '(and (not (get iql-bindings "x")) (get iql-bindings "y"))
-    "not x or y" '(or (not (get iql-bindings "x")) (get iql-bindings "y"))
-    "not x = y" '(not (= (get iql-bindings "x") (get iql-bindings "y")))
-    "x = y + z" '(= (get iql-bindings "x") (+ (get iql-bindings "y") (get iql-bindings "z")))
-    "x + y = z" '(= (+ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x + y * z" '(+ (get iql-bindings "x") (* (get iql-bindings "y") (get iql-bindings "z")))
-    "x * y + z" '(+ (* (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "\" x\" * y + z" '(+ (* (get iql-bindings " x") (get iql-bindings "y")) (get iql-bindings "z"))))
+    "x and y or z" '(or (and (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x or y and z" '(or (iql/safe-get iql-bindings "x") (and (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))
+    "not x and y" '(and (not (iql/safe-get iql-bindings "x")) (iql/safe-get iql-bindings "y"))
+    "not x or y" '(or (not (iql/safe-get iql-bindings "x")) (iql/safe-get iql-bindings "y"))
+    "not x = y" '(not (= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")))
+    "x = y + z" '(= (iql/safe-get iql-bindings "x") (+ (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))
+    "x + y = z" '(= (+ (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x + y * z" '(+ (iql/safe-get iql-bindings "x") (* (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))
+    "x * y + z" '(+ (* (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "\" x\" * y + z" '(+ (* (iql/safe-get iql-bindings " x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))))
 
 
 (deftest plan-operator-group
   (are [s sexpr] (= sexpr (plan s))
-    "x and (y or z)" '(and (get iql-bindings "x") (or (get iql-bindings "y") (get iql-bindings "z")))
-    "(x or y) and z" '(and (or (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "(not x) and y" '(and (not (get iql-bindings "x")) (get iql-bindings "y"))
-    "(not x) or y" '(or (not (get iql-bindings "x")) (get iql-bindings "y"))
-    "(not x) = y" '(= (not (get iql-bindings "x")) (get iql-bindings "y"))
-    "(x = y) + z" '(+ (= (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x + (y = z)" '(+ (get iql-bindings "x") (= (get iql-bindings "y") (get iql-bindings "z")))
-    "(x + y) * z" '(* (+ (get iql-bindings "x") (get iql-bindings "y")) (get iql-bindings "z"))
-    "x * (y + z)" '(* (get iql-bindings "x") (+ (get iql-bindings "y") (get iql-bindings "z")))
-    "\"x%\" * (y + z)" '(* (get iql-bindings "x%") (+ (get iql-bindings "y") (get iql-bindings "z")))))
+    "x and (y or z)" '(and (iql/safe-get iql-bindings "x") (or (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))
+    "(x or y) and z" '(and (or (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "(not x) and y" '(and (not (iql/safe-get iql-bindings "x")) (iql/safe-get iql-bindings "y"))
+    "(not x) or y" '(or (not (iql/safe-get iql-bindings "x")) (iql/safe-get iql-bindings "y"))
+    "(not x) = y" '(= (not (iql/safe-get iql-bindings "x")) (iql/safe-get iql-bindings "y"))
+    "(x = y) + z" '(+ (= (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x + (y = z)" '(+ (iql/safe-get iql-bindings "x") (= (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))
+    "(x + y) * z" '(* (+ (iql/safe-get iql-bindings "x") (iql/safe-get iql-bindings "y")) (iql/safe-get iql-bindings "z"))
+    "x * (y + z)" '(* (iql/safe-get iql-bindings "x") (+ (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))
+    "\"x%\" * (y + z)" '(* (iql/safe-get iql-bindings "x%") (+ (iql/safe-get iql-bindings "y") (iql/safe-get iql-bindings "z")))))
 
 
 (deftest plan-distribution-event
@@ -210,8 +210,8 @@
     true "x IS NULL" {"x" nil} {} ["x"]
     true "x IS NULL" {} {"x" nil} ["x"]
 
-    1 "x + 1" {} {"x" 0} ["x"]
-    nil "x + 1" {} {} ["x"]
+    1   "x + 1" {} {"x" 0} ["x"]
+    nil "x + 1" {} {}      ["x"]
 
     nil "\"|x\" + 1" {} {} ["|x"]))
 
