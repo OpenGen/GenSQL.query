@@ -90,8 +90,8 @@
     [:variable-list & variables] (map plan variables)
 
     [:identifier child] (plan child)
-    [:delimited-symbol s] (list 'get 'iql-bindings s)
-    [:simple-symbol s] (list 'get 'iql-bindings s)))
+    [:delimited-symbol s] (list 'iql/safe-get 'iql-bindings s)
+    [:simple-symbol s] (list 'iql/safe-get 'iql-bindings s)))
 
 (defn inference-event
   [event]
@@ -100,6 +100,17 @@
                          (keyword? x) (symbol x)
                          :else x))
                  event))
+
+(defn safe-get
+  "Looks up an identifier id in map m. If not found, throws an exception."
+  [m id]
+  (let [result (get m id ::not-found)]
+    (if (= result ::not-found)
+      (throw (ex-info (str "Could not resolve identifier: " (pr-str id))
+                      {::anomalies/category ::anomalies/incorrect
+                       :identifier id
+                       :env m}))
+      result)))
 
 (defn prob
   [model event]
@@ -245,7 +256,8 @@
                   '* (nil-safe (auto-unbox *))
                   '/ (nil-safe (auto-unbox /))
                   'log (nil-safe (auto-unbox math/log))}
-   'iql {'prob prob
+   'iql {'safe-get safe-get
+         'prob prob
          'pdf pdf
          #?@(:clj ['eval-relation-plan
                    (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
@@ -260,31 +272,38 @@
 
 (defn eval
   "Evaluates a scalar-based sexpr given the environment, bindings, and
-  (optional) tuples/rows."
+  (optional) tuples/rows.
+
+  Params:
+  - sexpr: The scalar-based S-expression to evaluate in SCI.
+  - env: Holds the models and relations to use in the evaluation.
+  - bindings: Extra bindings, like WITH-based CTEs.
+  - tuples: The tuples/rows to use in the evaluation."
   ;; TODO: Use a SCI ctx for environment shared across tuples?
+  ;; NB: never actually passes in more than one tuple
   [sexpr env bindings & tuples]
   (tap> #:scalar.eval{:in-env env :in-bindings bindings
                       :sexpr (pr-str sexpr) :tuple-sample (take 3 tuples)})
-  (let [env (merge env bindings)
-        tuple-map (fn [tuple]
+  (let [env' (merge env bindings)
+        tuple-map (fn tuple-map [tuple]
                     (merge (zipmap (tuple/attributes tuple)
                                    (repeat nil))
                            (when-let [tuple-name (tuple/name tuple)]
                              (zipmap (map #(str tuple-name "." %)
                                           (tuple/attributes tuple))
                                      (repeat nil)))
-                           env
+                           env'
                            (tuple/->map tuple)))
         attributes (into #{} (map tuple/attributes) tuples)
-        bindings (into (merge env bindings)
-                       (map tuple-map)
-                       tuples)
+        sci-bindings (into env'
+                           (map tuple-map)
+                           tuples)
         ;; FIXME write a function to produce this automatically
         ;; from `env`
-        opts {:namespaces #?(:clj (namespaces env bindings)
+        opts {:namespaces #?(:clj (namespaces env' sci-bindings)
                              :cljs (namespaces))
-              :bindings (merge bindings
-                               {'iql-bindings bindings})}]
+              :bindings (merge sci-bindings
+                               {'iql-bindings sci-bindings})}]
     (try (let [sci-result (sci/eval-string (pr-str sexpr) opts)]
            (tap> #:scalar.eval{:opts opts
                                :result sci-result})
@@ -298,5 +317,5 @@
                                {::anomalies/category ::anomalies/incorrect
                                 :identifier (pr-str id)
                                 :sexpr (pr-str sexpr)
-                                :env bindings})))
+                                :env sci-bindings})))
              (throw ex))))))
