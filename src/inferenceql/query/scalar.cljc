@@ -304,18 +304,20 @@
                              :cljs (namespaces))
               :bindings (merge sci-bindings
                                {'iql-bindings sci-bindings})}]
-    (try (let [sci-result (sci/eval-string (pr-str sexpr) opts)]
-           (tap> #:scalar.eval{:opts opts
-                               :result sci-result})
-           sci-result)
+    ;; ensure pr-str doesn't truncate by setting print-length to nil
+    (binding [*print-length* nil]
+      (try (let [sci-result (sci/eval-string (pr-str sexpr) opts)]
+             (tap> #:scalar.eval{:opts opts
+                                 :result sci-result})
+             sci-result)
 
-         (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
-           (if-let [[_ id] (re-find #"Could not resolve identifier: (.+)$"
-                                    (ex-message ex))]
-             (when-not (contains? attributes id)
-               (throw (ex-info (str "Could not resolve identifier: " (pr-str id))
-                               {::anomalies/category ::anomalies/incorrect
-                                :identifier (pr-str id)
-                                :sexpr (pr-str sexpr)
-                                :env sci-bindings})))
-             (throw ex))))))
+           (catch #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) ex
+             (if-let [[_ id] (re-find #"Could not resolve identifier: (.+)$"
+                                      (ex-message ex))]
+               (when-not (contains? attributes id)
+                 (throw (ex-info (str "Could not resolve identifier: " (pr-str id))
+                                 {::anomalies/category ::anomalies/incorrect
+                                  :identifier (pr-str id)
+                                  :sexpr (pr-str sexpr)
+                                  :env sci-bindings})))
+               (throw ex)))))))
