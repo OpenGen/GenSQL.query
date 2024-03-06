@@ -37,7 +37,7 @@
            :js-build {:main-opts ["--main" "cljs.main"
                                   "--optimizations" "advanced"
                                   "--compile" "inferenceql.query.js"]}
-           :benchmark {:extra-paths ["benchmark"]
-                       :extra-deps {com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.2.0"}
-                                    criterium/criterium {:mvn/version "0.4.6"}}
-                       :jvm-opts ["-Djdk.attach.allowAttachSelf"]}}}
+           :perf {:extra-paths ["perf"]
+                  :extra-deps {com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.2.0"}
+                               criterium/criterium {:mvn/version "0.4.6"}}
+                  :jvm-opts ["-Djdk.attach.allowAttachSelf"]}}}
