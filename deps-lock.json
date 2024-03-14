@@ -1548,6 +1548,16 @@
       "hash": "sha256-hML6t6Mso8HkDEGm7Mm9U26UezBYDne41dwjKjSSXqw="
     },
     {
+      "mvn-path": "org/clojure/core.memoize/1.0.257/core.memoize-1.0.257.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-mg6RgW4hp3SY7+3r1HrUvcL7+X+dvEm8nZWU4gEkbpY="
+    },
+    {
+      "mvn-path": "org/clojure/core.memoize/1.0.257/core.memoize-1.0.257.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-3QQaWFudj1eN30s82rhS8/XdKajjNl4d1ehftl4/c9w="
+    },
+    {
       "mvn-path": "org/clojure/core.rrb-vector/0.0.11/core.rrb-vector-0.0.11.jar",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-Pra50SrtdI0NnMR6u2j3XYouS65rZBycgCOQ5/6GugI="
