@@ -19,7 +19,8 @@
         ring-cors/ring-cors {:mvn/version "0.1.13"}
         ring/ring-core {:mvn/version "1.9.5"}
         ring/ring-jetty-adapter {:mvn/version "1.9.5"}
-        tech.tablesaw/tablesaw-core {:mvn/version "0.43.1"}}
+        tech.tablesaw/tablesaw-core {:mvn/version "0.43.1"}
+        org.clojure/core.memoize {:mvn/version "1.0.257"}}
  :paths ["src" "resources"]
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.13"}

@@ -8,6 +8,7 @@
             [inferenceql.inference.approximate :as approx]
             [inferenceql.inference.gpm :as gpm]
             ;; [inferenceql.inference.search.crosscat :as crosscat]
+            [inferenceql.query.cache :as cache]
             #?(:clj [inferenceql.query.generative-table :as generative-table])
             [inferenceql.query.literal :as literal]
             [inferenceql.query.parser.tree :as tree]
@@ -112,23 +113,29 @@
                        :env m}))
       result)))
 
-(defn prob
-  [model event]
-  (let [event (inference-event event)]
-    (math/exp (gpm/logprob model event))))
+(def prob
+  (cache/lru
+    (fn prob*
+      [model event]
+      (let [event (inference-event event)]
+        (math/exp (gpm/logprob model event))))))
 
-(defn pdf
-  [model event]
-  (let [event (update-keys event str)]
-    (math/exp (gpm/logpdf model event {}))))
+(def pdf
+  (cache/lru
+    (fn pdf*
+      [model event]
+      (let [event (update-keys event str)]
+        (math/exp (gpm/logpdf model event {}))))))
 
-(defn condition
-  [model conditions]
-  (let [conditions (-> (medley/filter-vals some? conditions)
-                       (update-keys str))]
-    (cond-> model
-      (seq conditions)
-      (gpm/condition conditions))))
+(def condition
+  (cache/lru
+    (fn condition*
+      [model conditions]
+      (let [conditions (-> (medley/filter-vals some? conditions)
+                           (update-keys str))]
+        (cond-> model
+                (seq conditions)
+                (gpm/condition conditions))))))
 
 (defn condition-all
   [model bindings]
@@ -172,24 +179,28 @@
                              :else (remove nil? form)))))
                  event))
 
-(defn constrain
-  [model event]
-  (let [event (-> event
-                  (strip-nils)
-                  (inference-event))]
-    (cond-> model
-      (some? event)
-      (gpm/constrain event
-                     {:operation? operation?
-                      :operands operands
-                      :operator operator
-                      :variable? variable?}))))
+(def constrain
+  (cache/lru
+    (fn constrain*
+      [model event]
+      (let [event (-> event
+                      (strip-nils)
+                      (inference-event))]
+        (cond-> model
+                (some? event)
+                (gpm/constrain event
+                               {:operation? operation?
+                                :operands operands
+                                :operator operator
+                                :variable? variable?}))))))
 
-(defn mutual-info
-  [model event-a event-b]
-  (let [event-a (inference-event event-a)
-        event-b (inference-event event-b)]
-    (gpm/mutual-info model event-a event-b)))
+(def mutual-info
+  (cache/lru
+    (fn mutual-info*
+      [model event-a event-b]
+      (let [event-a (inference-event event-a)
+            event-b (inference-event event-b)]
+        (gpm/mutual-info model event-a event-b)))))
 
 (defn approx-mutual-info
   [model vars-lhs vars-rhs]
