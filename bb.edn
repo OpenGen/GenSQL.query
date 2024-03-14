@@ -19,4 +19,7 @@
                :task (shell "clj-kondo --lint src test")}
 
          repl {:doc "Launch the InferenceQL REPL"
-               :task (apply shell "clj -M -m inferenceql.query.main" *command-line-args*)}}}
+               :task (apply shell "clj -M -m inferenceql.query.main" *command-line-args*)}
+
+         perf:benchmark {:doc "Run performance benchmarks on default queries"
+                         :task (apply shell "clj")}}}

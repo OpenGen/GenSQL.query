@@ -4,9 +4,9 @@
             [clojure.data.csv :as csv]
             [clojure.main :as main]
             [clojure.pprint :as pprint]
-            [clojure.repl :as repl]
             [clojure.string :as string]
             [clojure.tools.cli :as cli]
+            [inferenceql.query.cli :as query.cli]
             [inferenceql.query.db :as db]
             [inferenceql.query.io :as io]
             [inferenceql.query.permissive :as permissive]
@@ -17,22 +17,18 @@
 (def output-formats #{"csv" "table"})
 (def langs #{"permissive" "strict"})
 
-(defn parse-named-pair
-  [s]
-  (when-let [[_ name path] (re-matches #"([^=]+)=([^=]+)" s)]
-    {name path}))
 
 (def cli-options
   [["-t" "--table NAME=PATH" "table CSV name and path"
     :multi true
     :default []
     :update-fn conj
-    :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
+    :validate [query.cli/parse-named-pair "Must be of the form: NAME=PATH"]]
    ["-m" "--model NAME=PATH" "model EDN name and path"
     :multi true
     :default []
     :update-fn conj
-    :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
+    :validate [query.cli/parse-named-pair "Must be of the form: NAME=PATH"]]
    ["-d" "--db PATH" "database path"]
    ["-l" "--lang LANG" "query language"
     :default "strict"
@@ -42,22 +38,12 @@
     :validate [output-formats (str "Must be one of: " (string/join ", " output-formats))]]
    ["-h" "--help"]])
 
-(defn print-exception
-  [e]
-  (binding [*out* *err*
-            *print-length* 10
-            *print-level* 4]
-    (if-let [parse-failure (:instaparse/failure (ex-data e))]
-      (clojure/print parse-failure)
-      (if-let [ex-message (ex-message e)]
-        (clojure/println ex-message)
-        (repl/pst e)))))
 
 (defn print-table
   "Prints the results of an InferenceQL query to the console as a table."
   [result]
   (if (instance? Exception result)
-    (print-exception result)
+    (query.cli/print-exception result)
     (let [columns (relation/attributes result)
           header-row (map name columns)
           cells (for [row result]
@@ -71,7 +57,7 @@
   "Prints the results of an InferenceQL query to the console as a CSV."
   [result]
   (if (instance? Exception result)
-    (print-exception result)
+    (query.cli/print-exception result)
     (let [columns (get (meta result)
                        :iql/columns
                        (into #{} (mapcat keys) result))
@@ -105,12 +91,7 @@
                       :print wrapped-print]]
     (apply main/repl repl-options)))
 
-(defn errorln
-  "Like `clojure.core/println`, but prints to `clojure.core/*err*` instead of
-  `clojure.core/*out*`."
-  [& args]
-  (binding [*out* *err*]
-    (apply println args)))
+
 
 (defn -main
   "Main function for the InferenceQL command-line application. Intended to be run
@@ -125,34 +106,13 @@
                 nil print-table)]
     (cond (seq errors)
           (doseq [error errors]
-            (errorln error))
+            (query.cli/errorln error))
 
           help
-          (errorln summary)
+          (query.cli/errorln summary)
 
           :else
-          (let [swap-in (fn [s]
-                          (if (= "-" s)
-                            *in*
-                            s))
-                models (-> (into {}
-                                 (map parse-named-pair)
-                                 models)
-                           (update-keys symbol)
-                           (update-vals swap-in)
-                           (update-vals io/slurp-model))
-                tables (-> (into {}
-                                 (map parse-named-pair)
-                                 tables)
-                           (update-keys symbol)
-                           (update-vals swap-in)
-                           (update-vals io/slurp-csv))
-                db (as-> (if db
-                           (db/slurp (swap-in db))
-                           (db/empty))
-                       %
-                     (reduce-kv db/with-table % tables)
-                     (reduce-kv db/with-model % models))
+          (let [db (query.cli/setup-db models tables db)
                 query-fn (case lang
                            "permissive" permissive/query
                            "strict" strict/query)]
