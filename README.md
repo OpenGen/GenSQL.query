@@ -69,6 +69,34 @@ The JavaScript interface currently only supports IQL-strict queries.
 
 ### Development
 
+#### Clojurescript / Shadow-cljs
+
+To develop with a cljs environment, use shadow-cljs. The simplest way is to use a bare Node-based REPL. There are two primary methods:
+
+##### Terminal
+From the command line, run:
+
+```shell 
+npx shadow-cljs node-repl # start a CLI node repl 
+```
+
+##### Editor nREPL
+First, from the command line, run:
+
+```shell 
+npx shadow-cljs server # start the shadow-cljs server
+```
+
+Then, connect to the nREPL server in your editor with the standard .nrepl-port file. (This process will be editor-specific.)
+
+This will get you a **Clojure**-based REPL in your editor. To convert it to **Clojurescript**, in the REPL, run: 
+
+```clojure
+(shadow/node-repl) ; starts a bare node repl
+```
+
+To exit Clojurescript mode, enter `:cljs/quit`.
+
 #### Running with native clojure
 
 To run the local source code without pinned dependency versions:
