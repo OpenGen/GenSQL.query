@@ -54,3 +54,18 @@ The JavaScript interface currently only supports IQL-strict queries.
 Make sure [babashka](https://github.com/babashka/babashka) is installed. Then 
 run the tests via `bb test`. Dialect-specific tests can be run with 
 `bb test:clj` and `bb test:cljs`. 
+
+#### Dependency upgrades
+
+We use `clj-nix` to support tamper-proof reproducible builds of the dependencies for all environments.
+When you upgrade a package in `deps.edn`, it is necessary to update `deps-lock.json` as well, so that
+the nix build universe has knowledge of the hash fingerprints of the new deps version tarballs.
+It can be done without any setup like so:
+
+```
+nix develop --command bash -c "nix run github:jlesquembre/clj-nix#deps-lock"
+```
+
+This script can take a minute or two as it needs to build local dependencies of the `clj-nix` library.
+You will see the changes to `deps.edn` reflected in `deps-lock.json`; you should commit these; and the
+release build will work again.
