@@ -17,6 +17,13 @@
       "hash": "sha256-PUNd+dHJNPTKno59YI27wpehyULYPvSyCQDjVIadKJ4="
     },
     {
+      "lib": "io.github.inferenceql/inferenceql.gpm.sppl",
+      "url": "https://github.com/inferenceql/inferenceql.gpm.sppl.git",
+      "rev": "f745dbb0c17c1a9da21488b7bd3098338ab7d7a2",
+      "git-dir": "https/github.com/inferenceql/inferenceql.gpm.sppl",
+      "hash": "sha256-4EJqRFT3/95kyriEYMIZxn+TavhMFPE7Yxv6lC1s0lI="
+    },
+    {
       "lib": "io.github.inferenceql/inferenceql.inference",
       "url": "https://github.com/inferenceql/inferenceql.inference.git",
       "rev": "40e77dedf680b7936ce988b66186a86f5c4db6a5",
