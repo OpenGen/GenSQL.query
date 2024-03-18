@@ -6,6 +6,7 @@
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
         io.github.inferenceql/inferenceql.inference {:git/sha "40e77dedf680b7936ce988b66186a86f5c4db6a5"}
+        io.github.inferenceql/inferenceql.gpm.sppl {:git/sha "f745dbb0c17c1a9da21488b7bd3098338ab7d7a2"}
         io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}
         org.babashka/sci {:mvn/version "0.3.32"}
         org.clojure/clojure {:mvn/version "1.11.1"}
