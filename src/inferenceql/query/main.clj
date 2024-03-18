@@ -11,7 +11,8 @@
             [inferenceql.query.io :as io]
             [inferenceql.query.permissive :as permissive]
             [inferenceql.query.relation :as relation]
-            [inferenceql.query.strict :as strict]))
+            [inferenceql.query.strict :as strict])
+  (:gen-class))
 
 (def output-formats #{"csv" "table"})
 (def langs #{"permissive" "strict"})
