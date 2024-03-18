@@ -1,4 +1,4 @@
-{:tasks {clean {:doc "Remove all build artifacts"
+{:tasks {clean {:doc "Remove all test artifacts (excludes java build artifacts)"
                 :task (shell "rm -Rf cljs-test-runner-out")}
 
          test {:doc "Run test"

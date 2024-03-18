@@ -6,6 +6,7 @@
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
         io.github.inferenceql/inferenceql.inference {:git/sha "40e77dedf680b7936ce988b66186a86f5c4db6a5"}
+        io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}
         org.babashka/sci {:mvn/version "0.3.32"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.60"}
@@ -23,6 +24,8 @@
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.13"}
                                org.clojure/test.check {:mvn/version "1.1.1"}}}
+           :build {:deps {io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}}
+                   :ns-default build}
            :clj-test {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
                       :main-opts ["--main" "cognitect.test-runner"]
                       :exec-fn cognitect.test-runner.api/test}
