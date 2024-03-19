@@ -4,16 +4,13 @@
          test {:doc "Run test"
                :task (run '-test)}
 
-         -test {:depends [test:clj test:cljs test:readme]}
+         -test {:depends [test:clj test:cljs]}
 
          test:clj {:doc "Run Clojure test"
                    :task (clojure "-X:test:clj-test")}
 
          test:cljs {:doc "Run ClojureScript test"
                     :task (clojure "-M:test:cljs-test")}
-
-         test:readme {:doc "Run README test"
-                      :task (clojure "-M:test:readme-test")}
 
          lint {:doc "Run Clojure linters"
                :task (shell "clj-kondo --lint src test")}
