@@ -4,6 +4,19 @@
 
 ## Usage
 
+### Dependencies and Nix
+
+Many of the usages described below are powered by the Nix package manager, which works on most Unix systems. We recommend installing Nix with the
+[Determinate Systems installer](https://determinate.systems/posts/determinate-nix-installer/). If you already have Nix installed, note that the
+precise minimum version of Nix required is not known, but we have tested with Nix 2.19.3:
+
+```
+$ nix --version
+nix (Nix) 2.19.3
+```
+
+Using Nix ensures you can get reliable version sets of all dependencies even when the project uses multiple languages and tools.
+
 ### Command-line interface
 
 `inferenceql.query` provides a simple command-line application that allows the user to manually enter and evaluate InferenceQL queries. Usage information can be printed with the following command.
