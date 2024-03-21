@@ -21,9 +21,16 @@ Using Nix ensures you can get reliable version sets of all dependencies even whe
 
 `inferenceql.query` provides a simple command-line application that allows the user to manually enter and evaluate InferenceQL queries. Usage information can be printed with the following command.
 
-``` bash
-clj -M -m inferenceql.query.main --help
+To run the latest version of `inferenceql.query` REPL without installing clojure or source code, run:
+
 ```
+nix run github:inferenceql/inferenceql.query -- --help  # pass parameters after a double dash
+nix run github:inferenceql/inferenceql.query            # to get an interactive REPL
+```
+
+The first time you invoke this, Nix will build some dependencies, but these will cache for future runs.
+
+To run the code in this repository with your native environment, see (Development)[#Development].
 
 The command-line application currently supports IQL-strict and IQL-permissive queries, with strict as the default.
 
@@ -62,6 +69,14 @@ The JavaScript interface currently only supports IQL-strict queries.
 
 ### Development
 
+#### Running with native clojure
+
+To run the local source code without pinned dependency versions:
+
+``` bash
+clj -M -m inferenceql.query.main --help
+```
+
 #### Testing
 
 Make sure [babashka](https://github.com/babashka/babashka) is installed. Then 
@@ -79,6 +94,13 @@ It can be done without any setup like so:
 nix develop --command bash -c "nix run github:jlesquembre/clj-nix#deps-lock"
 ```
 
-This script can take a minute or two as it needs to build local dependencies of the `clj-nix` library.
+This script can take a minute or two as it needs to build local dependencies of the `clj-nix` library,
+though this should only need to happen the first time you run it.
 You will see the changes to `deps.edn` reflected in `deps-lock.json`; you should commit these; and the
 release build will work again.
+
+#### Building a JAR (portable java application)
+
+```
+nix build '.#uber' -o iql.jar
+```

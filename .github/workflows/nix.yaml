@@ -15,6 +15,15 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     # Later, we can use Cachix or similar to distribute the binaries automatically.
     - uses: DeterminateSystems/magic-nix-cache-action@v2
+      # This saves us against build failures because the clojure deps
+      # are not yet locked. Since the CI does not automatically release
+      # nix artifacts yet, this reduction in friction is harmless for now
+      # and only means a releaser should run deps-lock and commit.
+      # This can be addressed inclusively with automation around releases.
+    - run: |
+        nix develop \
+          --command bash -c \
+          "nix run github:jlesquembre/clj-nix#deps-lock"
     - run: |
         nix build \
           -L \
