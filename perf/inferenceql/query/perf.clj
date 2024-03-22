@@ -20,18 +20,18 @@
        " FROM " table))
 
 (defn generate
-  [{:keys [col-var-list model limit]
+  [{:keys [col-vars model limit]
     :or {limit *default-limit*}}]
   (str "SELECT * FROM"
-       " GENERATE " (str-listify col-var-list)
+       " GENERATE " (str-listify col-vars)
        " UNDER " model
        " LIMIT " limit))
 
 (defn generate-conditioned-by
-  [{:keys [col-var-list model conditioned-density-evt limit]
+  [{:keys [col-vars model conditioned-density-evt limit]
     :or {limit *default-limit*}}]
   (str "SELECT * FROM"
-       " GENERATE " (str-listify col-var-list)
+       " GENERATE " (str-listify col-vars)
        " UNDER " model
        " CONDITIONED BY " conditioned-density-evt
        " LIMIT " limit))
@@ -69,7 +69,7 @@
   Parameters
   - model: the name of the model
   - table: the name of the table
-  - col-var-list: a list of column variables - either a string or a coll of strings
+  - col-vars: column variable(s) - either a string or a coll of strings
   - prob-density-evt: a probability density event (e.g., \"VAR foo = true\")
   - conditioned-density-evt: a density event to condition by
   - gen-join-density-evt: a generative join density event (e.g., \"VAR foo = foo\")
@@ -79,7 +79,7 @@
   Example usage:
     (default-queries {:model \"mod\"
                       :table \"tbl\"
-                      :col-var-list [\"VAR Anticipated_Lifetime\" \"VAR Period_minutes\"]
+                      :col-vars [\"VAR Anticipated_Lifetime\" \"VAR Period_minutes\"]
                       :conditioned-density-evt \"VAR Power_watts = 1000\"
                       :categorical-col-1 \"Class_of_Orbit\"
                       :categorical-col-2 \"Launch_Site\"
