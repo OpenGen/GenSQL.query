@@ -76,11 +76,13 @@ distinct-clause ::= #'(?i)DISTINCT'
 
 select-clause ::= #'(?i)SELECT' (ws distinct-clause)? ws select-list
 
-select-list ::= star
+select-list ::= select-star-clause
               / selection (ws? ',' ws? selection)*
               / aggregation (ws? ',' ws? aggregation)*
 
+select-star-clause ::= star (ws? select-except-clause)?
 star ::= '*'
+select-except-clause ::= #'(?i)EXCEPT' ws? '(' ws? identifier-list ws? ')'
 
 selection ::= (scalar-expr | aggregation) (ws alias-clause)?
 
@@ -149,7 +151,6 @@ insert-expr ::= #'(?i)INSERT' ws #'(?i)INTO' ws relation-expr ws relation-expr
 
 relation-value ::= '(' ws? identifier-list ws? ')' ws #'(?i)VALUES' ws value-lists
 
-identifier-list ::= identifier (ws? ',' ws identifier)*
 value-list ::= '(' ws? value (ws? ',' ws? value)* ws? ')'
 value-lists ::= value-lists-full | value-lists-sparse
 value-lists-full ::= value-list (ws? ',' ws? value-list)*
@@ -241,6 +242,7 @@ bool             ::= #'true|false'
 float            ::= #'-?\d+\.\d+(E-?\d+)?'
 int              ::= #'-?\d+'
 nat              ::= #'\d+'
+identifier-list  ::= identifier (ws? ',' ws? identifier)*
 identifier       ::= simple-symbol | delimited-symbol
 simple-symbol    ::= #'(?u)(?!G__)\p{L}[\p{L}\p{N}_\-\?\.]*'
 delimited-symbol ::= <'"'> #'[^\"]+' <'"'>

@@ -49,25 +49,32 @@
   [node]
   (tree/match [node]
     [[:selection child]] (star? child)
+    [[:select-star-clause & _]] true
     [[:star & _]] true
     :else false))
 
 ;;; plan
 
 (defn lookup
+  "A plan to retrieve a relation/table from the environment by name."
   [id]
   {::type :inferenceql.query.plan.type/lookup
    ::env/name id})
 
 (defn select
+  "A plan to filters the tuples/rows that match the pred fn.
+
+  NB: Used for the WHERE clause; unrelated to the SELECT clause."
   [op sexpr]
   {::type :inferenceql.query.plan.type/select
    ::sexpr sexpr
    ::plan op})
 
 (defn extended-project
+  "An (extended) projection plan. Used for simple selections of existing
+  columns as well as derived columns."
   [op coll]
-  ;; `coll` is a sequence of (s-expression, attribute) pairs.
+  ;; `coll` is a sequence of (fn-to-eval-s-expression, attribute-name) pairs.
   (let [terms (mapv #(zipmap [::sexpr ::relation/attribute] %)
                     coll)]
     {::type :inferenceql.query.plan.type/extended-project
@@ -335,15 +342,40 @@
     [[:scalar-expr & _]] true
     :else false))
 
+(defn ^:private select-star-plan
+  "Returns a plan for SELECT * and SELECT * EXCEPT ... clauses."
+  [node op]
+  (tree/match [node]
+    [[:select-star-clause & children]]
+    (select-star-plan children op)                          ; trying recur breaks with CLJ-2808
+
+    ;; plain SELECT *
+    [[[:star _]]]
+    op
+
+    ;; SELECT * EXCEPT (col1, col2, ...)
+    [[[:star & _] [:select-except-clause _except _lparen [:identifier-list & id-list] _rparen]]]
+    (loop [exclusions []
+           [id & rest-ids] (filterv (tree/tag-pred :identifier) id-list)]
+      (if id
+        (recur (conj exclusions (literal/read id)) rest-ids)
+        {::type :inferenceql.query.plan.type/star-except
+         ::exclusions exclusions
+         ::plan op}))
+
+    :else
+    (throw (ex-info "Can't generate selection plan - unknown * pattern"
+                    {:star-node node
+                     :partial-plan op}))))
+
 (defn select-plan
   [select-node group-by-node op]
   (assert (= :select-clause (tree/tag select-node)))
   (assert (or (nil? group-by-node) (= :group-by-clause (tree/tag group-by-node))))
-  (let [selections (selections select-node)
+  (let [selections (vec (selections select-node))
         distinct-clause (tree/get-node select-node :distinct-clause)
-        plan (cond (and (= 1 (count selections))
-                        (star? (first selections)))
-                   op
+        plan (cond (star? (first selections))
+                   (select-star-plan (first selections) op)
 
                    (or group-by-node (some aggregation? selections))
                    (aggregation-plan select-node group-by-node op)
@@ -504,6 +536,12 @@
         rel (eval plan env bindings)
         pred #(scalar/eval sexpr env bindings %)]
     (relation/select rel pred)))
+
+(defmethod eval :inferenceql.query.plan.type/star-except
+  [plan env bindings]
+  (let [{::keys [exclusions plan]} plan
+        rel (eval plan env bindings)]
+    (relation/remove-attributes rel exclusions)))
 
 (defmethod eval :inferenceql.query.plan.type/extended-project
   [plan env bindings]

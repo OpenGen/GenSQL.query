@@ -74,6 +74,7 @@
               :attrs (mapv second coll))))
 
 (defn select
+  "Selects/filters the tuples/rows that match the pred fn"
   [rel pred]
   (with-meta (filter pred (tuples rel))
     (meta rel)))
@@ -111,6 +112,14 @@
                          (conj (attributes rel)
                                attr))]
     (relation rel :attrs attributes)))
+
+(defn remove-attributes
+  "Remove attributes from a relation."
+  [rel attrs]
+  (let [attributes' (remove (set attrs)
+                            (attributes rel))]
+    (-> (map #(apply dissoc % attrs) rel)
+        (relation :attrs attributes'))))
 
 (defn group-by
   [rel f]

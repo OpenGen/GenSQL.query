@@ -113,7 +113,7 @@
 (defspec select-star-except
   (prop/for-all [[table ks] gen-table-col-subset]
     (let [kset (set ks)
-          col-list (->> ks #_ (map name) (string/join ", "))
+          col-list (->> ks (string/join ", "))
           results (q (str "SELECT * EXCEPT (" col-list ") FROM data") table)]
       (is (every? (every-pred #(empty? (select-keys % ks))
                               #(empty? (set/intersection kset (set (keys %)))))
