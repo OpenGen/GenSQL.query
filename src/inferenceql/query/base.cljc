@@ -22,14 +22,14 @@
   - parse - a parsing function"
   [s db parse]
   (let [node-or-failure (parse s)]
+    (tap> #:base.query{:node node-or-failure})
     (cond (insta/failure? node-or-failure)
           (throw (error/parse node-or-failure))
 
           (plan/relation-node? node-or-failure)
           (let [plan (plan/plan node-or-failure)
                 env (db/env @db)]
-            (tap> #:base.query{:node node-or-failure
-                               :plan plan
+            (tap> #:base.query{:plan plan
                                :env env})
             (plan/eval plan env {}))
 

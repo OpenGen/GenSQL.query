@@ -40,7 +40,7 @@
            (string/blank? node))))
 
 (defn children
-  "Returns `node`'s children."
+  "Returns `node`'s children. Removes whitespace nodes."
   [node]
   (into []
         (clojure/remove whitespace?)
