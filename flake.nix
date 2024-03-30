@@ -21,7 +21,8 @@
           ];
         };
 
-        uber = pkgsWithCljNixOverlay.callPackage ./nix/uber {};
+        depsCache = pkgsWithCljNixOverlay.callPackage ./nix/depsCache {};
+        uber = pkgs.callPackage ./nix/uber {inherit depsCache;};
 
         pname = "iql";
         bin = pkgs.callPackage ./nix/bin { inherit uber pname; };
