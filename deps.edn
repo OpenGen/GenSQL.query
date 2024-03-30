@@ -26,6 +26,7 @@
                                org.clojure/test.check {:mvn/version "1.1.1"}}}
            :build {:deps {io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}}
                    :ns-default build}
+           :sppl-queries {:extra-deps {io.github.inferenceql/inferenceql.gpm.sppl {:git/sha "f745dbb0c17c1a9da21488b7bd3098338ab7d7a2"}}}
            :clj-test {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
                       :main-opts ["--main" "cognitect.test-runner"]
                       :exec-fn cognitect.test-runner.api/test}

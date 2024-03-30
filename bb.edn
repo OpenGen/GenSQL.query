@@ -18,5 +18,13 @@
          lint {:doc "Run Clojure linters"
                :task (shell "clj-kondo --lint src test")}
 
+         deps-lock {:doc "Generate deps-lock.json file without sppl"
+                    :task (do (shell "nix run github:jlesquembre/clj-nix#deps-lock -- --alias-exclude :sppl-queries")
+                              (shell "mv deps-lock.json nix/depsCache/deps-lock.json"))}
+         deps-lock:sppl {:doc "Generate deps-lock.json file with sppl"
+                         :task (do (shell "nix run github:jlesquembre/clj-nix#deps-lock")
+                                   (shell "mv deps-lock.json nix/depsCacheWithSppl/deps-lock.json"))}
+         deps-lock:all {:depends [deps-lock deps-lock:sppl]}
+
          repl {:doc "Launch the InferenceQL REPL"
                :task (apply shell "clj -M -m inferenceql.query.main" *command-line-args*)}}}

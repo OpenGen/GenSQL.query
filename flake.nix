@@ -3,6 +3,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     systems.url = "github:nix-systems/default";
     clj-nix.url = "github:jlesquembre/clj-nix";
+    inferenceql-gpm-sppl.url = "github:inferenceql/inferenceql.gpm.sppl/ships/add-oci-image-package";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
     };
@@ -22,10 +23,14 @@
         };
 
         depsCache = pkgsWithCljNixOverlay.callPackage ./nix/depsCache {};
+        depsCacheWithSppl = pkgsWithCljNixOverlay.callPackage ./nix/depsCacheWithSppl {};
+
         uber = pkgs.callPackage ./nix/uber {inherit depsCache;};
+        uberSppl = pkgs.callPackage ./nix/uber {depsCache = depsCacheWithSppl;};
 
         pname = "iql";
         bin = pkgs.callPackage ./nix/bin { inherit uber pname; };
+        binSppl = pkgs.callPackage ./nix/bin { inherit pname; uber=uberSppl; };
 
         basicToolsFn = pkgs: with pkgs; [
           coreutils
@@ -51,13 +56,21 @@
           nixpkgs = inputs.nixpkgs;
         };
 
+        ociImgSppl = pkgs.callPackage ./nix/oci/sppl.nix {
+          inherit pname basicToolsFn;
+          inferenceql-gpm-sppl = inputs.inferenceql-gpm-sppl;
+
+          uber = uberSppl;
+          nixpkgs = inputs.nixpkgs;
+        };
+
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = [ pkgs.openjdk21 pkgs.clojure pkgs.babashka ] ++ (basicToolsFn pkgs);
         };
 
         packages = {
-          inherit uber bin ociImg;
+          inherit uber bin uberSppl binSppl ociImg ociImgSppl;
           default = bin;
         };
       };

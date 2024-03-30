@@ -91,13 +91,18 @@ the nix build universe has knowledge of the hash fingerprints of the new deps ve
 It can be done without any setup like so:
 
 ```
-nix develop --command bash -c "nix run github:jlesquembre/clj-nix#deps-lock" && mv deps-lock.json nix/depsCache
+nix develop --command bb deps-lock:all
 ```
 
 This script can take a minute or two as it needs to build local dependencies of the `clj-nix` library,
 though this should only need to happen the first time you run it.
-You will see the changes to `deps.edn` reflected in `deps-lock.json`; you should commit these; and the
+You will see the changes to `deps.edn` reflected in `nix/depsCache/deps-lock.json`; you should commit these; and the
 release build will work again.
+
+Because nix requires these lockfiles to be calculated in advance, we save a separate lockfile for the case of
+building an image with SPPL (and therefore `inferenceql.gpm.sppl`) and one without it, to avoid the baggage
+of installing python.
+
 
 #### Building a JAR (portable java application)
 

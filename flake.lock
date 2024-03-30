@@ -95,6 +95,42 @@
         "type": "github"
       }
     },
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1659877975,
+        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "inferenceql-gpm-sppl": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs_2",
+        "nixpkgs-sppl": "nixpkgs-sppl"
+      },
+      "locked": {
+        "lastModified": 1711139904,
+        "narHash": "sha256-H7RGZ3YXPyZDC0jVFYB7Zb2Uh3B35cYDg821g4kEKNY=",
+        "owner": "inferenceql",
+        "repo": "inferenceql.gpm.sppl",
+        "rev": "ed26e2941bfce954f104adbf6f562f6e310da0c5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "inferenceql",
+        "ref": "ships/add-oci-image-package",
+        "repo": "inferenceql.gpm.sppl",
+        "type": "github"
+      }
+    },
     "nix-fetcher-data": {
       "inputs": {
         "flake-part": "flake-part",
@@ -188,7 +224,39 @@
         "type": "github"
       }
     },
+    "nixpkgs-sppl": {
+      "locked": {
+        "lastModified": 1647703831,
+        "narHash": "sha256-6qjgWliwYtFsEUl4/SjlUaUF9hSSfVoaRZzN6MCgslg=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "35a74aa665a681b60d68e3d3400fcaa11690ee50",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "35a74aa665a681b60d68e3d3400fcaa11690ee50",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1662096612,
+        "narHash": "sha256-R+Q8l5JuyJryRPdiIaYpO5O3A55rT+/pItBrKcy7LM4=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "21de2b973f9fee595a7a1ac4693efff791245c34",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
       "locked": {
         "lastModified": 1706718339,
         "narHash": "sha256-S+S97c/HzkO2A/YsU7ZmNF9w2s7Xk6P8dzmfDdckzLs=",
@@ -208,7 +276,8 @@
       "inputs": {
         "clj-nix": "clj-nix",
         "flake-parts": "flake-parts_2",
-        "nixpkgs": "nixpkgs_2",
+        "inferenceql-gpm-sppl": "inferenceql-gpm-sppl",
+        "nixpkgs": "nixpkgs_3",
         "systems": "systems_2"
       }
     },

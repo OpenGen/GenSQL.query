@@ -34,3 +34,8 @@ jobs:
           -L \
           -o ./imgTarball \
           '.#ociImg'
+    - run: |
+        nix build \
+          -L \
+          -o ./imgTarball \
+          '.#ociImgSppl'
