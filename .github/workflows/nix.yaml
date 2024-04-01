@@ -21,7 +21,7 @@ jobs:
       # and only means a releaser should run deps-lock and commit.
       # This can be addressed inclusively with automation around releases.
     - run: |
-        nix develop \
+        nix develop '.#depsLock' \
           --command bash -c \
           "nix run github:jlesquembre/clj-nix#deps-lock"
     - run: |

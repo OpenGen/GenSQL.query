@@ -21,7 +21,8 @@
           ];
         };
 
-        uber = pkgsWithCljNixOverlay.callPackage ./nix/uber {};
+        depsCache = pkgsWithCljNixOverlay.callPackage ./nix/depsCache {};
+        uber = pkgs.callPackage ./nix/uber {inherit depsCache;};
 
         pname = "iql";
         bin = pkgs.callPackage ./nix/bin { inherit uber pname; };
@@ -42,7 +43,7 @@
         #   packages (derived from inputs.nixpkgs automatically by
         #   flake-parts), but ...
         ociImg = pkgs.callPackage ./nix/oci {
-          inherit uber pname basicToolsFn;
+          inherit uber pname basicToolsFn depsCache;
           # ... we still must pass in the original nixpkgs because
           # we need access to a different system's set of packages
           # when compiling for linux while remaining agnostic of
@@ -51,8 +52,28 @@
         };
 
       in {
+        # development shell
         devShells.default = pkgs.mkShell {
+          buildInputs = [ pkgs.openjdk21 pkgs.clojure pkgs.babashka depsCache ] ++ (basicToolsFn pkgs);
+
+          shellHook = ''
+            echo "Setting up default dev shell..."
+            export CLJ_CONFIG="${depsCache}/.clojure"
+            export GITLIBS="${depsCache}/.gitlibs"
+            export JAVA_TOOL_OPTIONS="-Duser.home=${depsCache}"
+          '';
+        };
+
+        # a minimal shell for doing a depsLock, that doesn't require an existing deps cache
+        devShells.depsLock = pkgs.mkShell {
           buildInputs = [ pkgs.openjdk21 pkgs.clojure pkgs.babashka ] ++ (basicToolsFn pkgs);
+
+          shellHook = ''
+            echo "Setting up minimal dev shell..."
+            unset CLJ_CONFIG
+            unset GITLIBS
+            unset JAVA_TOOL_OPTIONS
+          '';
         };
 
         packages = {
