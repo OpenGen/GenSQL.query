@@ -4,6 +4,7 @@
   uber,
   pname,
   basicToolsFn,
+  depsCache,
 }: let
     # in OCI context, whatever our host platform we want to build same arch but linux
     systemWithLinux = builtins.replaceStrings [ "darwin" ] [ "linux" ] system;
@@ -17,7 +18,6 @@
       contents =
         (basicToolsFn crossPkgsLinux) ++ (with crossPkgsLinux; [
           bashInteractive
-          busybox # NOTE: might be unnecessary
       ]);
       config = {
         Cmd = [ "${crossPkgsLinux.bashInteractive}/bin/bash" ];
@@ -30,9 +30,14 @@ in pkgs.dockerTools.buildImage {
   tag = systemWithLinux;
   fromImage = baseImg;
   # architecture
-  copyToRoot = [ ociBin ];
+  copyToRoot = [ ociBin depsCache crossPkgsLinux.clojure ];
   config = {
     Cmd = [ "${ociBin}/bin/${pname}" ];
+    Env = [
+      "CLJ_CONFIG=${depsCache}/.clojure"
+      "GITLIBS=${depsCache}/.gitlibs"
+      "JAVA_TOOL_OPTIONS=-Duser.home=${depsCache}"
+    ];
   };
 }
 

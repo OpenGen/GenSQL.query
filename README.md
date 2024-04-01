@@ -119,7 +119,7 @@ the nix build universe has knowledge of the hash fingerprints of the new deps ve
 It can be done without any setup like so:
 
 ```
-nix develop --command bash -c "nix run github:jlesquembre/clj-nix#deps-lock"
+nix develop '.#depsLock' --command bash -c "nix run github:jlesquembre/clj-nix#deps-lock"
 ```
 
 This script can take a minute or two as it needs to build local dependencies of the `clj-nix` library,

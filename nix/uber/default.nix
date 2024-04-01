@@ -1,14 +1,7 @@
 { stdenv,
   pkgs,
-  mk-deps-cache,
-}: let
-  depsCache = mk-deps-cache {
-    lockfile = builtins.path {
-      path = ./../../deps-lock.json;
-      name = "inferenceql.query.deps-lock.json";
-    };
-  };
-in stdenv.mkDerivation {
+  depsCache,
+}: stdenv.mkDerivation {
   name = "inferenceql.query-uberjar";
   version = "unstable";
   src = builtins.path {
