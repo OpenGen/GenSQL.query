@@ -6,9 +6,9 @@
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
         io.github.inferenceql/inferenceql.inference {:git/sha "c3cef474ba964a37fc2e5ff667055f5b77e12c45"}
-        io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}
         org.babashka/sci {:mvn/version "0.3.32"}
         org.clojure/clojure {:mvn/version "1.11.1"}
+        com.google.javascript/closure-compiler-unshaded {:mvn/version "v20230802"}
         org.clojure/clojurescript {:mvn/version "1.11.132"}
         org.clojure/core.match {:mvn/version "1.0.0"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
