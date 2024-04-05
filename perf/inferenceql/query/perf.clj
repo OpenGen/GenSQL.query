@@ -94,8 +94,8 @@
 
   Parameters
   - db: the database to run the queries on
-  - queries: Either (1) a map of queries to run, keys are names, vals are IQL
-    strict queries, or (2) a single IQL strict query in a string"
+  - queries: Either (1) a map of queries to run, keys are names, vals are GenSQL
+    strict queries, or (2) a single GenSQL strict query in a string"
   ([db queries]
    (benchmark db queries {}))
   ([db queries opts]
@@ -121,8 +121,8 @@
 
   Parameters
   - db: the database to run the queries on
-  - queries: Either (1) a map of queries to run, keys are names, vals are IQL
-    strict queries, or (2) a single IQL strict query in a string
+  - queries: Either (1) a map of queries to run, keys are names, vals are GenSQL
+    strict queries, or (2) a single GenSQL strict query in a string
   - opts - a map of options
 
   opts map keys:

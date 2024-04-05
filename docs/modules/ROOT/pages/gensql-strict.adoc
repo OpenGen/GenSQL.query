@@ -1,4 +1,4 @@
-= IQL-strict
+= GenSQL-strict
 
 include::partial$base/commands.adoc[]
 

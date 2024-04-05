@@ -4,7 +4,7 @@ Table expressions can be renamed with the `+AS+` keyword.
 
 [example]
 ====
-[source,iql]
+[source,gensql]
 ----
 (Launch_Site, State) VALUES
     ("Cape Canaveral", "Florida"),

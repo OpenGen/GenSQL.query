@@ -1,5 +1,5 @@
 (ns inferenceql.query.permissive
-  "Functions for issuing IQL-permissive queries, and converting them to strict
+  "Functions for issuing GenSQL-permissive queries, and converting them to strict
   queries."
   (:require #?(:clj [clojure.core.match :as match]
                :cljs [cljs.core.match :as match])

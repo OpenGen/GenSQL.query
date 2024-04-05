@@ -1,6 +1,6 @@
 (ns inferenceql.query.db
   "This file defines functions for the creation, interrogation, and manipulation
-  of InferenceQL databases."
+  of GenSQL databases."
   (:refer-clojure :exclude [empty read-string slurp])
   (:require #?(:clj [clojure.core :as clojure])
             [borkdude.dynaload :as dynaload]

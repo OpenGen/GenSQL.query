@@ -1,7 +1,7 @@
 (ns inferenceql.query.base
   "Functions for issuing queries. This is not a public API.
 
-  Contains fns shared by both strict and permissive IQL variants."
+  Contains fns shared by both strict and permissive GenSQL variants."
   (:refer-clojure :exclude [eval])
   (:require #?(:clj [inferenceql.query.command :as command])
             [inferenceql.query.db :as db]

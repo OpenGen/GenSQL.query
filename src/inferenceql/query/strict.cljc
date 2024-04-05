@@ -1,5 +1,5 @@
 (ns inferenceql.query.strict
-  "Functions for issuing IQL-strict queries."
+  "Functions for issuing GenSQL-strict queries."
   (:require [inferenceql.query.base :as base]
             [inferenceql.query.strict.parser :as parser]))
 
