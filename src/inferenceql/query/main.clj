@@ -54,7 +54,7 @@
         (repl/pst e)))))
 
 (defn print-table
-  "Prints the results of an InferenceQL query to the console as a table."
+  "Prints the results of an GenSQL query to the console as a table."
   [result]
   (if (instance? Exception result)
     (print-exception result)
@@ -68,7 +68,7 @@
       (pprint/print-table header-row cells))))
 
 (defn print-csv
-  "Prints the results of an InferenceQL query to the console as a CSV."
+  "Prints the results of an GenSQL query to the console as a CSV."
   [result]
   (if (instance? Exception result)
     (print-exception result)
@@ -90,12 +90,12 @@
            e))))
 
 (defn repl
-  "Launches an interactive InferenceQL REPL (read-eval-print loop)."
+  "Launches an interactive GenSQL REPL (read-eval-print loop)."
   [query-fn db & {:keys [print] :or {print print-table}}]
   (let [wrapped-print (fn [x]
                         (when-not (nil? x)
                           (print x)))
-        repl-options [:prompt #(clojure.core/print "iql> ")
+        repl-options [:prompt #(clojure.core/print "gensql> ")
                       :read (fn [request-prompt request-exit]
                               (case (main/skip-whitespace *in*)
                                 :line-start request-prompt
@@ -113,7 +113,7 @@
     (apply println args)))
 
 (defn -main
-  "Main function for the InferenceQL command-line application. Intended to be run
+  "Main function for the GenSQL command-line application. Intended to be run
   with clj -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)

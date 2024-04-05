@@ -2,7 +2,7 @@
 
 [example]
 ====
-[source,iql]
+[source,gensql]
 ----
 SELECT
   PROBABILITY DENSITY OF VAR Apogee_km < 1000

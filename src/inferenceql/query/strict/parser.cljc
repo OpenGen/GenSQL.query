@@ -1,5 +1,5 @@
 (ns inferenceql.query.strict.parser
-  "Functions for parsing IQL SQL queries into a parse tree. See
+  "Functions for parsing GenSQL queries into a parse tree. See
   `inferenceql.query.parser.tree` for functions that operate on parse trees."
   #?(:clj (:require [inferenceql.query.io :as io])
      :cljs (:require-macros [inferenceql.query.io :as io]))
@@ -11,7 +11,7 @@
        (io/inline-file "inferenceql/query/strict.bnf")))
 
 (def parse
-  "An instaparse parser for IQL SQL queries. The grammar is inlined at macro
+  "An instaparse parser for GenSQL queries. The grammar is inlined at macro
   expansion time so that it can be used in the ClojureScript context where we
   don't have access to file resources."
   (insta/parser bnf))

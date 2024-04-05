@@ -696,7 +696,7 @@
                          (relation/tuples rel))]
     (relation/relation tuples)))
 
-;; NB: Only place bindings are set in IQL
+;; NB: Only place bindings are set in GenSQL
 (defmethod eval :inferenceql.query.plan.type/with
   [plan env bindings]
   (let [{::keys [plan] binding-plans ::bindings} plan

@@ -26,7 +26,7 @@
            (throw e)))))
 
 (defn -main
-  "Main function for the InferenceQL query web server. Intended to be run with clj
+  "Main function for the GenSQL.query web server. Intended to be run with clj
   -m. Run with -h or --help for more information."
   [& args]
   (let [{:keys [options errors summary]} (cli/parse-opts args cli-options)

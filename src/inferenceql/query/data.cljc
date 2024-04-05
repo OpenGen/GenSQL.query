@@ -1,5 +1,5 @@
 (ns inferenceql.query.data
-  "Functions for manipulating InferenceQL datasets."
+  "Functions for manipulating GenSQL datasets."
   (:require [clojure.edn :as edn]
             [clojure.string :as string]))
 

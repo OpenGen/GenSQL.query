@@ -1,4 +1,4 @@
-= IQL-permissive
+= GenSQL-permissive
 
 include::partial$base/commands.adoc[]
 

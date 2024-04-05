@@ -1,7 +1,7 @@
 {
   "name": "inferenceql.query",
   "version": "1.0.0",
-  "description": "![tests](https://github.com/OpenIQL/inferenceql.query/workflows/tests/badge.svg) ![linter](https://github.com/OpenIQL/inferenceql.query/workflows/linter/badge.svg)",
+  "description": "![tests](https://github.com/OpenGen/GenSQL.query/workflows/tests/badge.svg) ![linter](https://github.com/OpenGen/GenSQL.query/workflows/linter/badge.svg)",
   "main": "index.js",
   "directories": {
     "doc": "docs",
@@ -12,15 +12,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/InferenceQL/inferenceql.query.git"
+    "url": "git+https://github.com/OpenGen/GenSQL.query.git"
   },
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/InferenceQL/inferenceql.query/issues"
+    "url": "https://github.com/OpenGen/GenSQL.query/issues"
   },
-  "homepage": "https://github.com/InferenceQL/inferenceql.query#readme",
+  "homepage": "https://github.com/OpenGen/GenSQL.query#readme",
   "devDependencies": {
     "shadow-cljs": "^2.27.5"
   },
