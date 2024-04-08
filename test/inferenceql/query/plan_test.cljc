@@ -232,7 +232,8 @@
       "GENERATE VAR x UNDER model" ["x"]
       "GENERATE VAR x, VAR y UNDER model" ["x" "y"]
       "GENERATE VAR y, VAR x UNDER model" ["y" "x"]
-      "GENERATE VAR x, VAR y, VAR z UNDER model" ["x" "y" "z"]))
+      "GENERATE * EXCEPT (VAR x) UNDER model" ["y"]
+      "GENERATE * EXCEPT (VAR x, VAR y) UNDER model" nil))
   (testing "values"
     (let [rel (eval "GENERATE VAR x UNDER model" {"model" model})]
       (doseq [tup (relation/tuples (take 1 #_ 5 rel))]

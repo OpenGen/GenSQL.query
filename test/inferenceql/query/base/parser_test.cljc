@@ -107,3 +107,6 @@
 
 (deftest parse-generative-join-success
   (parses "table GENERATIVE JOIN model" :generative-join-expr))
+
+(deftest parse-generate-star
+  (parses "GENERATE * UNDER model" :generate-expr))

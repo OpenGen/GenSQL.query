@@ -286,14 +286,17 @@
 
 ;;; Generate
 
-#_
+
 (deftest generate-generates-correct-columns
-  (testing "generate"
+  (testing "GENERATE"
     (let [model simple-model
           q #(q % [] {"model" model})]
       (testing "with star "
         (doseq [result (q "SELECT * FROM (GENERATE * UNDER model) LIMIT 10")]
           (is (= #{"x" "y"} (set (keys result))))))
+      (testing "with star except"
+        (doseq [result (q "SELECT * FROM (GENERATE * EXCEPT (VAR x) UNDER model) LIMIT 10")]
+          (is (= #{"y"} (set (keys result))))))
       (testing "with a single variable"
         (doseq [result (q "SELECT * FROM (GENERATE VAR y UNDER model) LIMIT 10")]
           (is (= #{"y"} (set (keys result))))))

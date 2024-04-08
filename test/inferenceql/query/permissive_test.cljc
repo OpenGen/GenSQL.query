@@ -141,7 +141,10 @@
     "GENERATE VAR x, VAR y UNDER model"
 
     "GENERATE x, y, z UNDER model"
-    "GENERATE VAR x, VAR y, VAR z UNDER model"))
+    "GENERATE VAR x, VAR y, VAR z UNDER model"
+
+    "GENERATE * EXCEPT (x, y) UNDER model"
+    "GENERATE * EXCEPT (VAR x, VAR y) UNDER model"))
 
 (deftest approximate-mutual-info
   (are [permissive strict] (= (strict.parser/parse strict :start :scalar-expr)

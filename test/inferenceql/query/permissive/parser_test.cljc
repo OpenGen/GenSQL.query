@@ -35,3 +35,9 @@
     "data GENERATIVE JOIN model CONDITIONED BY x = 0"
     "data GENERATIVE JOIN model CONSTRAINED BY x > 0"
     "data GENERATIVE JOIN model GIVEN x = 0"))
+
+(deftest generate-valid
+  (are [s] (not (insta/failure? (parser/parse s :start :generate-expr)))
+    "GENERATE * UNDER model"
+    "GENERATE foo, bar UNDER model"
+    "GENERATE * EXCEPT (foo, bar) UNDER model"))
