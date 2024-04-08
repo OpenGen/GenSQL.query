@@ -17,6 +17,7 @@
     "SELECT * FROM data"
     "SELECT x FROM data"
     "SELECT (x) FROM data"
+    "SELECT * EXCEPT (foo, bar) FROM data"
     "SELECT PROBABILITY OF VAR x = x UNDER model FROM data"
     "SELECT (PROBABILITY OF VAR x = x UNDER model) FROM data"))
 
@@ -29,6 +30,7 @@
     "SELECT * FROM data"
     "SELECT x FROM data"
     "SELECT (x) FROM data"
+    "SELECT * EXCEPT (foo, bar) FROM data"
     "SELECT PROBABILITY OF x UNDER model FROM data"
     "SELECT (PROBABILITY OF x UNDER model) FROM data"))
 
@@ -73,7 +75,6 @@
       "SELECT * FROM data;" [{"x" 0 "y" 1}] ["x"]     ["x"]
       "SELECT * FROM data;" [{"x" 0}]       ["x" "y"] ["x" "y"]
       "SELECT x FROM data;" [{}]            ["x"]     ["x"]))
-
 
   (testing "from aliasing"
     (are [query in attrs expected] (= expected
