@@ -123,6 +123,7 @@
     (walk/postwalk remove-ws node)))
 
 (defmacro match
+  "Like core.match/match, but removes whitespace nodes before matching."
   [vars & clauses]
   (let [match (macrovich/case :clj 'clojure.core.match/match
                               :cljs 'cljs.core.match/match)]

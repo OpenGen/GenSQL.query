@@ -14,14 +14,15 @@
                       node)]
     [[:value child]] (read child)
 
-    [[:bool s]]             (edn/read-string s)
-    [[:float s]]            (edn/read-string s)
-    [[:int s]]              (edn/read-string s)
-    [[:nat s]]              (edn/read-string s)
-    [[:identifier child]]   (read child)
-    [[:simple-symbol s]]    (edn/read-string (str \" s \"))
-    [[:delimited-symbol s]] (edn/read-string (str \" s \"))
-    [[:string s]]           (edn/read-string (str \" s \"))
+    [[:bool s]]              (edn/read-string s)
+    [[:float s]]             (edn/read-string s)
+    [[:int s]]               (edn/read-string s)
+    [[:nat s]]               (edn/read-string s)
+    [[:identifier child]]    (read child)
+    [[:variable _var child]] (read child)
+    [[:simple-symbol s]]     (edn/read-string (str \" s \"))
+    [[:delimited-symbol s]]  (edn/read-string (str \" s \"))
+    [[:string s]]            (edn/read-string (str \" s \"))
 
     [[:null _]] nil
     [nil] nil

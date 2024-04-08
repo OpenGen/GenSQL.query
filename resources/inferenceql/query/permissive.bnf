@@ -43,9 +43,6 @@ probability-expr ::= #'(?i)PROBABILITY' ws #'(?i)OF'
                      ws permissive-event-list
                      ws #'(?i)UNDER' ws model-expr
 
-(* generate-expr *)
-
-<generate-list> ::= star / identifier-list
 
 (* mutual-information-expr *)
 
@@ -57,3 +54,8 @@ mutual-info-expr ::= #'(?i)MUTUAL' ws #'(?i)INFORMATION'
                      ws #'(?i)OF' ws distribution-event
                      ws #'(?i)WITH' ws distribution-event
                      ws #'(?i)UNDER' ws model-expr
+
+(* model var abstraction *)
+
+<model-var> ::= identifier
+<model-var-list> ::= identifier-list

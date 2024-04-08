@@ -101,6 +101,9 @@
                               nodes)]
       [:generate-expr generate ws variable-list ws under ws model])
 
+    [[:generate-except-clause except "(" [:identifier-list & nodes] ")"]]
+    [:generate-except-clause except ws "(" (identifier-list->variable-list (into [:identifier-list] nodes)) ")"]
+
     [[:density-event-list & _]]
     (and-node :density-event-and
               (map tree/only-child

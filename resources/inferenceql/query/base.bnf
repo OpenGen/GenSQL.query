@@ -186,6 +186,10 @@ join-expr-group ::= '(' join-expr ')'
 (* generate-expr *)
 
 generate-expr ::= #'(?i)GENERATE' ws generate-list ws #'(?i)UNDER' ws model-expr
+<generate-list> ::= generate-star-clause
+                  / model-var-list
+generate-star-clause ::= star (ws? generate-except-clause)?
+generate-except-clause ::= #'(?i)EXCEPT' ws? '(' ws? model-var-list ws? ')'
 
 (* generative-join-expr *)
 

@@ -82,9 +82,13 @@
      ::plan op}))
 
 (defn generate
-  [variables sexpr]
+  "Generate tuples from a model.
+
+  `mode` can be :include or :exclude"
+  [variables sexpr mode]
   {::type :inferenceql.query.plan.type/generate
    ::sexpr sexpr
+   ::mode mode
    ::variables variables})
 
 (defn limit
@@ -223,22 +227,26 @@
   (let [id (literal/read node)]
     (lookup id)))
 
-(defn variable-node->symbol
+(defn variable-node->string
+  "Extracts the identifier name from a variable node."
   [node]
-  (-> node tree/only-child-node literal/read ))
+  (-> node tree/only-child-node literal/read))
 
 (defmethod plan-impl :generate-expr
   [node]
   (tree/match [node]
     [[:generate-expr _generate generate-list _under model-expr]]
-    (let [sexpr (scalar/plan model-expr)
-          variables (case (tree/tag generate-list)
-                      :star
-                      '*
+    (let [sexpr (scalar/plan model-expr)]
+      (tree/match [generate-list]
+        [[:generate-star-clause [:star & _]]]
+        (generate :* sexpr :include)
 
-                      :variable-list
-                      (map variable-node->symbol (tree/child-nodes generate-list)))]
-      (generate variables sexpr))))
+        [[:generate-star-clause [:star & _]
+          [:generate-except-clause _except _lparen (:or [:variable-list & variables] [:identifier-list & variables]) _rparen]]]
+        (generate (map variable-node->string (filter tree/branch? variables)) sexpr :exclude)
+
+        [[:variable-list & variables]]
+        (generate (map variable-node->string (filter tree/branch? variables)) sexpr :include)))))
 
 (defmethod plan-impl :where-clause
   [node op]
@@ -574,15 +582,23 @@
 
 (defmethod eval :inferenceql.query.plan.type/generate
   [plan env bindings]
-  (let [{::keys [sexpr variables]} plan
+  (let [{::keys [sexpr variables mode]} plan
         model (scalar/eval sexpr env bindings)
-        variables (->> (if (= '* variables)
-                         (gpm/variables model)
-                         variables)
-                       (map str))
-        samples (map #(update-keys % str)
-                     (repeatedly #(gpm/simulate model variables {})))]
-    (relation/relation samples :attrs variables)))
+        model-vars (gpm/variables model)
+        ;; handle models with non-str vars
+        str-vars->model-vars (zipmap (map name model-vars) model-vars)
+        ->model-var (fn [k]
+                      (or (str-vars->model-vars k)
+                          (throw (ex-info (str "Could not find model var: " (pr-str k))
+                                          {:requested-var-name k
+                                           :known-model-vars   model-vars}))))
+        sim-vars (match/match [mode variables]
+                   [:include :*] model-vars
+                   [:include _] (map ->model-var variables)
+                   [:exclude _] (remove (set (map ->model-var variables)) model-vars))
+        samples (map #(update-keys % name)
+                     (repeatedly #(gpm/simulate model sim-vars {})))]
+    (relation/relation samples :attrs (map name sim-vars))))
 
 (defmethod eval :inferenceql.query.plan.type/insert
   [plan env bindings]
