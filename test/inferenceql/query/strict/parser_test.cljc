@@ -42,6 +42,12 @@
     "data GENERATIVE JOIN model CONDITIONED BY VAR x = 0"
     "data GENERATIVE JOIN model CONSTRAINED BY VAR x > 0"))
 
+(deftest generate-valid
+  (are [s] (not (insta/failure? (parser/parse s :start :generate-expr)))
+    "GENERATE * UNDER model"
+    "GENERATE VAR foo, VAR bar UNDER model"
+    "GENERATE * EXCEPT (VAR foo, VAR bar) UNDER model"))
+
 (deftest conditioned-by-valid
   (are [s] (not (insta/failure? (parser/parse s)))
     "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY VAR x = x)"
