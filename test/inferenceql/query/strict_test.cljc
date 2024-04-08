@@ -1,7 +1,8 @@
 (ns inferenceql.query.strict-test
   (:refer-clojure :exclude [alter])
   #?(:clj (:import [clojure.lang ExceptionInfo]))
-  (:require [clojure.string :as string]
+  (:require [clojure.set :as set]
+            [clojure.string :as string]
             [clojure.test :as test :refer [are deftest is testing]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
@@ -108,6 +109,15 @@
   (prop/for-all [table gen-table]
     (let [results (q "SELECT * FROM data" table)]
       (is (= results table)))))
+
+(defspec select-star-except
+  (prop/for-all [[table ks] gen-table-col-subset]
+    (let [kset (set ks)
+          col-list (->> ks #_ (map name) (string/join ", "))
+          results (q (str "SELECT * EXCEPT (" col-list ") FROM data") table)]
+      (is (every? (every-pred #(empty? (select-keys % ks))
+                              #(empty? (set/intersection kset (set (keys %)))))
+                  results)))))
 
 (defspec select-col
   (prop/for-all [[table ks] gen-table-col-subset]

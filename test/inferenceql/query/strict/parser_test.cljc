@@ -11,7 +11,8 @@
     "SELECT x AS y FROM data"
     "SELECT (x) FROM data"
     "SELECT (x) AS y FROM data"
-    "SELECT avg(x) FROM data"))
+    "SELECT avg(x) FROM data"
+    "SELECT * EXCEPT (foo, bar) FROM data"))
 
 (deftest select-invalid
   (are [s] (insta/failure? (parser/parse s))
