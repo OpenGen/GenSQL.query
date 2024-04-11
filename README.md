@@ -1,15 +1,17 @@
 # GenSQL.query
+
 ![tests](https://github.com/OpenGen/GenSQL.query/workflows/tests/badge.svg)
 ![linter](https://github.com/OpenGen/GenSQL.query/workflows/linter/badge.svg)
+[![Codecov branch][codecov]][codecov-url]
 
 ## Usage
 
 ### Dependencies and Nix
 
-Many of the usages described below are powered by the Nix package manager, which 
-works on most Unix systems. We recommend installing Nix with the 
-[Determinate Systems installer](https://determinate.systems/posts/determinate-nix-installer/). 
-If you already have Nix installed, note that the precise minimum version of Nix 
+Many of the usages described below are powered by the Nix package manager, which
+works on most Unix systems. We recommend installing Nix with the
+[Determinate Systems installer](https://determinate.systems/posts/determinate-nix-installer/).
+If you already have Nix installed, note that the precise minimum version of Nix
 required is not known, but we have tested with Nix 2.19.3:
 
 ```shell
@@ -78,20 +80,20 @@ To develop with a cljs environment, use shadow-cljs. The simplest way is to use 
 ##### Terminal
 From the command line, run:
 
-```shell 
-npx shadow-cljs node-repl # start a CLI node repl 
+```shell
+npx shadow-cljs node-repl # start a CLI node repl
 ```
 
 ##### Editor nREPL
 First, from the command line, run:
 
-```shell 
+```shell
 npx shadow-cljs server # start the shadow-cljs server
 ```
 
 Then, connect to the nREPL server in your editor with the standard .nrepl-port file. (This process will be editor-specific.)
 
-This will get you a **Clojure**-based REPL in your editor. To convert it to **Clojurescript**, in the REPL, run: 
+This will get you a **Clojure**-based REPL in your editor. To convert it to **Clojurescript**, in the REPL, run:
 
 ```clojure
 (shadow/node-repl) ; starts a bare node repl
@@ -109,9 +111,9 @@ clj -M -m inferenceql.query.main --help
 
 #### Testing
 
-Make sure [babashka](https://github.com/babashka/babashka) is installed. Then 
-run the tests via `bb test`. Dialect-specific tests can be run with 
-`bb test:clj` and `bb test:cljs`. 
+Make sure [babashka](https://github.com/babashka/babashka) is installed. Then
+run the tests via `bb test`. Dialect-specific tests can be run with
+`bb test:clj` and `bb test:cljs`.
 
 #### Dependency upgrades
 
@@ -134,3 +136,6 @@ release build will work again.
 ```shell
 nix build '.#uber' -o gensql.jar
 ```
+
+[codecov-url]: https://codecov.io/github/OpenGen/GenSQL.query
+[codecov]: https://img.shields.io/codecov/c/github/OpenGen/GenSQL.query/main.svg?maxAge=3600
