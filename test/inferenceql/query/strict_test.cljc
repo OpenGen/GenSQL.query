@@ -255,6 +255,9 @@
         q1 (comp first vals first #(q %1 %2 %3))]
     (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = 'yes' UNDER model CONDITIONED BY VAR x = x) FROM data;"
                    (with-meta [{}] {:iql/columns ["x" "y"]})
+                   {"model" model})))
+    (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = 'yes' UNDER (model CONDITIONED BY * EXCEPT VAR y)) FROM data;"
+                   (with-meta [{}] {:iql/columns ["x" "y"]})
                    {"model" model})))))
 
 (deftest density-of-bindings
@@ -498,5 +501,15 @@
           (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY VAR y = y FROM data"
                          (with-meta [{}]
                            {:iql/columns ["x" "y"]})))))
+
+        (testing "* except"
+          (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY * EXCEPT VAR x FROM data"
+                         (with-meta [{}]
+                                    {:iql/columns ["x" "y"]}))))
+
+          (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY * EXCEPT (VAR x) FROM data"
+                         (with-meta [{}]
+                                    {:iql/columns ["x" "y"]})))))
+
         (testing "in with"
           (is (= 0.0 (q "WITH model CONDITIONED BY VAR y = 'no' AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data" [{"x" "yes"}]))))))))
