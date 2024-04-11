@@ -1,0 +1,55 @@
+name: coverage
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: adopt
+          java-version: 17
+
+      - name: Setup Clojure tools
+        uses: DeLaGuardo/setup-clojure@master
+        with:
+          cli: 1.10.3.1040
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install ws
+        run: npm install ws
+
+      - name: Cache m2
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: m2-${{ hashFiles('deps.edn') }}
+
+      - name: Cache gitlibs
+        uses: actions/cache@v2
+        with:
+          path: ~/.gitlibs
+          key: gitlibs-${{ hashFiles('deps.edn') }}
+
+      - name: Prepare dependencies
+        run: clojure -P -M:test:clj-test:coverage
+
+      - name: generate coverage report
+        run: |
+            CLOVERAGE_VERSION=1.2.4 clojure -M:test:coverage --codecov || :
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          file: ./target/coverage/codecov.json
+          token: ${{ secrets.CODECOV_TOKEN }}
