@@ -40,6 +40,9 @@
   (are [s] (not (insta/failure? (parser/parse s)))
     "data GENERATIVE JOIN model"
     "data GENERATIVE JOIN model CONDITIONED BY VAR x = 0"
+    "data GENERATIVE JOIN model CONDITIONED BY *"
+    "data GENERATIVE JOIN model CONDITIONED BY * EXCEPT VAR x, VAR y"
+    "data GENERATIVE JOIN model CONDITIONED BY * EXCEPT (VAR x)"
     "data GENERATIVE JOIN model CONSTRAINED BY VAR x > 0"))
 
 (deftest generate-valid
@@ -51,4 +54,7 @@
 (deftest conditioned-by-valid
   (are [s] (not (insta/failure? (parser/parse s)))
     "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY VAR x = x)"
-    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY *)"))
+    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY *)"
+    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY * EXCEPT (VAR x))"
+    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY * EXCEPT VAR x, VAR y)"
+    "SELECT * FROM (GENERATE * UNDER model CONDITIONED BY * EXCEPT VAR x, VAR \"foo.bar\", VAR z)"))
