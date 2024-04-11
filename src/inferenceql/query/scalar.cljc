@@ -23,76 +23,97 @@
   [node]
   (-> node tree/only-child-node (nth 1)))
 
+(declare plan)
+
+(defn ^:private conditioned-by-plan*
+  "`plan` helper that generates plans for CONDITIONED BY nodes.
+
+  NB: Exists because https://clojure.atlassian.net/browse/CLJ-1852 prevents us
+  from directly adding these rules into `plan`."
+  [node]
+  (match/match node
+    [:conditioned-by-expr model _conditioned _by [:star _]]
+    `(~'iql/condition-all ~(plan model))
+    [:conditioned-by-expr model _conditioned _by [:star _] [:conditioned-by-except-clause & except-children]]
+    `(~'iql/condition-all-except ~(plan model) ~(plan (into [:conditioned-by-except-clause] except-children)))
+    [:conditioned-by-expr model _conditioned _by child]
+    `(~'iql/condition ~(plan model) ~(plan child))
+    [:conditioned-by-except-clause _except model-var-list]
+    (plan model-var-list)))
 
 (defn plan
   "Given a parse tree/node, returns an execution plan."
   [node]
-  (match/match (into (empty node)
-                     (remove tree/whitespace?)
-                     node)
-    [:scalar-expr child]               (plan child)
-    [:scalar-expr-group "(" child ")"] (plan child)
+  (let [ws-free-node (into (empty node)
+                           (remove tree/whitespace?)
+                           node)]
+    (match/match ws-free-node
+      [:scalar-expr child] (plan child)
+      [:scalar-expr-group "(" child ")"] (plan child)
 
-    [:expr-not _not child] `(~'not ~(plan child))
+      [:expr-not _not child] `(~'not ~(plan child))
 
-    [:expr-disjunction    left _ right] `(~'or  ~(plan left) ~(plan right))
-    [:expr-conjunction    left _ right] `(~'and ~(plan left) ~(plan right))
-    [:expr-addition       left _ right] `(~'+   ~(plan left) ~(plan right))
-    [:expr-addition       left _ right] `(~'+   ~(plan left) ~(plan right))
-    [:expr-subtraction    left _ right] `(~'-   ~(plan left) ~(plan right))
-    [:expr-multiplication left _ right] `(~'*   ~(plan left) ~(plan right))
-    [:expr-division       left _ right] `(~'/   ~(plan left) ~(plan right))
+      [:expr-disjunction left _ right] `(~'or ~(plan left) ~(plan right))
+      [:expr-conjunction left _ right] `(~'and ~(plan left) ~(plan right))
+      [:expr-addition left _ right] `(~'+ ~(plan left) ~(plan right))
+      [:expr-addition left _ right] `(~'+ ~(plan left) ~(plan right))
+      [:expr-subtraction left _ right] `(~'- ~(plan left) ~(plan right))
+      [:expr-multiplication left _ right] `(~'* ~(plan left) ~(plan right))
+      [:expr-division left _ right] `(~'/ ~(plan left) ~(plan right))
 
-    [:expr-function-call-log _log child _] `(~'log ~(plan child))
+      [:expr-function-call-log _log child _] `(~'log ~(plan child))
 
-    [:expr-binop left [:binop [:is _]]       right] `(~'=         ~(plan left) ~(plan right))
-    [:expr-binop left [:binop [:is-not & _]] right] `(~'not=      ~(plan left) ~(plan right))
-    ;; MUST not str-ify below, binops aren't identifiers.
-    [:expr-binop left [:binop s]             right] `(~(symbol s) ~(plan left) ~(plan right))
+      [:expr-binop left [:binop [:is _]] right] `(~'= ~(plan left) ~(plan right))
+      [:expr-binop left [:binop [:is-not & _]] right] `(~'not= ~(plan left) ~(plan right))
+      ;; MUST not str-ify below, binops aren't identifiers.
+      [:expr-binop left [:binop s] right] `(~(symbol s) ~(plan left) ~(plan right))
 
-    [:distribution-event child] (plan child)
+      [:distribution-event child] (plan child)
 
-    [:distribution-event-or  left _or  right] [:or  (plan left) (plan right)]
-    [:distribution-event-and left _and right] [:and (plan left) (plan right)]
+      [:distribution-event-or left _or right] [:or (plan left) (plan right)]
+      [:distribution-event-and left _and right] [:and (plan left) (plan right)]
 
-    [:distribution-event-binop (variable :guard (tree/tag-pred :variable))    [:binop s] (scalar   :guard (tree/tag-pred :scalar-expr))] [(keyword s) (plan variable) (plan scalar)]
-    [:distribution-event-binop (scalar   :guard (tree/tag-pred :scalar-expr)) [:binop s] (variable :guard (tree/tag-pred :variable))]    [(keyword s) (plan variable) (plan scalar)]
+      [:distribution-event-binop (variable :guard (tree/tag-pred :variable)) [:binop s] (scalar :guard (tree/tag-pred :scalar-expr))] [(keyword s) (plan variable) (plan scalar)]
+      [:distribution-event-binop (scalar :guard (tree/tag-pred :scalar-expr)) [:binop s] (variable :guard (tree/tag-pred :variable))] [(keyword s) (plan variable) (plan scalar)]
 
-    [:distribution-event-group "(" child ")"] (plan child)
+      [:distribution-event-group "(" child ")"] (plan child)
 
-    [:density-event child] (plan child)
-    [:density-event-and & children] (into {} (comp (filter tree/branch?) (map plan)) children)
+      [:density-event child] (plan child)
+      [:density-event-and & children] (into {} (comp (filter tree/branch?) (map plan)) children)
 
-    [:density-event-eq (variable :guard (tree/tag-pred :variable))    _= (scalar   :guard (tree/tag-pred :scalar-expr))] {(plan variable) (plan scalar)}
-    [:density-event-eq (scalar   :guard (tree/tag-pred :scalar-expr)) _= (variable :guard (tree/tag-pred :variable))]    {(plan variable) (plan scalar)}
+      [:density-event-eq (variable :guard (tree/tag-pred :variable)) _= (scalar :guard (tree/tag-pred :scalar-expr))] {(plan variable) (plan scalar)}
+      [:density-event-eq (scalar :guard (tree/tag-pred :scalar-expr)) _= (variable :guard (tree/tag-pred :variable))] {(plan variable) (plan scalar)}
 
-    [:density-event-group "(" child ")"] (plan child)
+      [:density-event-group "(" child ")"] (plan child)
 
-    [:probability-expr _prob          _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
-    [:density-expr     _prob _density _of event _under model] `(~'iql/pdf  ~(plan model) ~(plan event))
+      [:probability-expr _prob _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
+      [:density-expr _prob _density _of event _under model] `(~'iql/pdf ~(plan model) ~(plan event))
 
-    [:mutual-info-expr           _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info        ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
-    [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
+      [:mutual-info-expr _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
+      [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
 
-    [:model-expr child] (plan child)
-    [:model-expr "(" child ")"] (plan child)
+      [:model-expr child] (plan child)
+      [:model-expr "(" child ")"] (plan child)
 
-    #?@(:clj [[:generative-table-expr _generative _table relation]
-              (let [query-plan (requiring-resolve 'inferenceql.query.plan/plan)]
-                `(~'iql/eval-relation-plan (~'quote ~(query-plan relation))))])
+      #?@(:clj [[:generative-table-expr _generative _table relation]
+                (let [query-plan (requiring-resolve 'inferenceql.query.plan/plan)]
+                  `(~'iql/eval-relation-plan (~'quote ~(query-plan relation))))])
 
-    [:conditioned-by-expr model _conditioned _by "*"]   `(~'iql/condition-all ~(plan model))
-    [:conditioned-by-expr model _conditioned _by event] `(~'iql/condition ~(plan model) ~(plan event))
-    [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
+      ;; Matches either :conditioned-by-expr or :conditioned-by-except-clause
+      ;; and defers to conditioned-by-plan* to avoid https://clojure.atlassian.net/browse/CLJ-1852
+      [(:or :conditioned-by-expr :conditioned-by-except-clause) & _] (conditioned-by-plan* ws-free-node)
 
-    [:value child] (literal/read child)
+      [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
 
-    [:variable _var child] (id-node->str child)
-    [:variable-list & variables] (map plan variables)
 
-    [:identifier child] (plan child)
-    [:delimited-symbol s] (list 'iql/safe-get 'iql-bindings s)
-    [:simple-symbol s] (list 'iql/safe-get 'iql-bindings s)))
+      [:value child] (literal/read child)
+
+      [:variable _var child] (id-node->str child)
+      [:variable-list & variables] (into [] (comp (filter tree/branch?) (map plan)) variables) ; remove commas
+
+      [:identifier child] (plan child)
+      [:delimited-symbol s] (list 'iql/safe-get 'iql-bindings s)
+      [:simple-symbol s] (list 'iql/safe-get 'iql-bindings s))))
 
 (defn inference-event
   [event]
@@ -138,14 +159,26 @@
                 (gpm/condition conditions))))))
 
 (defn condition-all
-  [model bindings]
-  (let [conditions (reduce (fn [conditions variable]
-                             (cond-> conditions
-                               (contains? bindings variable)
-                               (assoc variable (get bindings variable))))
-                           {}
-                           (map str (gpm/variables model)))]
-    (condition model conditions)))
+  "Retrieves all variables from the model and conditions them based on the
+  value found in the bindings, which includes the current tuple/row.
+
+  The 3-arity version takes an additional coll of vars to exclude."
+  ([model bindings]
+   (condition-all model #{} bindings))
+  ([model exclusions bindings]
+   (let [exclusions (set exclusions)
+         condition-vars (into []
+                              (comp
+                                (map name)
+                                (filter (complement exclusions)))
+                              (gpm/variables model))
+         conditions (reduce (fn [conditions variable]
+                              (cond-> conditions
+                                      (contains? bindings variable)
+                                      (assoc variable (get bindings variable))))
+                            {}
+                            condition-vars)]
+     (condition model conditions))))
 
 (defn operation?
   "Given an event form, returns `true` if the form is an operation."
@@ -273,7 +306,8 @@
          #?@(:clj ['eval-relation-plan
                    (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
                      #(generative-table/generative-table (eval % env bindings)))])
-         #?@(:clj ['condition-all #(condition-all % bindings)])
+         #?@(:clj ['condition-all #(condition-all % bindings)
+                   'condition-all-except #(condition-all %1 %2 bindings)])
          'condition condition
          'constrain constrain
          'mutual-info mutual-info
