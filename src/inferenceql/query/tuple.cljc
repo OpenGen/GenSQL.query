@@ -22,10 +22,10 @@
   (map? x))
 
 (defn select-attrs
-  "Retrives tuple `tup` with only the attributes in `attrs`."
+  "Retrieves tuple `tup` with only the attributes in `attrs`."
   [tup attrs]
-  (let [names (into #{} (map name) attrs)]
-    (medley/filter-keys (comp names name)
+  (let [names (into #{} (map clojure.core/name) attrs)]
+    (medley/filter-keys (comp names clojure.core/name)
                         tup)))
 
 (defn ->map
