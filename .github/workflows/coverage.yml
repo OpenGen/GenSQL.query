@@ -46,7 +46,9 @@ jobs:
 
       - name: generate coverage report
         run: |
-            CLOVERAGE_VERSION=1.2.4 clojure -M:test:coverage --codecov || :
+            CLOVERAGE_VERSION=1.2.4 clojure -M:test:clj-test:coverage \
+            --ns-exclude-regex "inferenceql.query.plan.viz" \
+            --codecov || :
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4.0.1
