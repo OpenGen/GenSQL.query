@@ -306,8 +306,8 @@
          #?@(:clj ['eval-relation-plan
                    (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
                      #(generative-table/generative-table (eval % env bindings)))])
-         #?@(:clj ['condition-all #(condition-all % bindings)
-                   'condition-all-except #(condition-all %1 %2 bindings)])
+         'condition-all #(condition-all % bindings)
+         'condition-all-except #(condition-all %1 %2 bindings)
          'condition condition
          'constrain constrain
          'mutual-info mutual-info
@@ -328,7 +328,7 @@
   ;; NB: never actually passes in more than one tuple
   [sexpr env bindings & tuples]
   (tap> #:scalar.eval{:in-env env :in-bindings bindings
-                      :sexpr (pr-str sexpr) :tuple-sample (take 3 tuples)})
+                      :sexpr  (pr-str sexpr) :tuple-sample (take 3 tuples)})
   (let [env' (merge env bindings)
         tuple-map (fn tuple-map [tuple]
                     (merge (zipmap (tuple/attributes tuple)
