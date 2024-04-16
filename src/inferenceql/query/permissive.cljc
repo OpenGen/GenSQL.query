@@ -52,20 +52,46 @@
                         {:event event}))))
 
 (defn identifier->variable
-  "Returns the variable node equivalent of an identifier node."
+  "Wraps an identifier node in a variable node."
   [node]
   [:variable "VAR" ws node])
 
+(defn ^:private ands->commas
+  "Replaces subsequent pairs of whitespace nodes followed by \"AND\" with
+  a comma."
+  [node]
+  ;; Really awkward to do this with a loop, but reduce/partition alternatives
+  ;; have the problem of not being able to look ahead easily, or skip over
+  ;; elements. An index is actually easier.
+  (let [cnt (count node)
+        stop-idx (dec cnt)]
+    (if (= 1 cnt)
+      node
+      (loop [i 0
+             acc []]
+        (cond (> i stop-idx) acc                            ; final pair was ws+and, so we overshot
+              (= i stop-idx) (conj acc (peek node))         ; conj last elt
+              :else (let [n1 (nth node i)
+                          n2 (nth node (inc i))]
+                      (if (and (tree/whitespace? n1)
+                               (string? n2)
+                               (re-matches #"(?i)AND" n2))
+                        (recur (+ 2 i) (conj acc ","))      ; skip to after AND
+                        (recur (inc i) (conj acc n1)))))))))
+
 (defn identifier-list->variable-list
   [node]
-  (into [:variable-list]
-        (map (fif identifier->variable (tree/tag-pred :identifier)))
-        (rest node)))
+  (-> (into [:variable-list]
+            (map (fif identifier->variable (tree/tag-pred :identifier)))
+            (rest node))
+      ands->commas))
 
 (defn identifier->density-event-eq
-  "Given a simple symbol node for returns the density event for when the
+  "Given an identifier node, returns the density event for when the
   variable of that name equals the value held by that symbol in the
-  environment."
+  environment.
+
+  Returns the node unaltered if not an identifier."
   [node]
   (if-not (= :identifier (tree/tag node))
     node
@@ -83,6 +109,7 @@
 (defn strict-node
   [node]
   (match/match [(vec (remove tree/whitespace? node))]
+
     [[:density-event-eq ([:identifier _] :as id) equals scalar-expr]]
     [:density-event-eq (identifier->variable id) ws equals ws [:scalar-expr scalar-expr]]
 
@@ -140,6 +167,15 @@
      with ws with-event ws
      under ws model]
 
+    [[:given-except-clause except given-except-id-list]]
+    [:conditioned-by-except-clause except ws (identifier-list->variable-list given-except-id-list)]
+
+    [[:given-expr [:model-expr model] _given [:star star]]]
+    [:conditioned-by-expr [:model-expr model] ws "CONDITIONED" ws "BY" ws [:star star]]
+
+    [[:given-expr [:model-expr model] _given [:star star] except-clause]]
+    [:conditioned-by-expr [:model-expr model] ws "CONDITIONED" ws "BY" ws [:star star] ws except-clause]
+
     [[:given-expr [:model-expr model] _given events]]
     (transduce (map identifier->density-event-eq)
                (completing model-expr)
@@ -161,7 +197,7 @@
 
 (defn ->strict
   [node]
-  (let [f (fn [x]
+  (let [f (fn strictify-branch-node [x]
             (if (tree/branch? x)
               (strict-node x)
               x))]

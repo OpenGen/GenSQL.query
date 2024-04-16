@@ -94,13 +94,13 @@
     "model CONDITIONED BY *"
 
     "model GIVEN * EXCEPT (x, y)"
-    "model CONDITIONED BY * EXCEPT (x, y)"
+    "model CONDITIONED BY * EXCEPT (VAR x, VAR y)"
 
     "model GIVEN * EXCEPT x, y"
-    "model CONDITIONED BY * EXCEPT x, y"
+    "model CONDITIONED BY * EXCEPT VAR x, VAR y"
 
     "model GIVEN * EXCEPT x AND y AND z"
-    "model CONDITIONED BY * EXCEPT x, y, z"))
+    "model CONDITIONED BY * EXCEPT VAR x, VAR y, VAR z"))
 
 (deftest probability
   (are [permissive strict] (= (-> strict
