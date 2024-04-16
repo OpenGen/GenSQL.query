@@ -84,6 +84,24 @@
     "model GIVEN x AND y AND z"
     "model CONDITIONED BY VAR x = x CONDITIONED BY VAR y = y CONDITIONED BY VAR z = z"))
 
+(deftest given-star
+  (are [permissive strict] (= (strict.parser/parse strict :start :model-expr)
+                              (-> permissive
+                                  (permissive.parser/parse :start :model-expr)
+                                  (permissive/->strict)))
+
+    "model GIVEN *"
+    "model CONDITIONED BY *"
+
+    "model GIVEN * EXCEPT (x, y)"
+    "model CONDITIONED BY * EXCEPT (x, y)"
+
+    "model GIVEN * EXCEPT x, y"
+    "model CONDITIONED BY * EXCEPT x, y"
+
+    "model GIVEN * EXCEPT x AND y AND z"
+    "model CONDITIONED BY * EXCEPT x, y, z"))
+
 (deftest probability
   (are [permissive strict] (= (-> strict
                                   (strict.parser/parse :start :scalar-expr))
