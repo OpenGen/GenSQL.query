@@ -30,9 +30,14 @@ standalone-event-conjunction ::= identifier (ws #'(?i)AND' ws identifier)+
 
 (* given *)
 
-given-expr ::= model-expr ws #'(?i)GIVEN' ws (given-event-list | given-event-conjunction)
+given-expr ::= model-expr ws #'(?i)GIVEN' ws (given-star-clause | given-event-list | given-event-conjunction)
 given-event-list ::= given-event (ws? ',' ws? given-event)*
 given-event-conjunction ::= given-event (ws #'(?i)AND' ws given-event)+
+
+<given-star-clause> ::= star (ws? given-except-clause)?
+given-except-clause ::= #'(?i)EXCEPT' (ws given-except-list | ws? <'('> ws? given-except-list ws? <')'>)
+given-except-list ::= identifier ((ws? ',' ws? | ws #'(?i)AND' ws) identifier)*
+
 
 <given-event> ::= (density-event-eq / distribution-event-binop)
                 | identifier

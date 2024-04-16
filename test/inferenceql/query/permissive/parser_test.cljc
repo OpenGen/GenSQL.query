@@ -24,14 +24,16 @@
     "model GIVEN x > 0, y = 0"
     "model GIVEN *"
     "model GIVEN * EXCEPT (foo)"
-    "model GIVEN * EXCEPT foo, bar"))
+    "model GIVEN * EXCEPT foo, bar"
+    "model GIVEN * EXCEPT foo AND \"bar.none\" AND moop"))
 
 (deftest given-invalid
   (are [s] (insta/failure? (parser/parse s :start :given-expr))
     "model GIVEN VAR x = 0 OR VAR y = 0"
     "model GIVEN VAR x = 0 OR VAR y > 0"
     "model GIVEN VAR x > 0 OR VAR y = 0"
-    "model GIVEN * EXCEPT"))
+    "model GIVEN * EXCEPT"
+    "model GIVEN * EXCEPTfoo, bar"))
 
 (deftest generative-join-valid
   (are [s] (not (insta/failure? (parser/parse s)))
