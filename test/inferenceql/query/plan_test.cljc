@@ -230,7 +230,8 @@
 
 (deftest generate
   (testing "attributes"
-    (are [query attrs] (= attrs (relation/attributes (eval query {"model" model})))
+    (are [query attrs]
+      (= attrs (relation/attributes (eval query {"model" model})))
       "GENERATE VAR x UNDER model" ["x"]
       "GENERATE VAR x, VAR y UNDER model" ["x" "y"]
       "GENERATE VAR y, VAR x UNDER model" ["y" "x"]
@@ -239,7 +240,6 @@
   (testing "values"
     (let [rel (eval "GENERATE VAR x UNDER model" {"model" model})]
       (doseq [tup (relation/tuples (take 1 #_ 5 rel))]
-        ;;(tap> #:tup{:tup tup})
         (is (= ["x"] (keys tup)))
         (is (contains? #{"yes" "no"} (tuple/get tup "x")))))))
 
