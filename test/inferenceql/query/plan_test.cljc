@@ -17,6 +17,7 @@
     "SELECT * FROM data"
     "SELECT x FROM data"
     "SELECT (x) FROM data"
+    "SELECT * EXCEPT x,y,z FROM data"
     "SELECT * EXCEPT (foo, bar) FROM data"
     "SELECT PROBABILITY OF VAR x = x UNDER model FROM data"
     "SELECT (PROBABILITY OF VAR x = x UNDER model) FROM data"))
@@ -30,6 +31,7 @@
     "SELECT * FROM data"
     "SELECT x FROM data"
     "SELECT (x) FROM data"
+    "SELECT * EXCEPT x,y,z FROM data"
     "SELECT * EXCEPT (foo, bar) FROM data"
     "SELECT PROBABILITY OF x UNDER model FROM data"
     "SELECT (PROBABILITY OF x UNDER model) FROM data"))

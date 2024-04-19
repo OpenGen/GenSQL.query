@@ -1,4 +1,7 @@
 (ns inferenceql.query.base.parser-test
+  "Tests for parsing common GenSQL queries. Tests against both strict and
+  permissive parsers. Tests against either the strict or permissive variants
+  should go in their respective test files."
   (:require [clojure.test :refer [deftest testing is]]
             [inferenceql.query.parser.tree :as tree]
             [inferenceql.query.strict.parser :as strict.parser]
@@ -110,3 +113,10 @@
 
 (deftest parse-generate-star
   (parses "GENERATE * UNDER model" :generate-expr))
+
+(deftest select-star
+  (parses "SELECT *" :select-clause)
+  (parses "SELECT * EXCEPT foo" :select-clause)
+  (parses "SELECT * EXCEPT foo, bar" :select-clause)
+  (parses "SELECT * EXCEPT (foo, bar)" :select-clause)
+  (parses "SELECT * EXCEPT(x,y,z)" :select-clause))

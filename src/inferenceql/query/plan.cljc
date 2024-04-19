@@ -354,15 +354,12 @@
   "Returns a plan for SELECT * and SELECT * EXCEPT ... clauses."
   [node op]
   (tree/match [node]
-    [[:select-star-clause & children]]
-    (select-star-plan children op)                          ; trying recur breaks with CLJ-2808
-
     ;; plain SELECT *
     [[[:star _]]]
     op
 
-    ;; SELECT * EXCEPT (col1, col2, ...)
-    [[[:star & _] [:select-except-clause _except _lparen [:identifier-list & id-list] _rparen]]]
+    ;; SELECT * EXCEPT col1, col2, ...
+    [[[:star & _] [:select-except-clause _except [:identifier-list & id-list]]]]
     (loop [exclusions []
            [id & rest-ids] (filterv (tree/tag-pred :identifier) id-list)]
       (if id
@@ -383,7 +380,7 @@
   (let [selections (vec (selections select-node))
         distinct-clause (tree/get-node select-node :distinct-clause)
         plan (cond (star? (first selections))
-                   (select-star-plan (first selections) op)
+                   (select-star-plan selections op)
 
                    (or group-by-node (some aggregation? selections))
                    (aggregation-plan select-node group-by-node op)
