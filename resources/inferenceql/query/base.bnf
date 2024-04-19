@@ -229,7 +229,7 @@ density-event-group ::= '(' ws? density-event ws? ')'
 
 conditioned-by-expr ::= model-expr ws #'(?i)CONDITIONED' ws #'(?i)BY' ws (conditioned-by-star-clause | density-event)
 <conditioned-by-star-clause> ::= star (ws? conditioned-by-except-clause)?
-conditioned-by-except-clause ::= #'(?i)EXCEPT' (ws? <'('> ws? model-var-list ws? <')'> | ws model-var-list)
+conditioned-by-except-clause ::= #'(?i)EXCEPT' (ws model-var-list | ws? <'('> ws? model-var-list ws? <')'>)
 
 
 incorporate-expr ::= #'(?i)INCORPORATE' ws relation-expr ws #'(?i)INTO' ws model-expr
