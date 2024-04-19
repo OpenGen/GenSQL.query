@@ -235,18 +235,14 @@
 (defmethod plan-impl :generate-expr
   [node]
   (tree/match [node]
-    [[:generate-expr _generate generate-list _under model-expr]]
-    (let [sexpr (scalar/plan model-expr)]
-      (tree/match [generate-list]
-        [[:generate-star-clause [:star & _]]]
-        (generate :* sexpr :include)
+    [[:generate-expr _generate [:star & _] _under model-expr]]
+    (generate :* (scalar/plan model-expr) :include)
 
-        [[:generate-star-clause [:star & _]
-          [:generate-except-clause _except _lparen (:or [:variable-list & variables] [:identifier-list & variables]) _rparen]]]
-        (generate (map variable-node->string (filter tree/branch? variables)) sexpr :exclude)
+    [[:generate-expr _generate [:star & _] [:generate-except-clause _except (:or [:variable-list & variables] [:identifier-list & variables])] _under model-expr]]
+    (generate (map variable-node->string (filter tree/branch? variables)) (scalar/plan model-expr) :exclude)
 
-        [[:variable-list & variables]]
-        (generate (map variable-node->string (filter tree/branch? variables)) sexpr :include)))))
+    [[:generate-expr _generate [:variable-list & variables] _under model-expr]]
+    (generate (map variable-node->string (filter tree/branch? variables)) (scalar/plan model-expr) :include)))
 
 (defmethod plan-impl :where-clause
   [node op]
