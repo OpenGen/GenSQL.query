@@ -4,6 +4,7 @@ The `+GENERATE+` expression evaluates to a table of samples from a model.
 
 WARNING: The tables returned by `+GENERATE+` are infinite. A query comprised of a generate expression will run forever. In order to view the output if a `+GENERATE+` expression you should limit its output by wrapping it with a <<select expression,Select>> that includes a `+LIMIT+` clause.
 
+.Generate 10 rows of three columns from the model
 [example]
 ====
 [source,gensql]
@@ -14,6 +15,22 @@ FROM
     VAR Users,
     VAR Apogee_km,
     VAR Perigee_km
+  UNDER model
+LIMIT 10
+----
+====
+
+.Generate 10 rows containing almost all columns from the model, but excluding 2
+[example]
+====
+[source,gensql]
+----
+SELECT *
+FROM
+  GENERATE *
+    EXCEPT
+      VAR Contractor,
+      VAR Country_of_Operator
   UNDER model
 LIMIT 10
 ----
