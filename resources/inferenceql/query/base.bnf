@@ -81,8 +81,9 @@ select-list ::= select-star-clause
               / aggregation (ws? ',' ws? aggregation)*
 
 star ::= '*'
-select-star-clause ::= star (ws? select-except-clause)?
-select-except-clause ::= #'(?i)EXCEPT' ws? '(' ws? identifier-list ws? ')'
+<select-star-clause> ::= star (ws? select-except-clause)?
+select-except-clause ::= #'(?i)EXCEPT' (ws identifier-list | ws? <'('> ws? identifier-list ws? <')'>)
+
 
 selection ::= (scalar-expr | aggregation) (ws alias-clause)?
 
