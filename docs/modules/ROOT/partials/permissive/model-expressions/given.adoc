@@ -1,12 +1,27 @@
 === `+GIVEN+`
 
+.Compute the probability of the satellite's period from the model, given the class of orbit.
 [example]
 ====
 [source,gensql]
 ----
 SELECT
   PROBABILITY OF Period_minutes
-  UNDER satellites_model GIVEN Class_of_Orbit
+  UNDER satellites_model
+  GIVEN Class_of_Orbit
+FROM satellites
+----
+====
+
+.Compute the probability of the satellite's period from the model, given everything but the period, contractor, and operator's country.
+[example]
+====
+[source,gensql]
+----
+SELECT
+  PROBABILITY OF Period_minutes
+  UNDER satellites_model
+  GIVEN * EXCEPT Period_minutes, Contractor, Country_of_Operator
 FROM satellites
 ----
 ====

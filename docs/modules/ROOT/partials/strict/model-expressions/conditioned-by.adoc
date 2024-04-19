@@ -1,5 +1,6 @@
 === `+CONDITIONED BY+`
 
+.Compute the probability density of a model variable after conditioning on another variable
 [example]
 ====
 [source,gensql]
@@ -7,6 +8,19 @@
 SELECT
   PROBABILITY DENSITY OF VAR Apogee_km < 1000
   UNDER model CONDITIONED BY VAR Users = "Military"
+FROM satellites_model
+----
+====
+
+
+.Compute the probability density of a model variable after conditioning on all other variables except one
+[example]
+====
+[source,gensql]
+----
+SELECT
+  PROBABILITY DENSITY OF VAR Apogee_km < 1000
+  UNDER model CONDITIONED BY * EXCEPT VAR Apogee_km, VAR Country
 FROM satellites_model
 ----
 ====
