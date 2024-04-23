@@ -131,6 +131,21 @@ though this should only need to happen the first time you run it.
 You will see the changes to `deps.edn` reflected in `deps-lock.json`; you should commit these; and the
 release build will work again.
 
+#### Style
+
+##### Git
+
+This repo follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) 
+specification for commit messages. We use the defaults, except our subject lines 
+are in sentence case (e.g., "This is in sentence case") and do not end in a 
+stop/period.
+
+To check your most recent commit message, run `npx commitlint --from HEAD~1 
+--to HEAD --verbose`. If you need to change the last message, run `git commit 
+--amend`.
+
+If you forget, a CI job will check it for you when you make a pull request.
+
 #### Building a jar (portable Java application)
 
 ```shell

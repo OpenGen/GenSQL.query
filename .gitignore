@@ -16,7 +16,6 @@ pom.xml.asc
 /.lsp/.cache/
 /node_modules/
 /out/
-package-lock.json
 /cljs-test-runner-out/
 /.direnv/
 /.shadow-cljs/
