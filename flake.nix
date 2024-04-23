@@ -54,7 +54,7 @@
       in {
         # development shell
         devShells.default = pkgs.mkShell {
-          buildInputs = [ pkgs.openjdk21 pkgs.clojure pkgs.babashka depsCache ] ++ (basicToolsFn pkgs);
+          buildInputs = [ pkgs.openjdk21 pkgs.clojure pkgs.babashka pkgs.nodejs_20 depsCache ] ++ (basicToolsFn pkgs);
 
           shellHook = ''
             echo "Setting up default dev shell..."
