@@ -16,4 +16,4 @@
                :task (shell "clj-kondo --lint src test")}
 
          repl {:doc "Launch the GenSQL REPL"
-               :task (apply shell "clj -M -m inferenceql.query.main" *command-line-args*)}}}
+               :task (apply shell "clj -M -m gensql.query.main" *command-line-args*)}}}
