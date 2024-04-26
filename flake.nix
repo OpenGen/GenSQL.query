@@ -24,7 +24,7 @@
         depsCache = pkgsWithCljNixOverlay.callPackage ./nix/depsCache {};
         uber = pkgs.callPackage ./nix/uber {inherit depsCache;};
 
-        pname = "iql";
+        pname = "gensql";
         bin = pkgs.callPackage ./nix/bin { inherit uber pname; };
 
         basicToolsFn = pkgs: with pkgs; [

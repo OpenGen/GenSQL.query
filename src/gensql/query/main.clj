@@ -73,7 +73,7 @@
   (if (instance? Exception result)
     (print-exception result)
     (let [columns (get (meta result)
-                       :iql/columns
+                       :gensql/columns
                        (into #{} (mapcat keys) result))
           header-row (map name columns)
           cells (map (apply juxt columns) result)

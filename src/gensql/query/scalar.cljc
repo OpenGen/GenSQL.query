@@ -33,11 +33,11 @@
   [node]
   (match/match node
     [:conditioned-by-expr model _conditioned _by [:star _]]
-    `(~'iql/condition-all ~(plan model))
+    `(~'gensql/condition-all ~(plan model))
     [:conditioned-by-expr model _conditioned _by [:star _] [:conditioned-by-except-clause & except-children]]
-    `(~'iql/condition-all-except ~(plan model) ~(plan (into [:conditioned-by-except-clause] except-children)))
+    `(~'gensql/condition-all-except ~(plan model) ~(plan (into [:conditioned-by-except-clause] except-children)))
     [:conditioned-by-expr model _conditioned _by child]
-    `(~'iql/condition ~(plan model) ~(plan child))
+    `(~'gensql/condition ~(plan model) ~(plan child))
     [:conditioned-by-except-clause _except model-var-list]
     (plan model-var-list)))
 
@@ -86,24 +86,24 @@
 
       [:density-event-group "(" child ")"] (plan child)
 
-      [:probability-expr _prob _of event _under model] `(~'iql/prob ~(plan model) ~(plan event))
-      [:density-expr _prob _density _of event _under model] `(~'iql/pdf ~(plan model) ~(plan event))
+      [:probability-expr _prob _of event _under model] `(~'gensql/prob ~(plan model) ~(plan event))
+      [:density-expr _prob _density _of event _under model] `(~'gensql/pdf ~(plan model) ~(plan event))
 
-      [:mutual-info-expr _m _i _of lhs _with rhs _under model] `(~'iql/mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
-      [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'iql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
+      [:mutual-info-expr _m _i _of lhs _with rhs _under model] `(~'gensql/mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
+      [:approx-mutual-info-expr _a _m _i _of lhs _with rhs _under model] `(~'gensql/approx-mutual-info ~(plan model) ~(vec (plan lhs)) ~(vec (plan rhs)))
 
       [:model-expr child] (plan child)
       [:model-expr "(" child ")"] (plan child)
 
       #?@(:clj [[:generative-table-expr _generative _table relation]
                 (let [query-plan (requiring-resolve 'gensql.query.plan/plan)]
-                  `(~'iql/eval-relation-plan (~'quote ~(query-plan relation))))])
+                  `(~'gensql/eval-relation-plan (~'quote ~(query-plan relation))))])
 
       ;; Matches either :conditioned-by-expr or :conditioned-by-except-clause
       ;; and defers to conditioned-by-plan* to avoid https://clojure.atlassian.net/browse/CLJ-1852
       [(:or :conditioned-by-expr :conditioned-by-except-clause) & _] (conditioned-by-plan* ws-free-node)
 
-      [:constrained-by-expr model _constrained _by event] `(~'iql/constrain ~(plan model) ~(plan event))
+      [:constrained-by-expr model _constrained _by event] `(~'gensql/constrain ~(plan model) ~(plan event))
 
 
       [:value child] (literal/read child)
@@ -112,8 +112,8 @@
       [:variable-list & variables] (into [] (comp (filter tree/branch?) (map plan)) variables) ; remove commas
 
       [:identifier child] (plan child)
-      [:delimited-symbol s] (list 'iql/safe-get 'iql-bindings s)
-      [:simple-symbol s] (list 'iql/safe-get 'iql-bindings s))))
+      [:delimited-symbol s] (list 'gensql/safe-get 'gensql-bindings s)
+      [:simple-symbol s] (list 'gensql/safe-get 'gensql-bindings s))))
 
 (defn inference-event
   [event]
@@ -300,7 +300,7 @@
                   '* (nil-safe (auto-unbox *))
                   '/ (nil-safe (auto-unbox /))
                   'log (nil-safe (auto-unbox math/log))}
-   'iql {'safe-get safe-get
+   'gensql {'safe-get safe-get
          'prob prob
          'pdf pdf
          #?@(:clj ['eval-relation-plan
@@ -348,7 +348,7 @@
         opts {:namespaces #?(:clj (namespaces env' sci-bindings)
                              :cljs (namespaces))
               :bindings (merge sci-bindings
-                               {'iql-bindings sci-bindings})}]
+                               {'gensql-bindings sci-bindings})}]
     ;; ensure pr-str doesn't truncate by setting print-length to nil
     (binding [*print-length* nil]
       (try (let [sci-result (sci/eval-string (pr-str sexpr) opts)]

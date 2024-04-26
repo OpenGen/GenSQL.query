@@ -4,9 +4,9 @@
     {
       "lib": "io.github.OpenGen/GenSQL.inference",
       "url": "https://github.com/OpenGen/GenSQL.inference.git",
-      "rev": "c3cef474ba964a37fc2e5ff667055f5b77e12c45",
+      "rev": "689fe740dead93f3ba349a88efa52f2544aa138b",
       "git-dir": "https/github.com/OpenGen/GenSQL.inference",
-      "hash": "sha256-gjVmfbcAEeb0uHJTOUrFasDhZY+c4wI8M5W+itJynz4="
+      "hash": "sha256-dQZHbTzf7Ee0rKNrn61tlBSPT7MXVVsPHO05DFN6Zvw="
     },
     {
       "lib": "io.github.clojure/tools.build",

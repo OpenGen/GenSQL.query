@@ -43,7 +43,7 @@ The command-line application currently supports GenSQL-strict and GenSQL-permiss
 If you would like to use `GenSQL.query` to query SPPL models you will need to ensure that SPPL is on the classpath, and that [libpython-clj](https://github.com/clj-python/libpython-clj) can find a Python where SPPL is installed. The easiest way to accomplish this is to use [Nix](https://nixos.org/):
 
 ```shell
-nix develop github:OpenGen/GenSQL.gpm.sppl -c clj -Sdeps '{:deps {io.github.OpenGen/GenSQL.gpm.sppl {:git/sha "52f8316e094b3644709dccde8f0a935f9b55f187"}}}' -M -m gensql.query.main --help
+nix develop github:OpenGen/GenSQL.gpm.sppl -c clj -Sdeps '{:deps {io.github.OpenGen/GenSQL.gpm.sppl {:git/sha "718de40878766bb8d08acc2b429a76ed662a1352"}}}' -M -m gensql.query.main --help
 ```
 
 ### Clojure interface

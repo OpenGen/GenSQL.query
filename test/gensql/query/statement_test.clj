@@ -28,15 +28,15 @@
 
 (defn eval
   [tables stmt]
-  (let [db (atom {:iql/tables tables})]
+  (let [db (atom {:gensql/tables tables})]
     (statement/execute (parser/parse stmt) db)
-    (:iql/tables @db)))
+    (:gensql/tables @db)))
 
 (defn eval-models
   [models stmt]
-  (let [db (atom {:iql/models models})]
+  (let [db (atom {:gensql/models models})]
     (statement/execute (parser/parse stmt) db)
-    (:iql/models @db)))
+    (:gensql/models @db)))
 
 (deftest create-table
   (are [before stmt after] (= after (eval before stmt))

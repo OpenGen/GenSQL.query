@@ -25,7 +25,7 @@
 
 (defn get-table
   [db k]
-  (get-in db [:iql/tables k]))
+  (get-in db [:gensql/tables k]))
 
 (defn safe-get-table
   [db k]
@@ -36,7 +36,7 @@
 
 (defn get-model
   [db k]
-  (get-in db [:iql/models k]))
+  (get-in db [:gensql/models k]))
 
 (defn safe-get-model
   [db k]
@@ -49,17 +49,17 @@
   "Adds a table with key `k` to the database. Turns k into a string."
   [db k table]
   (let [table-name (name k)]                                ; TODO: keep using `name`?
-    (assoc-in db [:iql/tables table-name] table)))
+    (assoc-in db [:gensql/tables table-name] table)))
 
 (defn with-model
   "Adds a model with key `k` to the database. Turns k into a string."
   [db k model]
   (let [model-name (name k)]                                ; TODO: keep using `name`?
-    (assoc-in db [:iql/models model-name] model)))
+    (assoc-in db [:gensql/models model-name] model)))
 
 (defn env
   "A map used for SCI lookup of models/relations."
   ;; FIXME: Check for, or handle, name collisions between models and tables.
   [db]
-  (merge (:iql/tables db)
-         (:iql/models db)))
+  (merge (:gensql/tables db)
+         (:gensql/models db)))
