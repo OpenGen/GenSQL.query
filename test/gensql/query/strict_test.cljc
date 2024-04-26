@@ -23,7 +23,7 @@
    (let [relation (fn [coll]
                     (let [tuples (mapv #(update-keys % str)
                                        coll)]
-                      (if-let [columns (-> coll meta :iql/columns)]
+                      (if-let [columns (-> coll meta :gensql/columns)]
                         (relation/relation tuples :attrs (map str columns))
                         (relation/relation tuples))))
          models (update-keys models str)
@@ -132,9 +132,9 @@
 (deftest select-response-metadata
   (are [query data in-c out-c] (= out-c
                                   (-> (q query (cond-> data
-                                                 in-c (with-meta {:iql/columns in-c})))
+                                                 in-c (with-meta {:gensql/columns in-c})))
                                       meta
-                                      :iql/columns))
+                                      :gensql/columns))
     "SELECT * FROM data;" [{"x" 0}]       ["x"]     ["x"]
     "SELECT * FROM data;" [{"x" 0}]       nil       ["x"]
     "SELECT * FROM data;" [{"x" 0 "y" 1}] ["x"]     ["x"]
@@ -208,7 +208,7 @@
 (deftest conditions-null-example
   (is (= [{}]
          (q "SELECT * FROM data WHERE x IS NULL"
-            (with-meta [{}] {:iql/columns ["x"]})))))
+            (with-meta [{}] {:gensql/columns ["x"]})))))
 
 (defspec conditions-null
   (prop/for-all [[table k] gen-table-col]
@@ -254,10 +254,10 @@
                                         "y" {"yes" 0.0 "no" 1.0}}}]]})
         q1 (comp first vals first #(q %1 %2 %3))]
     (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = 'yes' UNDER model CONDITIONED BY VAR x = x) FROM data;"
-                   (with-meta [{}] {:iql/columns ["x" "y"]})
+                   (with-meta [{}] {:gensql/columns ["x" "y"]})
                    {"model" model})))
     (is (= 0.5 (q1 "SELECT (PROBABILITY DENSITY OF VAR y = 'yes' UNDER (model CONDITIONED BY * EXCEPT VAR y)) FROM data;"
-                   (with-meta [{}] {:iql/columns ["x" "y"]})
+                   (with-meta [{}] {:gensql/columns ["x" "y"]})
                    {"model" model})))))
 
 (deftest density-of-bindings
@@ -386,12 +386,12 @@
         result (q "SELECT * FROM (ALTER data ADD y);"
                   data)]
     (is (= data result))
-    (is (= ["x" "y"] (:iql/columns (meta result))))))
+    (is (= ["x" "y"] (:gensql/columns (meta result))))))
 
 ;; With
 
 (deftest with
-  (let [data (with-meta [] {:iql/columns ["x"]})
+  (let [data (with-meta [] {:gensql/columns ["x"]})
         result (q "WITH (INSERT INTO data (x) VALUES (1), (2), (3)) AS data: SELECT * FROM data;"
                   data)]
     (is (= [{"x" 1}
@@ -481,7 +481,7 @@
 
 (deftest conditioned-by
   (testing "generate"
-    (let [q #(q % (with-meta [] {:iql/columns ["y"]}) {"model" simple-model})]
+    (let [q #(q % (with-meta [] {:gensql/columns ["y"]}) {"model" simple-model})]
       (doseq [result (q "SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = 'yes') LIMIT 10")]
         (is (= {"x" "yes"} (select-keys result ["x"]))))
       (doseq [result (q "WITH 'yes' AS v: SELECT * FROM (GENERATE VAR x UNDER model CONDITIONED BY VAR x = v) LIMIT 10")]
@@ -500,16 +500,16 @@
         (testing "in select"
           (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY VAR y = y FROM data"
                          (with-meta [{}]
-                           {:iql/columns ["x" "y"]})))))
+                           {:gensql/columns ["x" "y"]})))))
 
         (testing "* except"
           (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY * EXCEPT VAR x FROM data"
                          (with-meta [{}]
-                                    {:iql/columns ["x" "y"]}))))
+                                    {:gensql/columns ["x" "y"]}))))
 
           (is (= 0.75 (q "SELECT PROBABILITY DENSITY OF VAR x = 'yes' UNDER model CONDITIONED BY * EXCEPT (VAR x) FROM data"
                          (with-meta [{}]
-                                    {:iql/columns ["x" "y"]})))))
+                                    {:gensql/columns ["x" "y"]})))))
 
         (testing "in with"
           (is (= 0.0 (q "WITH model CONDITIONED BY VAR y = 'no' AS model: SELECT PROBABILITY DENSITY OF VAR x = x UNDER model FROM data" [{"x" "yes"}]))))))))

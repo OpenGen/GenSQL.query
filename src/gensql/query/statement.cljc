@@ -15,23 +15,23 @@
   [db id]
   (if-not (db/get-table db id)
     db
-    (update db :iql/tables dissoc id)))
+    (update db :gensql/tables dissoc id)))
 
 (defn safe-drop-table
   [db id]
   (when (db/safe-get-table db id)
-    (update db :iql/tables dissoc id)))
+    (update db :gensql/tables dissoc id)))
 
 (defn drop-model
   [db id]
   (if-not (db/get-model db id)
     db
-    (update db :iql/models dissoc id)))
+    (update db :gensql/models dissoc id)))
 
 (defn safe-drop-model
   [db id]
   (when (db/safe-get-model db id)
-    (update db :iql/models dissoc id)))
+    (update db :gensql/models dissoc id)))
 
 (defn execute
   [node db]

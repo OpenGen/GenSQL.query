@@ -58,4 +58,4 @@
           str-rel (map stringify-keys rel)
           str-attrs (map str (relation/attributes rel))]
       (with-meta str-rel
-        {:iql/columns str-attrs}))))
+        {:gensql/columns str-attrs}))))
