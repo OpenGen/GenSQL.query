@@ -1,0 +1,136 @@
+(ns gensql.query.relation
+  "Functions for creating and manipulating relations."
+  (:refer-clojure :exclude [distinct empty group-by name sort transduce])
+  (:require [clojure.core :as clojure]
+            [gensql.query.tuple :as tuple]
+            [medley.core :as medley]))
+
+;; These are not sequence functions, so the primary argument comes first.
+
+(defn relation
+  "Produces a relation from a sequence of maps. "
+  ;;Returns the same collection, but w/ name and attr metadata attached.
+  [coll & {:keys [attrs name]}]
+  (let [attrs (or attrs
+                  (into []
+                        (comp (mapcat keys)
+                              (clojure/distinct))
+                        coll))]
+    (cond-> coll
+      (seq attrs) (vary-meta assoc ::attributes attrs)
+      name (vary-meta assoc ::name name))))
+
+(defn empty
+  "Returns an empty relation with the specified attributes."
+  [attrs]
+  (relation [] :attrs attrs))
+
+(defn relation?
+  "Returns true if `x` is a relation."
+  [x]
+  (and (coll? x)
+       (contains? (meta x)
+                  ::attributes)))
+
+(defn attributes
+  "Returns the attributes of a relation."
+  [rel]
+  (-> rel meta ::attributes))
+
+(defn name
+  [rel]
+  (-> rel meta ::name))
+
+(defn assoc-name
+  [rel name]
+  (vary-meta (or rel []) assoc ::name name))
+
+(defn tuples
+  "Returns a sequence of tuples in relation `rel`."
+  [rel]
+  (map #(tuple/tuple %
+                     :attrs (attributes rel)
+                     :name (name rel))
+       rel))
+
+(defn project
+  [rel attrs]
+  (with-meta (sequence (map #(tuple/select-attrs % attrs))
+                       (tuples rel))
+    {::attributes attributes}))
+
+(defn extended-project
+  "Takes a relation and a collection of function / attribute pairs. Returns a
+  new relation with the attributes from the collection. Attribute values are
+  produced by applying the functions from coll to each tuple in the relation
+  argument."
+  [rel coll]
+  (let [f (fn [tuple]
+            (->> (zipmap (map second coll)
+                         (map #((first %) tuple)
+                              coll))
+                 (medley/remove-vals nil?)))]
+    (relation (map f (tuples rel))
+              :attrs (mapv second coll))))
+
+(defn select
+  "Selects/filters the tuples/rows that match the pred fn"
+  [rel pred]
+  (with-meta (filter pred (tuples rel))
+    (meta rel)))
+
+(defn limit
+  [rel n]
+  (with-meta (take n (tuples rel))
+    (meta rel)))
+
+(defn distinct
+  [rel]
+  (with-meta (clojure/distinct (tuples rel))
+    (meta rel)))
+
+(defn sort
+  [rel attr order]
+  (relation (->> (tuples rel)
+                 (sort-by #(tuple/get % attr)
+                          (case order
+                            :ascending compare
+                            :descending #(compare %2 %1))))
+            :attrs (attributes rel)))
+
+(defn transduce
+  [rel xf]
+  (with-meta (into (empty rel)
+                   xf
+                   rel)
+    (meta rel)))
+
+(defn add-attribute
+  [rel attr]
+  (let [attributes (into []
+                         (clojure/distinct)
+                         (conj (attributes rel)
+                               attr))]
+    (relation rel :attrs attributes)))
+
+(defn remove-attributes
+  "Remove attributes from a relation."
+  [rel attrs]
+  (let [attributes' (remove (set attrs)
+                            (attributes rel))]
+    (-> (map #(apply dissoc % attrs) rel)
+        (relation :attrs attributes'))))
+
+(defn group-by
+  [rel f]
+  (->> (tuples rel)
+       (clojure/group-by f)
+       (vals)
+       (map #(relation % :attrs (attributes rel)))))
+
+(defn ->vector
+  [rel]
+  (let [attrs (attributes rel)]
+    (into [attrs]
+          (mapv (comp vec tuple/->vector)
+                (tuples rel)))))

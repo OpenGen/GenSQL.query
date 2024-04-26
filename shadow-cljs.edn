@@ -13,6 +13,6 @@
   {:target :browser
    :output-dir "public/assets/query/js"
    :asset-path "/assets/query/js"
-   :modules {:query {:entries [inferenceql.query.js]}}
+   :modules {:query {:entries [gensql.query.js]}}
    :compiler-options {:infer-externs :auto
                       :optimizations :advanced}}}}
