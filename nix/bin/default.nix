@@ -2,7 +2,7 @@
   uber,
   pname
 }: pkgs.stdenv.mkDerivation {
-  name = "inferenceql.query";
+  name = "gensql.query";
   inherit pname;
   src = ./.;
   nativeBuildInputs = [ pkgs.makeWrapper ];

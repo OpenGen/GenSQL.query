@@ -2,11 +2,11 @@
   pkgs,
   depsCache,
 }: stdenv.mkDerivation {
-  name = "inferenceql.query-uberjar";
+  name = "gensql.query-uberjar";
   version = "unstable";
   src = builtins.path {
     path = ./../..;
-    name = "inferenceql.query";
+    name = "gensql.query";
   };
 
   env = {

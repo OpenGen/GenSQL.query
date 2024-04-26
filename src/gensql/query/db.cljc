@@ -10,7 +10,8 @@
 
 (defn read-string
   [s]
-  (let [sppl-readers {'inferenceql.gpm.spe/SPE (dynaload/dynaload 'inferenceql.gpm.sppl/read-string)}
+  (let [sppl-readers {'gensql.gpm.spe/SPE (dynaload/dynaload 'gensql.gpm.sppl/read-string)
+                      'inferenceql.gpm.spe/SPE (dynaload/dynaload 'gensql.gpm.sppl/read-string)} ; for backwards-compatibility
         readers (merge gpm/readers sppl-readers)]
     (edn/read-string {:readers readers} s)))
 

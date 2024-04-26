@@ -11,10 +11,10 @@
 
     crossPkgsLinux = nixpkgs.legacyPackages.${systemWithLinux};
 
-    # TODO: This can be factored out into an inferenceql/nix
+    # TODO: This can be factored out into an gensql/nix
     # shared package.
     baseImg = pkgs.dockerTools.buildLayeredImage {
-      name = "inferenceql.base";
+      name = "gensql.base";
       contents =
         (basicToolsFn crossPkgsLinux) ++ (with crossPkgsLinux; [
           bashInteractive
@@ -26,7 +26,7 @@
 
     ociBin =  crossPkgsLinux.callPackage ./../bin {inherit uber pname;};
 in pkgs.dockerTools.buildImage {
-  name = "probcomp/inferenceql.query";
+  name = "probcomp/gensql.query";
   tag = systemWithLinux;
   fromImage = baseImg;
   # architecture
