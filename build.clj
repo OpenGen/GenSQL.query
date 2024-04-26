@@ -1,7 +1,7 @@
 (ns build
   (:require [clojure.tools.build.api :as build]))
 
-(def lib 'io.github.inferenceql/gensql.query)
+(def lib 'io.github.OpenGen/GenSQL.query)
 (def version (format "1.2.%s" (build/git-count-revs nil)))
 (def class-dir "target/classes")
 (def uber-file (format "target/%s-%s-standalone.jar" (name lib) version))

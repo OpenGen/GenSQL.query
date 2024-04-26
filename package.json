@@ -1,5 +1,5 @@
 {
-  "name": "inferenceql.query",
+  "name": "gensql.query",
   "version": "1.0.0",
   "description": "![tests](https://github.com/OpenGen/GenSQL.query/workflows/tests/badge.svg) ![linter](https://github.com/OpenGen/GenSQL.query/workflows/linter/badge.svg)",
   "main": "index.js",

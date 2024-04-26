@@ -96,7 +96,7 @@
       [:model-expr "(" child ")"] (plan child)
 
       #?@(:clj [[:generative-table-expr _generative _table relation]
-                (let [query-plan (requiring-resolve 'inferenceql.query.plan/plan)]
+                (let [query-plan (requiring-resolve 'gensql.query.plan/plan)]
                   `(~'iql/eval-relation-plan (~'quote ~(query-plan relation))))])
 
       ;; Matches either :conditioned-by-expr or :conditioned-by-except-clause
@@ -288,7 +288,7 @@
 (defn namespaces
   #?(:clj [env bindings]
      :cljs [])
-  {'inferenceql.inference.gpm {}
+  {'gensql.inference.gpm {}
    'clojure.core {'not not
                   '> (nil-safe (auto-unbox >))
                   '>= (nil-safe (auto-unbox >=))
@@ -304,7 +304,7 @@
          'prob prob
          'pdf pdf
          #?@(:clj ['eval-relation-plan
-                   (let [eval (requiring-resolve 'inferenceql.query.plan/eval)]
+                   (let [eval (requiring-resolve 'gensql.query.plan/eval)]
                      #(generative-table/generative-table (eval % env bindings)))])
          'condition-all #(condition-all % bindings)
          'condition-all-except #(condition-all %1 %2 bindings)

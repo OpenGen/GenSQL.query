@@ -7,7 +7,9 @@
 (defn read-db
   [s]
   (let [readers (assoc gpm/readers
-                       'inferenceql.inference.gpm.multimixture.Multimixture
+                       'gensql.inference.gpm.multimixture.Multimixture
+                       mmix/map->Multimixture
+                       'inferenceql.inference.gpm.multimixture.Multimixture ; for backwards-compatibility
                        mmix/map->Multimixture)]
     (edn/read-string {:readers readers} s)))
 
