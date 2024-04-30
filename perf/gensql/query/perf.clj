@@ -95,22 +95,34 @@
   Parameters
   - db: the database to run the queries on
   - queries: Either (1) a map of queries to run, keys are names, vals are GenSQL
-    strict queries, or (2) a single GenSQL strict query in a string"
+    strict queries, or (2) a single GenSQL strict query in a string
+  - opts - a map of options
+
+  Options map
+  - print? - whether to print out results (default: true)"
   ([db queries]
    (benchmark db queries {}))
-  ([db queries opts]
+  ([db queries {:keys [print? quick?]
+                :or {print? true
+                     quick? true}
+                :as opts}]
    (let [queries (if (string? queries) {:query queries} queries)
+         criterium-bench (if quick? crit/quick-benchmark* crit/benchmark*)
          bmark (fn bmark
                  [query]
-                 (println "\nBenchmarking query:" query)
-                 (crit/benchmark
+                 (when print?
+                   (if quick?
+                     (println "\nQuick-benchmarking query:" query)
+                     (println "\nBenchmarking query:" query)))
+                 (criterium-bench
                    ;; doall forces all lazy results to be realized during benchmarking
-                   (doall (strict/q query db))
+                   (fn [] (doall (strict/q query db)))
                    {}))
          bmark-results (update-vals queries bmark)]
      (medley/map-kv (fn [query-k bmark-result]
-                      (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                      (println (str "Results for \"" (query-k queries) "\":"))
+                      (when print?
+                        (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        (println (str "Results for \"" (get queries query-k) "\":")))
                       (crit/report-result bmark-result))
                     bmark-results)
      bmark-results)))
