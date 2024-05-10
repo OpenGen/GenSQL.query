@@ -2,6 +2,13 @@
   "lock-version": 3,
   "git-deps": [
     {
+      "lib": "io.github.OpenGen/GenSQL.gpm.sppl",
+      "url": "https://github.com/OpenGen/GenSQL.gpm.sppl.git",
+      "rev": "718de40878766bb8d08acc2b429a76ed662a1352",
+      "git-dir": "https/github.com/OpenGen/GenSQL.gpm.sppl",
+      "hash": "sha256-mAOKu6KU6naFA0ykqUfvz5WA0DlhwXm/2Ze5MAruJDE="
+    },
+    {
       "lib": "io.github.OpenGen/GenSQL.inference",
       "url": "https://github.com/OpenGen/GenSQL.inference.git",
       "rev": "689fe740dead93f3ba349a88efa52f2544aa138b",
@@ -87,6 +94,16 @@
       "hash": "sha256-JezOPysastKFP6SSVze/8ZvwYnbr/uu5PhHvdTc7ea8="
     },
     {
+      "mvn-path": "camel-snake-kebab/camel-snake-kebab/0.4.2/camel-snake-kebab-0.4.2.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-p7hxVjg5GmkjD1D8Nh6W+zt/vAWXj5zMdO+veamBdrs="
+    },
+    {
+      "mvn-path": "camel-snake-kebab/camel-snake-kebab/0.4.2/camel-snake-kebab-0.4.2.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-q0kp6YUZCevRFA1J6OSnV3922+u4eHSlO/wa65suEyc="
+    },
+    {
       "mvn-path": "cheshire/cheshire/5.10.0/cheshire-5.10.0.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-l3PHeIYLYeUXTVeUfJQIGwaJY6aaL7ABmhGpGuN9l8w="
@@ -117,6 +134,16 @@
       "hash": "sha256-B71Nb2N/jk0TljOexdQI0xDc4OLCs17Wet0qWkDKh7Q="
     },
     {
+      "mvn-path": "clj-python/libpython-clj/2.023/libpython-clj-2.023.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-EE9di3S5qYku7A5hIDtW0x26yFfEoBqAVoE0CtlJHqo="
+    },
+    {
+      "mvn-path": "clj-python/libpython-clj/2.023/libpython-clj-2.023.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-bcM6b2zDs4IX9iZQKHurWJeRVemmuHu8+PVuuaW4jmk="
+    },
+    {
       "mvn-path": "clj-time/clj-time/0.15.2/clj-time-0.15.2.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-8X3G2PlnPfkYf8qtLRhStVIM4TuGpMG0llc4nd/xjlA="
@@ -137,6 +164,16 @@
       "hash": "sha256-ahZELYfCkwwDImtKo9KYkVfVi5TtPnyNZ2aLDrZYOJs="
     },
     {
+      "mvn-path": "cljs-bean/cljs-bean/1.7.0/cljs-bean-1.7.0.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-mfia1lyVNncZL4WSMo7CMGwUKY0bILaXUU/s4j2vPzs="
+    },
+    {
+      "mvn-path": "cljs-bean/cljs-bean/1.7.0/cljs-bean-1.7.0.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-D/xuvTuPmNwI4tT6OBFRmeMTKV7p/rKzi5PTvVchBbg="
+    },
+    {
       "mvn-path": "cljs-bean/cljs-bean/1.8.0/cljs-bean-1.8.0.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-1oabPQuqQdEXPFefuLeewnb08MhIwAx2jlEih86i5UU="
@@ -147,11 +184,6 @@
       "hash": "sha256-xMtL7gH6hnrFu8XPdgT+g+022A6zpQD9+qkuObEW7nQ="
     },
     {
-      "mvn-path": "clojure-msgpack/clojure-msgpack/1.2.1/clojure-msgpack-1.2.1.pom",
-      "mvn-repo": "https://repo.clojars.org/",
-      "hash": "sha256-idvV+CLoAQw/kJd78R2E2DKXecl1eE5jn+7yezZdmRw="
-    },
-    {
       "mvn-path": "cloverage/cloverage/1.2.4/cloverage-1.2.4.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-pmnEN8oahyohS+2aacY4VKql7EGMrM21ijipsxQQJQ8="
@@ -160,6 +192,16 @@
       "mvn-path": "cloverage/cloverage/1.2.4/cloverage-1.2.4.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-n0sJ40YL4OFuAt7ol6BjL0JF9zbVo+Z+y7URF6IzUkc="
+    },
+    {
+      "mvn-path": "cnuernber/dtype-next/10.000-beta-20/dtype-next-10.000-beta-20.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-FdD4leseGnfZsfiLtFm/XI8cct80yq3V/isw/SdUFY4="
+    },
+    {
+      "mvn-path": "cnuernber/dtype-next/10.000-beta-20/dtype-next-10.000-beta-20.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-k675IGYC39vFhNXIJ8Ikp1P71J6OpSRD/eohQXx4zp0="
     },
     {
       "mvn-path": "com/andrewmcveigh/cljs-time/0.5.2/cljs-time-0.5.2.jar",
@@ -190,6 +232,16 @@
       "mvn-path": "com/clojure-goes-fast/clj-async-profiler/1.2.0/clj-async-profiler-1.2.0.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-OZif4zTZYVoDj6UC8jRyaviBTyMlitPTxHdSmEeV0t8="
+    },
+    {
+      "mvn-path": "com/cnuernber/ham-fisted/1.000-beta-74/ham-fisted-1.000-beta-74.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-QEswSpdd2Bb+EchKfH8TAbPm+vR9jUQE0SzyY40QydA="
+    },
+    {
+      "mvn-path": "com/cnuernber/ham-fisted/1.000-beta-74/ham-fisted-1.000-beta-74.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-HsiUDD98kr7OhUy2aDGDaHOVWTrpKyT6xCvcLMkIBNY="
     },
     {
       "mvn-path": "com/cognitect/aws/api/0.8.612/api-0.8.612.jar",
@@ -357,6 +409,26 @@
       "hash": "sha256-k3tSiy5LHiJc2cC3o6zxlB/BOVqFe/0MPTUQGNUHdF8="
     },
     {
+      "mvn-path": "com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-Hgp7vvHdeRZTFD8/BdDkiZNL9UgeWKh8nmGc1Gtocps="
+    },
+    {
+      "mvn-path": "com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-b6TxwQGSgG+O8FtdS+e9n1zli4dvZDZNTpDD/AkjI9w="
+    },
+    {
+      "mvn-path": "com/github/wendykierp/JTransforms/3.1/JTransforms-3.1.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-2d/6Pid5MEDcy5ewVNlSZ99G5mnDlr8cpPOwhQabwtU="
+    },
+    {
+      "mvn-path": "com/github/wendykierp/JTransforms/3.1/JTransforms-3.1.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-lrWRq517j7FFnPq0Mo/XSwI/G+7ecE1Wuk7PlF70Wrc="
+    },
+    {
       "mvn-path": "com/google/auto/auto-parent/6/auto-parent-6.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-BfdAxmSBZdsAz2GN1WwgDEcl41jm1U9YU+C+wVc06go="
@@ -467,6 +539,11 @@
       "hash": "sha256-chYh8BUxLnop8NtXDQi7NjJ/vUpTo+6T3zIUNjzlOXE="
     },
     {
+      "mvn-path": "com/google/guava/guava-parent/31.1-jre/guava-parent-31.1-jre.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-RDliZ4O0StJe8F/wdiHdS7eWzE608pZqSkYf6kEw4Pw="
+    },
+    {
       "mvn-path": "com/google/guava/guava/30.0-jre/guava-30.0-jre.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-P4gXdBYSgvZzDSuOdKjhrHU7inNHgaUm+ICxuL24lFE="
@@ -490,6 +567,16 @@
       "mvn-path": "com/google/guava/guava/31.1-android/guava-31.1-android.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-ZikplWROlVN+6XqJ6JkBcdjzwmrPmEgwp3kZlwc9RR0="
+    },
+    {
+      "mvn-path": "com/google/guava/guava/31.1-jre/guava-31.1-jre.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-pC7cnKt5Ljn+ObuU8/ymVe0Vf/h6iveOHWulsHxKAKs="
+    },
+    {
+      "mvn-path": "com/google/guava/guava/31.1-jre/guava-31.1-jre.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-kZPQe/T2YBCNc1jliyfSG0TjToDWc06Y4hkWN28nDeI="
     },
     {
       "mvn-path": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
@@ -527,14 +614,34 @@
       "hash": "sha256-X6yoJLoRW+5FhzAzff2y/OpGui/XdNQwTtvzD6aj8FU="
     },
     {
+      "mvn-path": "com/google/javascript/closure-compiler-main/v20220502/closure-compiler-main-v20220502.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-7F9PqbsQeH4xxX0tdPqSmZyaTo/MwiDhMUhsvcY461w="
+    },
+    {
       "mvn-path": "com/google/javascript/closure-compiler-main/v20230802/closure-compiler-main-v20230802.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-xchbVGIcwXAKcFg5OtoTa+GKdC8AY6jRg351j/37QfY="
     },
     {
+      "mvn-path": "com/google/javascript/closure-compiler-parent/v20220502/closure-compiler-parent-v20220502.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-6L656nzyQchrdH9r55W/fsGQ6okKjDyJLpj/TbwehJY="
+    },
+    {
       "mvn-path": "com/google/javascript/closure-compiler-parent/v20230802/closure-compiler-parent-v20230802.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-xWtaS/2dPJCpZr6NA6tkgO7NdBMyRXMv2Q8bPCJf4R8="
+    },
+    {
+      "mvn-path": "com/google/javascript/closure-compiler-unshaded/v20220502/closure-compiler-unshaded-v20220502.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-WQx5QFep/7SBikqg0UD5G8GqCv57QhtijJV+wXMtmk0="
+    },
+    {
+      "mvn-path": "com/google/javascript/closure-compiler-unshaded/v20220502/closure-compiler-unshaded-v20220502.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-M2wDJLOXG4JktHHYZNSBH0X3IQi7MWCi87DSzdwK4MY="
     },
     {
       "mvn-path": "com/google/javascript/closure-compiler-unshaded/v20230802/closure-compiler-unshaded-v20230802.jar",
@@ -625,6 +732,11 @@
       "mvn-path": "commons-codec/commons-codec/1.11/commons-codec-1.11.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-wecUDR3qj981KLwePFRErAtUEpcxH0X5gGwhPsPumhA="
+    },
+    {
+      "mvn-path": "commons-codec/commons-codec/1.12/commons-codec-1.12.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-I99Y+unIPRvNJ3uZ+UKenYwTTwYAtz4uhrI4XteTyB4="
     },
     {
       "mvn-path": "commons-codec/commons-codec/1.12/commons-codec-1.12.pom",
@@ -762,6 +874,16 @@
       "hash": "sha256-+yb7uKcebqzMaUdiSNSQrWKtXKxEmqpvi2o6bRW0RoM="
     },
     {
+      "mvn-path": "insn/insn/0.5.2/insn-0.5.2.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-n6t9hk+ogtoP9yv+8ctdSxKRJPg0KVJhGYMNVmQB3zk="
+    },
+    {
+      "mvn-path": "insn/insn/0.5.2/insn-0.5.2.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-ID+WmZJwrx65tlWOhylt40no6d1x4AJJH653mcOvaU0="
+    },
+    {
       "mvn-path": "instaparse/instaparse/1.4.12/instaparse-1.4.12.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-E594v/J48bLZgE14WRHSNFHlvLBCWA7K3sRADOtV3s0="
@@ -805,6 +927,16 @@
       "mvn-path": "io/undertow/undertow-parent/2.3.10.Final/undertow-parent-2.3.10.Final.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-tFTJn/nVuMaSbzEMvP2pN8PS1j0haZ6nE5dcfoRvAKI="
+    },
+    {
+      "mvn-path": "it/unimi/dsi/fastutil-core/8.5.8/fastutil-core-8.5.8.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-kzd8lW4A3XphCNE94GeZpWte2pWn47QUGgid/XVUkd4="
+    },
+    {
+      "mvn-path": "it/unimi/dsi/fastutil-core/8.5.8/fastutil-core-8.5.8.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-L6jSY7LefSHwf6e6cCp5Ui9Zd50TJJ5VQQDuXFcRD6A="
     },
     {
       "mvn-path": "it/unimi/dsi/fastutil/8.3.0/fastutil-8.3.0.jar",
@@ -902,6 +1034,11 @@
       "hash": "sha256-/jSrgs700JyDFCohcxafaOxDfpS4ysyqWKa5g/RelE4="
     },
     {
+      "mvn-path": "medley/medley/1.3.0/medley-1.3.0.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-Mxqk/EXddj1j66qFXJAZxBPMI0qw402OnP+Id0Gbk8E="
+    },
+    {
       "mvn-path": "medley/medley/1.4.0/medley-1.4.0.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-TPIRabvctGuZ531Am+63v9GqNmCIUodXQky5l9SW81U="
@@ -940,6 +1077,16 @@
       "mvn-path": "metosin/muuntaja/0.6.8/muuntaja-0.6.8.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-pOKMydh8sWSV4JAgpctfTqjwZfgCAnR9kb+mRpY+6t8="
+    },
+    {
+      "mvn-path": "net/cgrand/macrovich/0.2.0/macrovich-0.2.0.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-6gdZEjM/nqP40CWa3Fls6vAJTYyGJ45ImSnD5pl4znU="
+    },
+    {
+      "mvn-path": "net/cgrand/macrovich/0.2.0/macrovich-0.2.0.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-eJZwv8mcMp2YLbFQGT48VScindycRHCJw51apOfxtNw="
     },
     {
       "mvn-path": "net/cgrand/macrovich/0.2.1/macrovich-0.2.1.jar",
@@ -1472,6 +1619,26 @@
       "hash": "sha256-d1t6425iggs7htwao5rzfArEuF/0j3/khakionkPRrk="
     },
     {
+      "mvn-path": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-qCfEkYPzpjInfSegpGc2hss0FQdEe51XAmEJS9dIqmg="
+    },
+    {
+      "mvn-path": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-KbqcXOGpS3AL2CPE7WEvWCe1kPGaSXdf1+uPmX+Ko3E="
+    },
+    {
+      "mvn-path": "org/clj-commons/primitive-math/1.0.0/primitive-math-1.0.0.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-jf43Wpf+4h86ri7BjxNoQVQNzyOUAIzUv6hTA39pXK4="
+    },
+    {
+      "mvn-path": "org/clj-commons/primitive-math/1.0.0/primitive-math-1.0.0.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-v10eGdhEPOwecFfDEJu78iLmKYzOq8MPjfz18e7/bzQ="
+    },
+    {
       "mvn-path": "org/clojure/clojure/1.10.3/clojure-1.10.3.jar",
       "mvn-repo": "https://repo1.maven.org/maven2/",
       "hash": "sha256-fxJHLa7Y9rUXSYqqKrE6ViR1w+31FHjkWBzHYemJeaM="
@@ -1510,6 +1677,16 @@
       "mvn-path": "org/clojure/clojurescript/1.11.132/clojurescript-1.11.132.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-P/01QSpDDIx0FX5fIzu6zESw+qfVcPLeaWAbFvLsalc="
+    },
+    {
+      "mvn-path": "org/clojure/clojurescript/1.11.51/clojurescript-1.11.51.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-1OawkZ64DYR+PnsHwUhN31EnKv4C5WcUcT/pe1+8Fx4="
+    },
+    {
+      "mvn-path": "org/clojure/clojurescript/1.11.51/clojurescript-1.11.51.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-6hMGtK+OR0befcBDNuNqddas3T5A+PluRiTN3WrCSCA="
     },
     {
       "mvn-path": "org/clojure/core.async/1.5.648/core.async-1.5.648.jar",
@@ -1622,6 +1799,16 @@
       "hash": "sha256-8T2ZaEbW16cCQ2JlqjhjKmdGkgJaQYpWaVxQKBPd2ng="
     },
     {
+      "mvn-path": "org/clojure/data.csv/1.0.0/data.csv-1.0.0.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-khcKPKULbI2QMi3er0YvyzyDzULeyW24XyFzxQJ2UZA="
+    },
+    {
+      "mvn-path": "org/clojure/data.csv/1.0.0/data.csv-1.0.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-JaOXio9lS2BC7sqK+qxI9NeWEXrdLtEAi9JxtELmKI8="
+    },
+    {
       "mvn-path": "org/clojure/data.csv/1.0.1/data.csv-1.0.1.jar",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-gTpWu971A7Y1CswhrG9/YKLF2wi+wQpF60uRfmbtE04="
@@ -1630,6 +1817,11 @@
       "mvn-path": "org/clojure/data.csv/1.0.1/data.csv-1.0.1.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-1cESYLiumGM6l3FThM8ENeAknrIhTi7VPaTMGMkToAE="
+    },
+    {
+      "mvn-path": "org/clojure/data.json/1.0.0/data.json-1.0.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-FIwv5rXvLug2zwbzgn3z6pQrFDYpP76KbRjXQcdbOKA="
     },
     {
       "mvn-path": "org/clojure/data.json/2.4.0/data.json-2.4.0.jar",
@@ -1672,6 +1864,16 @@
       "hash": "sha256-r27O5bMSGWJukB2Gja+zp/raf7xHaOrvDnvngPOtstI="
     },
     {
+      "mvn-path": "org/clojure/google-closure-library-third-party/0.0-20211011-0726fdeb/google-closure-library-third-party-0.0-20211011-0726fdeb.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-/FNsq/SBL0h93J70nHuIdoznIm4DoAbBgrpJ6ykgiFo="
+    },
+    {
+      "mvn-path": "org/clojure/google-closure-library-third-party/0.0-20211011-0726fdeb/google-closure-library-third-party-0.0-20211011-0726fdeb.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-TJdXE8WPrjKHZxAbUWZsk8k5/8uDLiwQ+xjEUOPGQmA="
+    },
+    {
       "mvn-path": "org/clojure/google-closure-library-third-party/0.0-20230227-c7c0a541/google-closure-library-third-party-0.0-20230227-c7c0a541.jar",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-akOBHiEML+UDsZZeJxm3h7gqfNbVIB0wN3/37BbZaUo="
@@ -1680,6 +1882,16 @@
       "mvn-path": "org/clojure/google-closure-library-third-party/0.0-20230227-c7c0a541/google-closure-library-third-party-0.0-20230227-c7c0a541.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-dhVz7jVV7/WzITGoKz7ul+l3tR+XvnR6TKhDwupC8FU="
+    },
+    {
+      "mvn-path": "org/clojure/google-closure-library/0.0-20211011-0726fdeb/google-closure-library-0.0-20211011-0726fdeb.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-KjPFSw8nqZPRjcBeGXuRRyw8kIIA4NDYISm94QexZOI="
+    },
+    {
+      "mvn-path": "org/clojure/google-closure-library/0.0-20211011-0726fdeb/google-closure-library-0.0-20211011-0726fdeb.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-xLwwLiNcKsr4EXURo9sOO50S6mqBKdlauJJ7m6iIYJg="
     },
     {
       "mvn-path": "org/clojure/google-closure-library/0.0-20230227-c7c0a541/google-closure-library-0.0-20230227-c7c0a541.jar",
@@ -1850,6 +2062,16 @@
       "mvn-path": "org/clojure/tools.logging/0.5.0/tools.logging-0.5.0.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-230HS84slEV+bsKwUSg+Typ4oayhZNhPjYFhelVCkZ0="
+    },
+    {
+      "mvn-path": "org/clojure/tools.logging/1.1.0/tools.logging-1.1.0.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-ZTEN++LnNziP8KllagxxmuNkU1w88dlpOuGjYXf8X3Q="
+    },
+    {
+      "mvn-path": "org/clojure/tools.logging/1.1.0/tools.logging-1.1.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-C4+IR3G2LL7q02f6F2FxV5oEzIIUG7XTzam+wpPwciQ="
     },
     {
       "mvn-path": "org/clojure/tools.logging/1.2.4/tools.logging-1.2.4.jar",
@@ -2232,36 +2454,6 @@
       "hash": "sha256-g2Bpyp6O48VuSDdiItopEmPxN70/0W2E/dR+/MPyhuI="
     },
     {
-      "mvn-path": "org/junit/jupiter/junit-jupiter-api/5.7.1/junit-jupiter-api-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-1Vvisj13FDKXB3IEMgey5mpnJK4CvVGStyFuS3AbxiM="
-    },
-    {
-      "mvn-path": "org/junit/jupiter/junit-jupiter-engine/5.7.1/junit-jupiter-engine-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-gRF+OjoCDf3W8wkcXseU0stJhAcxrPQogxxWmQEvTLs="
-    },
-    {
-      "mvn-path": "org/junit/jupiter/junit-jupiter-params/5.7.1/junit-jupiter-params-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-UIPD5bw9OhjVY6M0fVPi3f35ONdh60TbsL9PQgX+6Sw="
-    },
-    {
-      "mvn-path": "org/junit/jupiter/junit-jupiter/5.7.1/junit-jupiter-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-YLUGfK3Mb/tfqS6OJJiKgMbDYEaPJj0mmLKIHI4PfJE="
-    },
-    {
-      "mvn-path": "org/junit/platform/junit-platform-commons/1.7.1/junit-platform-commons-1.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-t8GENMTUsn5yO9SKr5ercK7IwMra1MFTkvvdFEykpQo="
-    },
-    {
-      "mvn-path": "org/junit/platform/junit-platform-engine/1.7.1/junit-platform-engine-1.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-dmAvWZVKo9+mjjHIDKibb7ouoAG0+wbLUfoV6tfIWjA="
-    },
-    {
       "mvn-path": "org/kohsuke/pom/14/pom-14.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-FQ9F/ISliYf7KGU9+SntI5krV0Y24HoLPmXsu+LT7oM="
@@ -2275,6 +2467,16 @@
       "mvn-path": "org/msgpack/msgpack/0.6.12/msgpack-0.6.12.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-lEl9jwL43oFZpbfVE24BD1f12axliGES7O2GlcUFbe4="
+    },
+    {
+      "mvn-path": "org/ow2/asm/asm/9.0/asm-9.0.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-Dfl1dJFK7pL9NJ0MtOAPM0XUWywjngu1DwqQ6tR4iOA="
+    },
+    {
+      "mvn-path": "org/ow2/asm/asm/9.0/asm-9.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-3gNVWQ3Rv8zNyNeQJK6ZKXLoVSaKztua1oLQheA6lK0="
     },
     {
       "mvn-path": "org/ow2/asm/asm/9.2/asm-9.2.jar",
@@ -2292,6 +2494,16 @@
       "hash": "sha256-D4obEW52C4/mOJxRuE5LB6cPwRCC1Pk25FO1g91QtDs="
     },
     {
+      "mvn-path": "org/roaringbitmap/RoaringBitmap/0.9.0/RoaringBitmap-0.9.0.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-E2ZU+QMXWmEuMMZ/NvqXVVLtR1VsYbMJkWvSu8d96pQ="
+    },
+    {
+      "mvn-path": "org/roaringbitmap/RoaringBitmap/0.9.0/RoaringBitmap-0.9.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-aJR2e+FkDD7+IKLfoff76nVIav/2h2yaaofbQvpcFXw="
+    },
+    {
       "mvn-path": "org/roaringbitmap/RoaringBitmap/0.9.25/RoaringBitmap-0.9.25.jar",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-c/jiT2NqG6ZQneysu1YFyDPrXq1ts5cXIv/MJUOz45M="
@@ -2300,6 +2512,16 @@
       "mvn-path": "org/roaringbitmap/RoaringBitmap/0.9.25/RoaringBitmap-0.9.25.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-z17GLVqzwo+OVHBPgP3ZNDvKr3HC2SGWkBqVqkiFs9Y="
+    },
+    {
+      "mvn-path": "org/roaringbitmap/shims/0.9.0/shims-0.9.0.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-dA9WoUa1ggorP9JrpkYGS7mXBfqYY2jmJf4dTFHoALA="
+    },
+    {
+      "mvn-path": "org/roaringbitmap/shims/0.9.0/shims-0.9.0.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-TLeQqxftMV3pY8fX4bzqA9DhKQHD9B5kPquGAzRP/fM="
     },
     {
       "mvn-path": "org/roaringbitmap/shims/0.9.25/shims-0.9.25.jar",
@@ -2387,6 +2609,36 @@
       "hash": "sha256-5uGiImN0fokpANH1Aj4dDf6LFtZe/shy8gV3oGl+01c="
     },
     {
+      "mvn-path": "org/xerial/larray/larray-buffer/0.4.1/larray-buffer-0.4.1.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-UqUnKmXPw24p3rfV/UUhlYKaJ1nFg+/cRggXR7CDdY0="
+    },
+    {
+      "mvn-path": "org/xerial/larray/larray-buffer/0.4.1/larray-buffer-0.4.1.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-G0OoAJmdB/Y2AVGmJiZv1n9VWI0cW4o9OyvYKL4RSUU="
+    },
+    {
+      "mvn-path": "org/xerial/larray/larray-mmap/0.4.1/larray-mmap-0.4.1.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-o8wN71698lc5zqxqpohzV13KBcy8NJ073x/AaSIw1Ls="
+    },
+    {
+      "mvn-path": "org/xerial/larray/larray-mmap/0.4.1/larray-mmap-0.4.1.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-OHrgA3P2W31jN3ba2//Lbo4govEqxh1rPpAGSPfuKus="
+    },
+    {
+      "mvn-path": "pl/edu/icm/JLargeArrays/1.5/JLargeArrays-1.5.jar",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-bcpasj4f25GQolfARoep6hkRHDa27JR4vOayoSjKGus="
+    },
+    {
+      "mvn-path": "pl/edu/icm/JLargeArrays/1.5/JLargeArrays-1.5.pom",
+      "mvn-repo": "https://repo.maven.apache.org/maven2/",
+      "hash": "sha256-LWIBDpiLwiRk/6gN5/RBOwhT023cosYAfXvGr967vJ0="
+    },
+    {
       "mvn-path": "potemkin/potemkin/0.4.5/potemkin-0.4.5.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-KzZsg02Hy26mMbpoaXvDdNDRr4H23rQsKECUTaMgvZk="
@@ -2457,11 +2709,6 @@
       "hash": "sha256-SZCg3bNUDE1Ed6GtqP1mP62RSRScmaYGL7/XSKXwGJo="
     },
     {
-      "mvn-path": "ring/ring-codec/1.1.2/ring-codec-1.1.2.pom",
-      "mvn-repo": "https://repo.clojars.org/",
-      "hash": "sha256-sl/LVYL/wFWem+BnzQXP13SAm5IocZz8HqVojsnKH+c="
-    },
-    {
       "mvn-path": "ring/ring-codec/1.1.3/ring-codec-1.1.3.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-1RhzW6kF6trinozd/Nc0f9LxnI4Y9DNNS5KbKS3f3yo="
@@ -2525,6 +2772,16 @@
       "mvn-path": "tech/tablesaw/tablesaw-parent/0.43.1/tablesaw-parent-0.43.1.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-VX8IP5FuXZWDfFW1oEl06Bwr7uDkAv/Z7H+8/8FXkZ0="
+    },
+    {
+      "mvn-path": "techascent/tech.resource/5.07/tech.resource-5.07.jar",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-UJfczqA4o28YVaFF2Vj5U9UZwvu8SZXuP4FSlQ1UbCI="
+    },
+    {
+      "mvn-path": "techascent/tech.resource/5.07/tech.resource-5.07.pom",
+      "mvn-repo": "https://repo.clojars.org/",
+      "hash": "sha256-Qzbpb6UnNqc//IXcBi2CJHzMChNdxCjoYonqaHnxbtM="
     },
     {
       "mvn-path": "thheller/shadow-client/1.3.3/shadow-client-1.3.3.jar",
