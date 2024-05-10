@@ -1,11 +1,17 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-    opengen.url = "github:OpenGen/nix";
-    systems.url = "github:nix-systems/default";
-    clj-nix.url = "github:jlesquembre/clj-nix";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
+    };
+    opengen = {
+      url = "github:OpenGen/nix";
+      inputs.flake-parts.follows = "flake-parts";
+    };
+    systems.url = "github:nix-systems/default";
+    clj-nix = {
+      url = "github:jlesquembre/clj-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
