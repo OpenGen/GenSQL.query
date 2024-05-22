@@ -3,6 +3,7 @@
             [clojure.java.browse :as browse]
             [clojure.string :as str]
             [criterium.core :as crit]
+            [gensql.query.perf.synthetic :as synthetic]
             [gensql.query.strict :as strict]
             [medley.core :as medley]))
 
@@ -51,6 +52,11 @@
   ;; information between two categorical column variables with a deterministic
   ;; computation. Currently, the Monte Carlo approximation is the only way to
   ;; do that.
+
+  ;; MD: Part of the goal is to compare the approx MC MI with the analytic MI,
+  ;; once the analytic MI computation is in place. 2024-05-23
+
+  ;; See https://www.notion.so/chi-mit/What-and-how-to-benchmark-187b69403577409ab291787b0d095154?pvs=4#91a25358ea934886b007dd303760e49b
   (str "SELECT APPROXIMATE MUTUAL INFORMATION OF VAR " categorical-col-1
        " WITH VAR " categorical-col-2
        " UNDER " model
@@ -152,3 +158,35 @@
      (prof/serve-ui 8080)
      (when open-browser
        (browse/browse-url "http://localhost:8080")))))
+
+(defn ^:private synthetic-density-event
+  [column-types col-format i]
+  (str "VAR " (format col-format i)
+       " = "
+       (let [col (nth column-types i)]
+         (if (= :categorical (:type col))
+           (str "'" (-> col :values first) "'")
+           50))))
+
+(defn synthetic-test-suite
+  "Generates a synthetic database, with models and data, and crafts
+  appropriate queries to run on them"
+  [opts]
+  (let [db (synthetic/generate-db opts)
+        column-types (:synthetic/column-types db)
+        {cat-cols :categorical gauss-cols :gaussian} (group-by :type column-types)
+        col-format (synthetic/numbered-format synthetic/col-prefix (count column-types))
+        col-0-str (format col-format 0)
+
+        q-opts {:table                   synthetic/*default-table-name*
+                :model                   synthetic/*default-model-name*
+                :col-vars                (map #(str "VAR " (:name %)) (drop 2 column-types))
+                :conditioned-density-evt (synthetic-density-event column-types col-format 0)
+                :categorical-col-1       (:name (nth cat-cols 0))
+                :categorical-col-2       (:name (nth cat-cols 1))
+                :gen-join-density-evt    (str "VAR " col-0-str " = " col-0-str)
+                :prob-density-evt        (synthetic-density-event column-types col-format 1)}]
+    {:db      db
+     :queries (default-queries q-opts)}))
+
+
