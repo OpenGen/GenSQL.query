@@ -7,7 +7,7 @@
             [gensql.query.strict :as strict]
             [medley.core :as medley]))
 
-(def ^:dynamic *default-limit* 10000)
+(def ^:dynamic *default-limit* 1000)
 
 (defn- str-listify
   [x]
@@ -105,12 +105,15 @@
   - opts - a map of options
 
   Options map
+  - quick? - whether to use quick-benchmark or benchmark (default: true)
+  - return-results? - whether to return all results - can lead to OOM errors if true (default: false)
   - print? - whether to print out results (default: true)"
   ([db queries]
    (benchmark db queries {}))
-  ([db queries {:keys [print? quick?]
-                :or {print? true
-                     quick? true}
+  ([db queries {:keys [return-results? print? quick?]
+                :or {return-results? false
+                     print?          true
+                     quick?          true}
                 :as opts}]
    (let [queries (if (string? queries) {:query queries} queries)
          criterium-bench (if quick? crit/quick-benchmark* crit/benchmark*)
@@ -119,18 +122,24 @@
                  (when print?
                    (if quick?
                      (println "\nQuick-benchmarking query:" query)
-                     (println "\nBenchmarking query:" query)))
+                     (println "\nBenchmarking query:" query))
+                   (when-not return-results?
+                     (println "Not returning results.")))
                  (criterium-bench
                    ;; doall forces all lazy results to be realized during benchmarking
-                   (fn [] (doall (strict/q query db)))
-                   {}))
+                   (fn []
+                     (let [results (doall (strict/q query db))]
+                       (if return-results?
+                         (doall (strict/q query db))
+                         (dorun (strict/q query db)))))
+                   {:warmup-jit-period 0}))
          bmark-results (update-vals queries bmark)]
-     (medley/map-kv (fn [query-k bmark-result]
-                      (when print?
-                        (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                        (println (str "Results for \"" (get queries query-k) "\":")))
-                      (crit/report-result bmark-result))
-                    bmark-results)
+     (dorun (medley/map-kv (fn [query-k bmark-result]
+                             (when print?
+                               (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                               (println (str "Results for \"" (get queries query-k) "\":")))
+                             (crit/report-result bmark-result))
+                           bmark-results))
      bmark-results)))
 
 (defn profile
