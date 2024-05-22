@@ -7,8 +7,10 @@
             [clojure.repl :as repl]
             [clojure.string :as string]
             [clojure.tools.cli :as cli]
+            [gensql.query.cli :as query.cli]
             [gensql.query.db :as db]
             [gensql.query.io :as io]
+            [gensql.query.log :as query.log]
             [gensql.query.permissive :as permissive]
             [gensql.query.relation :as relation]
             [gensql.query.strict :as strict])
@@ -17,22 +19,18 @@
 (def output-formats #{"csv" "table"})
 (def langs #{"permissive" "strict"})
 
-(defn parse-named-pair
-  [s]
-  (when-let [[_ name path] (re-matches #"([^=]+)=([^=]+)" s)]
-    {name path}))
 
 (def cli-options
   [["-t" "--table NAME=PATH" "table CSV name and path"
     :multi true
     :default []
     :update-fn conj
-    :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
+    :validate [query.cli/parse-named-pair "Must be of the form: NAME=PATH"]]
    ["-m" "--model NAME=PATH" "model EDN name and path"
     :multi true
     :default []
     :update-fn conj
-    :validate [parse-named-pair "Must be of the form: NAME=PATH"]]
+    :validate [query.cli/parse-named-pair "Must be of the form: NAME=PATH"]]
    ["-d" "--db PATH" "database path"]
    ["-l" "--lang LANG" "query language"
     :default "strict"
@@ -42,22 +40,11 @@
     :validate [output-formats (str "Must be one of: " (string/join ", " output-formats))]]
    ["-h" "--help"]])
 
-(defn print-exception
-  [e]
-  (binding [*out* *err*
-            *print-length* 10
-            *print-level* 4]
-    (if-let [parse-failure (:instaparse/failure (ex-data e))]
-      (clojure/print parse-failure)
-      (if-let [ex-message (ex-message e)]
-        (clojure/println ex-message)
-        (repl/pst e)))))
-
 (defn print-table
   "Prints the results of an GenSQL query to the console as a table."
   [result]
   (if (instance? Exception result)
-    (print-exception result)
+    (query.log/print-exception result)
     (let [columns (relation/attributes result)
           header-row (map name columns)
           cells (for [row result]
@@ -71,7 +58,7 @@
   "Prints the results of an GenSQL query to the console as a CSV."
   [result]
   (if (instance? Exception result)
-    (print-exception result)
+    (query.log/print-exception result)
     (let [v (relation/->vector result)]
       (csv/write-csv *out* v)
       (flush))))
@@ -100,13 +87,6 @@
                       :print wrapped-print]]
     (apply main/repl repl-options)))
 
-(defn errorln
-  "Like `clojure.core/println`, but prints to `clojure.core/*err*` instead of
-  `clojure.core/*out*`."
-  [& args]
-  (binding [*out* *err*]
-    (apply println args)))
-
 (defn -main
   "Main function for the GenSQL command-line application. Intended to be run
   with clj -m. Run with -h or --help for more information."
@@ -120,10 +100,10 @@
                 nil print-table)]
     (cond (seq errors)
           (doseq [error errors]
-            (errorln error))
+            (query.log/errorln error))
 
           help
-          (errorln summary)
+          (query.log/errorln summary)
 
           :else
           (let [swap-in (fn [s]
@@ -131,13 +111,13 @@
                             *in*
                             s))
                 models (-> (into {}
-                                 (map parse-named-pair)
+                                 (map query.cli/parse-named-pair)
                                  models)
                            (update-keys symbol)
                            (update-vals swap-in)
                            (update-vals io/slurp-model))
                 tables (-> (into {}
-                                 (map parse-named-pair)
+                                 (map query.cli/parse-named-pair)
                                  tables)
                            (update-keys symbol)
                            (update-vals swap-in)
