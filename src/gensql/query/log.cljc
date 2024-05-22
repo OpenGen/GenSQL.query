@@ -1,4 +1,5 @@
-(ns gensql.query.log)
+(ns gensql.query.log
+  (:require [clojure.repl :as repl]))
 
 (defn spy-tap>
   "Like tap>, but returns what's passed in, so can be used inline.
@@ -23,3 +24,21 @@
   ;; tapset is annoyingly private (and Clojure lacks this functionality), so we
   ;; have to use intern to bypass that
   (intern 'clojure.core 'tapset (atom #{})))
+
+(defn print-exception
+  [e]
+  (binding [*out* *err*
+            *print-length* 10
+            *print-level* 4]
+    (if-let [parse-failure (:instaparse/failure (ex-data e))]
+      (print parse-failure)
+      (if-let [ex-message (ex-message e)]
+        (println ex-message)
+        (repl/pst e)))))
+
+(defn errorln
+  "Like `clojure.core/println`, but prints to `clojure.core/*err*` instead of
+  `clojure.core/*out*`."
+  [& args]
+  (binding [*out* *err*]
+    (apply println args)))
