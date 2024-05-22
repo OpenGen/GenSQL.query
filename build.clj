@@ -13,6 +13,21 @@
 (defn clean [_]
   (build/delete {:path "target"}))
 
+(defn uber-perf [_]
+  (clean nil)
+  (let [uber-file (format "target/%s-perf-%s-standalone.jar" (name lib) version)
+        perf-basis (build/create-basis {:project "deps.edn"
+                                        :aliases [:perf]})]
+    (build/copy-dir {:src-dirs   ["src" "perf" "resources"]
+                     :target-dir class-dir})
+    (build/compile-clj {:basis      perf-basis
+                        :ns-compile '[gensql.query.perf.main]
+                        :class-dir  class-dir})
+    (build/uber {:class-dir class-dir
+                 :uber-file uber-file
+                 :basis     perf-basis
+                 :main      'gensql.query.perf.main})))
+
 (defn uber [_]
   (clean nil)
   (build/copy-dir {:src-dirs ["src" "resources"]
