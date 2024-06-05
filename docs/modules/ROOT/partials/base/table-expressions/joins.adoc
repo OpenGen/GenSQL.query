@@ -6,7 +6,7 @@ Join expressions combine columns from two tables into a new table.
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 satellites CROSS JOIN launch_sites
 ----
@@ -16,7 +16,7 @@ satellites CROSS JOIN launch_sites
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 satellites INNER JOIN launch_sites
 ON satellites.Launch_Site = launch_sites.Launch_Site

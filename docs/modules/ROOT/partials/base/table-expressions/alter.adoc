@@ -5,7 +5,7 @@ The `+ALTER+` expression evaluates to the a copy of a table with a new empty col
 .Retrieve the `+satellites+` table with a new column added
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 ALTER satellites ADD Swath
 ----

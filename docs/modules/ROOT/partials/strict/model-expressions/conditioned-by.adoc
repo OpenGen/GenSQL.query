@@ -3,7 +3,7 @@
 .Compute the probability density of a model variable after conditioning on another variable
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   PROBABILITY DENSITY OF VAR Apogee_km < 1000
@@ -16,7 +16,7 @@ FROM satellites_model
 .Compute the probability density of a model variable after conditioning on all other variables except one
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   PROBABILITY DENSITY OF VAR Apogee_km < 1000

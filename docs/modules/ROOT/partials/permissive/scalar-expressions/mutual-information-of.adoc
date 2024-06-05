@@ -2,7 +2,7 @@
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   MUTUAL INFORMATION OF Apogee_km < 1000
@@ -14,7 +14,7 @@ FROM satellites
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   MUTUAL INFORMATION OF Apogee_km

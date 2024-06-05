@@ -5,7 +5,7 @@ The `+INSERT INTO+` statement inserts a table into a table.
 .Insert two rows into the `+satellites+` table
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 INSERT INTO satellites
 (Users, Apogee_km, Perigee_km) VALUES

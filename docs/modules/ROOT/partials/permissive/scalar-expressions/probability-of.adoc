@@ -2,7 +2,7 @@
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT PROBABILITY OF Period_minutes UNDER satellites_model
 ----

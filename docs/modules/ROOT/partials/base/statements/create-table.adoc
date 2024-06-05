@@ -5,7 +5,7 @@ The `+CREATE TABLE+` statement assigns a name to a table so it can be referenced
 .Assign a name to a <<VALUES,table literal>>
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 CREATE TABLE launch_sites AS
 (Launch_Site, State) VALUES

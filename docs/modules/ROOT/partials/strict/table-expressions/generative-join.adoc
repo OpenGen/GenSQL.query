@@ -4,7 +4,7 @@ The `+GENERATIVE JOIN+` expression evaluates to a table by combining a model and
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 satellites GENERATIVE JOIN satellites_model CONDITIONED BY VAR Users = Users AND VAR Apogee_km = Apogee_km AND  VAR Perigee_km = Perigee_km
 ----

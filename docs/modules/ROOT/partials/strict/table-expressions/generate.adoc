@@ -7,7 +7,7 @@ WARNING: The tables returned by `+GENERATE+` are infinite. A query comprised of 
 .Generate 10 rows of three columns from the model
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT *
 FROM
@@ -23,7 +23,7 @@ LIMIT 10
 .Generate 10 rows containing almost all columns from the model, but excluding 2
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT *
 FROM
