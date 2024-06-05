@@ -106,8 +106,8 @@
 
   Options map
   - quick? - whether to use quick-benchmark or benchmark (default: true)
-  - return-results? - whether to return all results - can lead to OOM errors if true (default: false)
-  - print? - whether to print out results (default: true)"
+  - return-results? - whether to return the results of the benchmarked fn - can lead to OOM errors if true (default: false)
+  - print? - whether to print out benchmark info (default: true)"
   ([db queries]
    (benchmark db queries {}))
   ([db queries {:keys [return-results? print? quick?]
@@ -122,9 +122,7 @@
                  (when print?
                    (if quick?
                      (println "\nQuick-benchmarking query:" query)
-                     (println "\nBenchmarking query:" query))
-                   (when-not return-results?
-                     (println "Not returning results.")))
+                     (println "\nBenchmarking query:" query)))
                  (criterium-bench
                    ;; doall forces all lazy results to be realized during benchmarking
                    (fn []

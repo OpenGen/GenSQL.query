@@ -39,6 +39,7 @@
    [nil  "--dry-run" "Will set up, load, and run each query once, but will not benchmark/profile"
     :id :dry-run?
     :default false]
+   ["-o" "--output-file FILE" "File to write results to."]
    ["-h" "--help"]
 
    ;; Synthetic options
@@ -109,12 +110,39 @@
                  (reduce-kv db/with-model % models))]
     db))
 
+(defn ^:private synthetic-options-str
+  [{:keys [num-rows num-columns p-categorical num-views
+           num-clusters-per-view m r s nu categorical-alpha
+           local-alpha global-alpha]}]
+  (str "Perf run num-rows=" num-rows
+       " num-columns=" num-columns
+       " num-views=" num-views
+       " num-clusters-per-view=" num-clusters-per-view
+       " p-categorical=" p-categorical
+       " m=" m
+       " r=" r
+       " s=" s
+       " nu=" nu
+       " categorical-alpha=" categorical-alpha
+       " local-alpha=" local-alpha
+       " global-alpha=" global-alpha))
+
+(defn ^:private save-results
+  [results output-file options]
+  (if (seq results)
+    (let [results (if (map? results)
+                    (assoc results :cli-options options)
+                    results)]
+      (spit (or output-file
+                (str (synthetic-options-str options) ".edn"))
+            (pr-str results)))
+    (println "No results returned. Nothing to save.")))
 
 (defn -main
   [& args]
   (let [start (System/currentTimeMillis)
         {:keys [options errors summary]} (cli/parse-opts args cli-options)
-        {:keys [db help synthetic? models tables type query dry-run?]} options]
+        {:keys [db help synthetic? models tables type query dry-run? output-file]} options]
 
     (cond (seq errors)
           (doseq [error errors]
@@ -123,7 +151,7 @@
           help
           (println summary)
 
-          (and synthetic? (or models tables))
+          (and synthetic? (or (seq models) (seq tables)))
           (do
             (query.log/errorln "Cannot currently combine synthetic and real tables/models.")
             (println summary))
@@ -145,10 +173,15 @@
                                                   :num-clusters-per-view :m :r :s :nu :categorical-alpha
                                                   :local-alpha :global-alpha])
                     _ (println "Synthetic suite options:" (pr-str test-suite-opts))
-                    {:keys [db queries]} (perf/synthetic-test-suite test-suite-opts)]
-                (perf-fn db queries))
+                    {:keys [db queries]} (perf/synthetic-test-suite test-suite-opts)
+                    results (perf-fn db queries)]
+                (let [output-file (or output-file (str (synthetic-options-str options) ".edn"))]
+                  (save-results results output-file options)))
+
               (let [db (load-db models tables db)
-                    queries {:query query}]
-                (perf-fn db queries)))))
+                    queries {:query query}
+                    results (perf-fn db queries)]
+                (when output-file
+                  (save-results results output-file options))))))
 
     (println (str "\nTotal execution time: " (/ (- (System/currentTimeMillis) start) 1000.0) " seconds."))))
