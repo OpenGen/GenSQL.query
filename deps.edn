@@ -38,7 +38,9 @@
                                   "--compile" "gensql.query.js"]}
            :perf {:extra-paths ["perf"]
                   :extra-deps {com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.2.0"}
-                               criterium/criterium {:mvn/version "0.4.6"}}
+                               criterium/criterium {:mvn/version "0.4.6"}
+                               babashka/fs {:mvn/version "0.5.21"}
+                               org.clojure/data.json {:mvn/version "2.5.0"}}
                   :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
 
            :coverage
