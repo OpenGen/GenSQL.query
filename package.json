@@ -27,6 +27,7 @@
     "shadow-cljs": "^2.27.5"
   },
   "dependencies": {
-    "memoizee": "^0.4.15"
+    "memoizee": "^0.4.15",
+    "vega-lite": "^5.18.1"
   }
 }
