@@ -2,7 +2,7 @@
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   PROBABILITY OF VAR Users = "Military"

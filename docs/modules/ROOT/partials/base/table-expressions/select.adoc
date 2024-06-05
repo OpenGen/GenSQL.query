@@ -6,7 +6,7 @@ The `+SELECT+` expression evaluates a <<Scalar expressions,scalar expression>> i
 .Retrieving an entire table
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT * FROM satellites
 ----
@@ -15,7 +15,7 @@ SELECT * FROM satellites
 .Retrieve a subset of a table's columns
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT Users, Apogee_km, Perigee_km FROM satellites
 ----
@@ -24,7 +24,7 @@ SELECT Users, Apogee_km, Perigee_km FROM satellites
 .Exclude a subset of a table's columns
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT * EXCEPT Contractor, Country_of_Operator FROM satellites
 ----

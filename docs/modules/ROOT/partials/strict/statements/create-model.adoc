@@ -4,7 +4,7 @@ The `+CREATE MODEL+` statement assigns a name to a model so it can be referenced
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 CREATE MODEL military_model AS model CONDITIONED BY VAR Users = "Military"!
 ----

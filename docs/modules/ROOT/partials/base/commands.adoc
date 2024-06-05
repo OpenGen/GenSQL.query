@@ -13,7 +13,7 @@ The `+.import+` command creates a table from a `+.csv+` file.
 .Import a table from a `+.csv+` file
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 .import /path/to/satellites.csv satellites
 ----
@@ -26,7 +26,7 @@ The `+.export+` command writes a table to disk as a `+.csv+` file.
 .Export a table to a `+.csv+` file
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 .export /path/to/satellites.csv satellites
 ----

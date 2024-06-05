@@ -5,7 +5,7 @@ The `+UPDATE+` statement modifies the contents of a table in the database.
 .Rename a launch site
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 UPDATE satellites
 SET Launch_Site = "Majestic Cape Canaveral"

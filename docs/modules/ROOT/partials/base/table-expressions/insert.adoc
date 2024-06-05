@@ -5,7 +5,7 @@ The `+INSERT+` expression evaluates to a new table with additional values.
 .Retrieve the `+satellites+` table with two rows inserted
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 INSERT INTO satellites
 (Users, Apogee_km, Perigee_km) VALUES

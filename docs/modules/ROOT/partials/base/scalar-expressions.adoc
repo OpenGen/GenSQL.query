@@ -44,7 +44,7 @@ Basic arithmetic like multiplication, subtraction, addition, and division can be
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
 ----
@@ -54,7 +54,7 @@ SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT PROBABILITY DENSITY OF VAR Apogee_km < 1000
 UNDER model CONDITIONED BY VAR Users = "Military"

@@ -4,7 +4,7 @@ The `+DROP TABLE+` statement removes a table from the database.
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 DROP TABLE satellites!
 ----

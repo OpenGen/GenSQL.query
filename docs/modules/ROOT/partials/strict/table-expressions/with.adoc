@@ -4,7 +4,7 @@ The `+WITH+` keyword allows you to bind names to values for the lifetime of a qu
 
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 WITH (satellites_model CONDITIONED BY VAR Users = "Military") AS military_model:
   SELECT PROBABILITY OF VAR Apogee_km > Apogee_km UNDER military_model

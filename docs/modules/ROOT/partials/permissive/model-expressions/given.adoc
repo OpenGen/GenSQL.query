@@ -3,7 +3,7 @@
 .Compute the probability of the satellite's period from the model, given the class of orbit.
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   PROBABILITY OF Period_minutes
@@ -16,7 +16,7 @@ FROM satellites
 .Compute the probability of the satellite's period from the model, given everything but the period, contractor, and operator's country.
 [example]
 ====
-[source,gensql]
+[gensql]
 ----
 SELECT
   PROBABILITY OF Period_minutes
