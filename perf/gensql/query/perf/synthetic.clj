@@ -183,6 +183,8 @@
            local-alpha
            global-alpha]
     :as   opts}]
+  (assert (<= num-clusters-per-view num-rows))
+  (assert (<= num-views num-columns))
   (let [opts (merge {:categorical-alpha *default-categorical-alpha*
                      :local-alpha       *default-local-alpha*
                      :global-alpha      *default-global-alpha*
