@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [criterium.core :as crit]
             [gensql.query.perf.synthetic :as synthetic]
+            [gensql.query.perf.util :as util]
             [gensql.query.strict :as strict]
             [medley.core :as medley]))
 
@@ -94,6 +95,62 @@
   [arg-m]
   (update-vals default-query-fns (fn [f] (f arg-m))))
 
+(defn time+
+  "Uses a variant of time+ from https://clojure-goes-fast.com/kb/benchmarking/time-plus/.
+
+  Parameters
+  - db: the database to run the queries on
+  - queries: Either (1) a map of queries to run, keys are names, vals are GenSQL
+    strict queries, or (2) a single GenSQL strict query in a string
+  - opts - a map of options
+
+  opts map keys:
+  - warmup-iterations: the number of iterations to run to warmup queries (default: 5)
+  - duration: the duration in ms to aim for (default: 10000)
+  - print? - whether to print out info (default: true)
+  - return-results? - whether to return the results of the benchmarked fn - can lead to OOM errors if true (default: false)
+
+  Within the time limit, runs as many iterations as it can, then reports the
+  mean time taken, the mean bytes allocated, the number of iterations, and the
+  total time taken.
+
+  NB: This is preferable when criterium's warmup period is unstable. Criterium
+  attempts to wait for the Hotspot compiler to stabilize during warmup. Part of
+  the criteria is two executions of the function being benchmarked with no
+  changes in the reported JIT status. Unfortunately, not much JIT info is
+  available at runtime to programs, so it's hard to know if JIT changes are
+  relevant. Even worse, for very long run times (e.g., 30s+), the odds of a JIT
+  change increase. This can result in extremely long warmup periods, on the
+  order of 20+ minutes in some cases."
+  ([db queries]
+   (time+ db queries {}))
+  ([db queries {:keys [duration warmup-iterations print? return-results?]
+                :or   {duration          10000
+                       warmup-iterations 5
+                       print?            true
+                       return-results? false}
+                :as   opts}]
+   (let [queries (if (string? queries) {:query queries} queries)
+         time-fn (fn time-fn
+                   [query]
+                   (when print?
+                     (println "\nTiming query:" query)
+                     (println "Duration goal:" duration "ms")
+                     (println "Running" warmup-iterations "warmup iterations"))
+
+                   (dotimes [_ warmup-iterations]
+                     (dorun (strict/q query db)))
+
+                   (when print? (println "Timing main iterations"))
+
+                   (util/time+ duration
+                     ;; dorun/doall forces all lazy results to be realized during timing
+                     (if return-results?
+                       (doall (strict/q query db))
+                       (dorun (strict/q query db)))))]
+
+     (update-vals queries time-fn))))
+
 (defn benchmark
   "Benchmarks the query(ies). Prints out the summary results. Returns the
   Criterium results as a map.
@@ -106,8 +163,8 @@
 
   Options map
   - quick? - whether to use quick-benchmark or benchmark (default: true)
-  - return-results? - whether to return all results - can lead to OOM errors if true (default: false)
-  - print? - whether to print out results (default: true)"
+  - return-results? - whether to return the results of the benchmarked fn - can lead to OOM errors if true (default: false)
+  - print? - whether to print out benchmark info (default: true)"
   ([db queries]
    (benchmark db queries {}))
   ([db queries {:keys [return-results? print? quick?]
@@ -122,16 +179,13 @@
                  (when print?
                    (if quick?
                      (println "\nQuick-benchmarking query:" query)
-                     (println "\nBenchmarking query:" query))
-                   (when-not return-results?
-                     (println "Not returning results.")))
+                     (println "\nBenchmarking query:" query)))
                  (criterium-bench
                    ;; doall forces all lazy results to be realized during benchmarking
                    (fn []
-                     (let [results (doall (strict/q query db))]
-                       (if return-results?
-                         (doall (strict/q query db))
-                         (dorun (strict/q query db)))))
+                     (if return-results?
+                       (doall (strict/q query db))
+                       (dorun (strict/q query db))))
                    {:warmup-jit-period 0}))
          bmark-results (update-vals queries bmark)]
      (dorun (medley/map-kv (fn [query-k bmark-result]
