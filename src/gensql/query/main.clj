@@ -72,13 +72,8 @@
   [result]
   (if (instance? Exception result)
     (print-exception result)
-    (let [columns (get (meta result)
-                       :gensql/columns
-                       (into #{} (mapcat keys) result))
-          header-row (map name columns)
-          cells (map (apply juxt columns) result)
-          table (into [header-row] cells)]
-      (csv/write-csv *out* table)
+    (let [v (relation/->vector result)]
+      (csv/write-csv *out* v)
       (flush))))
 
 (defn make-eval
