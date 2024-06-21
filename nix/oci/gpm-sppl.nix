@@ -1,7 +1,7 @@
 { pkgs,
   nixpkgs,
-  opengen,
   system,
+  opengen,
   uber,
   pname,
   basicToolsFn,
@@ -16,19 +16,30 @@
     # shared package.
     baseImg = opengen.packages.${system}.ociImgBase;
 
-    ociBin = crossPkgsLinux.callPackage ./../bin {inherit uber pname;};
+    sppl =  opengen.packages.${systemWithLinux}.sppl;
+    python =  opengen.packages.${systemWithLinux}.sppl.runtimePython;
+
+    ociBin = crossPkgsLinux.callPackage ./../bin/gpm-sppl.nix {
+      inherit
+        uber
+        opengen
+        pname
+      ;
+    };
 in pkgs.dockerTools.buildLayeredImage {
   name = "probcomp/gensql.query";
   tag = systemWithLinux;
   fromImage = baseImg;
   # architecture
-  contents = [ ociBin depsCache crossPkgsLinux.clojure ];
+  contents = [ ociBin depsCache crossPkgsLinux.clojure sppl python];
   config = {
     Cmd = [ "${ociBin}/bin/${pname}" ];
     Env = [
       "CLJ_CONFIG=${depsCache}/.clojure"
       "GITLIBS=${depsCache}/.gitlibs"
       "JAVA_TOOL_OPTIONS=-Duser.home=${depsCache}"
+      "JDK_JAVA_OPTIONS=--add-modules jdk.incubator.foreign,jdk.incubator.vector --enable-native-access=ALL-UNNAMED"
+      "PYTHONPATH=${python.sitePackages}"
     ];
   };
 }

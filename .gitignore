@@ -19,3 +19,5 @@ pom.xml.asc
 /cljs-test-runner-out/
 /.direnv/
 /.shadow-cljs/
+
+result

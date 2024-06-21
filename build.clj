@@ -7,7 +7,7 @@
 (def uber-file (format "target/%s-%s-standalone.jar" (name lib) version))
 
 ;; delay to defer side effects (artifact downloads)
-(def basis (delay (build/create-basis {:project "deps.edn"})))
+(def basis (delay (build/create-basis {:aliases [ :query-sppl ]})))
 
 ;; clean build artifacts (excludes test artifacts)
 (defn clean [_]

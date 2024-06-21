@@ -27,6 +27,9 @@
                                org.clojure/test.check {:mvn/version "1.1.1"}}}
            :build {:deps {io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}}
                    :ns-default build}
+           :build-with-sppl {:deps {io.github.clojure/tools.build {:git/sha "8e78bccc35116f6b6fc0bf0c125dba8b8db8da6b"}
+                                    io.github.OpenGen/GenSQL.gpm.sppl {:git/sha "718de40878766bb8d08acc2b429a76ed662a1352"}}
+                             :ns-default build}
            :cljs {:extra-deps {thheller/shadow-cljs {:mvn/version "2.27.5"}}}
            :clj-test {:extra-deps {io.github.cognitect-labs/test-runner {:git/sha "7284cda41fb9edc0f3bc6b6185cfb7138fc8a023"}}
                       :main-opts ["--main" "cognitect.test-runner"]
@@ -40,6 +43,12 @@
                   :extra-deps {com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.2.0"}
                                criterium/criterium {:mvn/version "0.4.6"}}
                   :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
+
+           :query-sppl { :extra-deps { io.github.OpenGen/GenSQL.gpm.sppl {:git/sha "718de40878766bb8d08acc2b429a76ed662a1352"}}
+                         :jvm-opts ["--add-modules" "jdk.incubator.foreign,jdk.incubator.vector"
+                                    "--enable-native-access=ALL-UNNAMED"]
+                         :main-opts ["-m" "gensql.query.main"]
+                       }
 
            :coverage
            ;; Invoke with clj -M:test:coverage <args>

@@ -1,6 +1,7 @@
 { stdenv,
   pkgs,
   depsCache,
+  buildTool
 }: stdenv.mkDerivation {
   name = "gensql.query-uberjar";
   version = "unstable";
@@ -19,7 +20,7 @@
   nativeBuildInputs = with pkgs; [ clojure git ];
   buildPhase = ''
     cp -R $src .
-    clojure -T:build uber
+    clojure -T:${buildTool} uber
   '';
   installPhase = ''
     cp -R target/*.jar $out
