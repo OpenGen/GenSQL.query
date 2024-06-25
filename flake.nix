@@ -8,7 +8,7 @@
     };
   };
 
-  outputs = inputs@{ flake-parts, systems , ... }:
+  outputs = inputs@{ clj-nix, flake-parts, systems , ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import systems;
 
@@ -107,6 +107,7 @@
 
         packages = {
           inherit uber bin ociImg;
+          deps-lock = (clj-nix.packages.${system}.deps-lock);
           default = bin;
         };
       };
