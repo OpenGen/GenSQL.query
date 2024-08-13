@@ -95,7 +95,12 @@
 
         # a minimal shell for doing a depsLock, that doesn't require an existing deps cache
         devShells.depsLock = pkgs.mkShell {
-          buildInputs = [ pkgs.openjdk21 pkgs.clojure pkgs.babashka ] ++ (basicToolsFn pkgs);
+          buildInputs = [
+            pkgs.openjdk21
+            pkgs.clojure
+            pkgs.babashka
+            pkgsWithCljNixOverlay.deps-lock
+          ] ++ (basicToolsFn pkgs);
 
           shellHook = ''
             echo "Setting up minimal dev shell..."

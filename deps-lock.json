@@ -87,11 +87,6 @@
       "hash": "sha256-JezOPysastKFP6SSVze/8ZvwYnbr/uu5PhHvdTc7ea8="
     },
     {
-      "mvn-path": "cheshire/cheshire/5.10.0/cheshire-5.10.0.pom",
-      "mvn-repo": "https://repo.clojars.org/",
-      "hash": "sha256-l3PHeIYLYeUXTVeUfJQIGwaJY6aaL7ABmhGpGuN9l8w="
-    },
-    {
       "mvn-path": "cider/piggieback/0.5.3/piggieback-0.5.3.jar",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-WYsPBNKvNPiKoLqNA6C9OlREIpLwxfq4+0kEGmhc7RM="
@@ -100,11 +95,6 @@
       "mvn-path": "cider/piggieback/0.5.3/piggieback-0.5.3.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-wRAXPDF8zfKHTFp9swnK7CFt71KGYRnEotO3KFtX0ik="
-    },
-    {
-      "mvn-path": "clj-commons/clj-yaml/0.7.106/clj-yaml-0.7.106.pom",
-      "mvn-repo": "https://repo.clojars.org/",
-      "hash": "sha256-PjA1AYpQJF0qH1GABiXyETqcUo+e9/ilsRKKFLkggOc="
     },
     {
       "mvn-path": "clj-http/clj-http/3.12.1/clj-http-3.12.1.jar",
@@ -145,11 +135,6 @@
       "mvn-path": "cljs-bean/cljs-bean/1.8.0/cljs-bean-1.8.0.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-xMtL7gH6hnrFu8XPdgT+g+022A6zpQD9+qkuObEW7nQ="
-    },
-    {
-      "mvn-path": "clojure-msgpack/clojure-msgpack/1.2.1/clojure-msgpack-1.2.1.pom",
-      "mvn-repo": "https://repo.clojars.org/",
-      "hash": "sha256-idvV+CLoAQw/kJd78R2E2DKXecl1eE5jn+7yezZdmRw="
     },
     {
       "mvn-path": "cloverage/cloverage/1.2.4/cloverage-1.2.4.jar",
@@ -2232,36 +2217,6 @@
       "hash": "sha256-g2Bpyp6O48VuSDdiItopEmPxN70/0W2E/dR+/MPyhuI="
     },
     {
-      "mvn-path": "org/junit/jupiter/junit-jupiter-api/5.7.1/junit-jupiter-api-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-1Vvisj13FDKXB3IEMgey5mpnJK4CvVGStyFuS3AbxiM="
-    },
-    {
-      "mvn-path": "org/junit/jupiter/junit-jupiter-engine/5.7.1/junit-jupiter-engine-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-gRF+OjoCDf3W8wkcXseU0stJhAcxrPQogxxWmQEvTLs="
-    },
-    {
-      "mvn-path": "org/junit/jupiter/junit-jupiter-params/5.7.1/junit-jupiter-params-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-UIPD5bw9OhjVY6M0fVPi3f35ONdh60TbsL9PQgX+6Sw="
-    },
-    {
-      "mvn-path": "org/junit/jupiter/junit-jupiter/5.7.1/junit-jupiter-5.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-YLUGfK3Mb/tfqS6OJJiKgMbDYEaPJj0mmLKIHI4PfJE="
-    },
-    {
-      "mvn-path": "org/junit/platform/junit-platform-commons/1.7.1/junit-platform-commons-1.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-t8GENMTUsn5yO9SKr5ercK7IwMra1MFTkvvdFEykpQo="
-    },
-    {
-      "mvn-path": "org/junit/platform/junit-platform-engine/1.7.1/junit-platform-engine-1.7.1.pom",
-      "mvn-repo": "https://repo.maven.apache.org/maven2/",
-      "hash": "sha256-dmAvWZVKo9+mjjHIDKibb7ouoAG0+wbLUfoV6tfIWjA="
-    },
-    {
       "mvn-path": "org/kohsuke/pom/14/pom-14.pom",
       "mvn-repo": "https://repo.maven.apache.org/maven2/",
       "hash": "sha256-FQ9F/ISliYf7KGU9+SntI5krV0Y24HoLPmXsu+LT7oM="
@@ -2455,11 +2410,6 @@
       "mvn-path": "ring-cors/ring-cors/0.1.13/ring-cors-0.1.13.pom",
       "mvn-repo": "https://repo.clojars.org/",
       "hash": "sha256-SZCg3bNUDE1Ed6GtqP1mP62RSRScmaYGL7/XSKXwGJo="
-    },
-    {
-      "mvn-path": "ring/ring-codec/1.1.2/ring-codec-1.1.2.pom",
-      "mvn-repo": "https://repo.clojars.org/",
-      "hash": "sha256-sl/LVYL/wFWem+BnzQXP13SAm5IocZz8HqVojsnKH+c="
     },
     {
       "mvn-path": "ring/ring-codec/1.1.3/ring-codec-1.1.3.jar",

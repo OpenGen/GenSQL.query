@@ -1,0 +1,30 @@
+name: "Update deps-lock.json"
+on:
+  push:
+    paths:
+      - "deps.edn"
+
+permissions:
+  contents: write
+
+jobs:
+  update-lock:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: cachix/install-nix-action@v25
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v2
+
+      - name: Update deps-lock
+        run: "nix run github:jlesquembre/clj-nix#deps-lock"
+
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: regenerate deps-lock.json"
+          file_pattern: "deps-lock.json"
