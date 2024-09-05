@@ -23,7 +23,7 @@ jobs:
     - run: |
         nix develop '.#depsLock' \
           --command bash -c \
-          "nix run github:jlesquembre/clj-nix#deps-lock"
+          "nix run .#deps-lock"
     - run: |
         nix build \
           -L \
