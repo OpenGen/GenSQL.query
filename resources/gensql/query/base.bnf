@@ -125,7 +125,8 @@ scalar-expr ::= scalar-expr-0
 <scalar-expr-3> ::= scalar-expr-4 | expr-binop
 <scalar-expr-4> ::= scalar-expr-5 | expr-addition | expr-subtraction
 <scalar-expr-5> ::= scalar-expr-6 | expr-multiplication | expr-division
-<scalar-expr-6> ::= scalar-expr-7 | expr-function-call
+<scalar-expr-6> ::= scalar-expr-7 | expr-exponentiation
+<scalar-expr-7> ::= scalar-expr-8 | expr-function-call
 
 expr-disjunction ::= scalar-expr-0 ws #'(?i)OR'  ws scalar-expr-1
 expr-conjunction ::= scalar-expr-1 ws #'(?i)AND' ws scalar-expr-2
@@ -140,9 +141,15 @@ expr-subtraction ::= scalar-expr-4 ws? '-' ws? scalar-expr-5
 expr-multiplication ::= scalar-expr-5 ws? '*' ws? scalar-expr-6
 expr-division       ::= scalar-expr-5 ws? '/' ws? scalar-expr-6
 
+expr-exponentiation ::= scalar-expr-6 ws? '^' ws? scalar-expr-7
+
 (* currently only log - will likely add more later *)
-<expr-function-call> ::=  expr-function-call-log
+<expr-function-call> ::=  expr-function-call-log | expr-function-call-sqrt | expr-function-call-sin | expr-function-call-cos | expr-function-call-tan
 expr-function-call-log ::= 'log(' ws? scalar-expr-6 ws? ')'
+expr-function-call-sqrt ::= 'sqrt(' ws? scalar-expr-6 ws? ')'
+expr-function-call-sin ::= 'sin(' ws? scalar-expr-6 ws? ')'
+expr-function-call-cos ::= 'cos(' ws? scalar-expr-6 ws? ')'
+expr-function-call-tan ::= 'tan(' ws? scalar-expr-6 ws? ')'
 
 scalar-expr-group ::= '(' ws? scalar-expr ws? ')'
 

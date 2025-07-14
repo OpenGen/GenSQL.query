@@ -1,5 +1,5 @@
 <scalar-expr-0> ::= scalar-expr-1 | expr-disjunction | probability-expr | mutual-info-expr
-<scalar-expr-7> ::= scalar-expr-group | identifier | value
+<scalar-expr-8> ::= scalar-expr-group | identifier | value
 
 (* model-expr *)
 
