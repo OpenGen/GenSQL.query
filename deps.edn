@@ -5,7 +5,9 @@
         metosin/muuntaja {:mvn/version "0.6.8"}
         net.cgrand/macrovich {:mvn/version "0.2.1"}
         net.cgrand/xforms {:mvn/version "0.19.2"}
-        io.github.OpenGen/GenSQL.inference {:git/sha "689fe740dead93f3ba349a88efa52f2544aa138b"}
+        io.github.OpenGen/GenSQL.inference 
+        {:git/url "https://github.com/LeifAndersen/GenSQL.inference"
+         :sha "9decae2d54c8ff37920a2515a9a964398662cdfc"}
         org.babashka/sci {:mvn/version "0.3.32"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         com.google.javascript/closure-compiler-unshaded {:mvn/version "v20230802"}

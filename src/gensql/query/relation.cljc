@@ -80,8 +80,8 @@
     (meta rel)))
 
 (defn limit
-  [rel n]
-  (with-meta (take n (tuples rel))
+  [rel n offset]
+  (with-meta (take n (drop offset (tuples rel)))
     (meta rel)))
 
 (defn distinct

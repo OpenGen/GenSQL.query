@@ -10,10 +10,21 @@
 
 (defn read-string
   [s]
-  (let [sppl-readers {'gensql.gpm.spe/SPE (dynaload/dynaload 'gensql.gpm.sppl/read-string)
+  (let [object-reader {'object (fn [[class-name _ string-repr]]
+                                 (case class-name
+                                   java.time.LocalDate
+                                   (java.time.LocalDate/parse string-repr),
+                                   java.time.LocalDateTime
+                                   (java.time.LocalDateTime/parse string-repr),
+                                   string-repr))}
+        sppl-readers {'gensql.gpm.spe/SPE (dynaload/dynaload 'gensql.gpm.sppl/read-string)
                       'inferenceql.gpm.spe/SPE (dynaload/dynaload 'gensql.gpm.sppl/read-string)} ; for backwards-compatibility
-        readers (merge gpm/readers sppl-readers)]
-    (edn/read-string {:readers readers} s)))
+        readers (merge object-reader gpm/readers sppl-readers)]
+    (edn/read-string {:readers readers
+                      :default (fn [tag value]
+                                 (println "Found unknown tag:" tag "with value:" value)
+                                 {:tag tag :value value})}
+                     s)))
 
 #?(:clj (defn slurp
           [x]

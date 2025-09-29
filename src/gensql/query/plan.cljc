@@ -92,9 +92,10 @@
    ::variables variables})
 
 (defn limit
-  [op limit]
+  [op limit offset]
   {::type :gensql.query.plan.type/limit
    ::limit limit
+   ::offset offset
    ::plan op})
 
 (defn distinct
@@ -191,13 +192,13 @@
   elsewhere in the parse tree, as is the case with \"SELECT\" subclauses."
   ([node]
    (let [pln (with-meta (plan-impl node)
-                        {::parser/node node})]
+               {::parser/node node})]
      (tap> #:plan{:node node :plan pln})
      pln))
   ([node op]
    (let [pln (if (some? node)
                (with-meta (plan-impl node op)
-                          {::parser/node node})
+                 {::parser/node node})
                op)]
      (tap> #:plan{:node node :plan pln :op op})
      pln)))
@@ -265,9 +266,9 @@
   relation."
   [node]
   (tree/match [node]
-              [[:selection "(" child ")"]] (output-attr child)
-              [[:selection _ [:alias-clause _as id-node]]] (literal/read id-node)
-              [[:selection child]] (parser/unparse child)))
+    [[:selection "(" child ")"]] (output-attr child)
+    [[:selection _ [:alias-clause _as id-node]]] (literal/read id-node)
+    [[:selection child]] (parser/unparse child)))
 
 (defn ^:private selection-plan
   [node op]
@@ -404,8 +405,16 @@
 
 (defmethod plan-impl :limit-clause
   [node op]
+  (let [n (eval-literal-in node [:int])
+        offset (if-let [offset-clause (tree/get-node node :offset-clause)]
+                 (plan-impl offset-clause op)
+                 0)]
+    (limit op n offset)))
+
+(defmethod plan-impl :offset-clause
+  [node op]
   (let [n (eval-literal-in node [:int])]
-    (limit op n)))
+    (or n 0)))
 
 (defmethod plan-impl :distinct-clause
   [_ op]
@@ -557,9 +566,9 @@
 
 (defmethod eval :gensql.query.plan.type/limit
   [plan env bindings]
-  (let [{::keys [limit plan]} plan
+  (let [{::keys [limit offset plan]} plan
         rel (eval plan env bindings)]
-    (relation/limit rel limit)))
+    (relation/limit rel limit offset)))
 
 (defmethod eval :gensql.query.plan.type/distinct
   [plan env bindings]

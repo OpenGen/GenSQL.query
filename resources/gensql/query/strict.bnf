@@ -1,4 +1,4 @@
-<scalar-expr-7> ::= scalar-expr-group
+<scalar-expr-8> ::= scalar-expr-group
                   | identifier
                   | value
                   | probability-expr

@@ -60,8 +60,10 @@
       [:expr-subtraction left _ right] `(~'- ~(plan left) ~(plan right))
       [:expr-multiplication left _ right] `(~'* ~(plan left) ~(plan right))
       [:expr-division left _ right] `(~'/ ~(plan left) ~(plan right))
+      [:expr-exponentiation left _ right] `(~'pow ~(plan left) ~(plan right))
 
       [:expr-function-call-log _log child _] `(~'log ~(plan child))
+      [:expr-function-call-sqrt _sqrt child _] `(~'sqrt ~(plan child))
 
       [:expr-binop left [:binop [:is _]] right] `(~'= ~(plan left) ~(plan right))
       [:expr-binop left [:binop [:is-not & _]] right] `(~'not= ~(plan left) ~(plan right))
@@ -299,7 +301,9 @@
                   '- (nil-safe (auto-unbox -))
                   '* (nil-safe (auto-unbox *))
                   '/ (nil-safe (auto-unbox /))
-                  'log (nil-safe (auto-unbox math/log))}
+                  'pow (nil-safe (auto-unbox math/pow))
+                  'log (nil-safe (auto-unbox math/log))
+                  'sqrt (nil-safe (auto-unbox math/sqrt))}
    'gensql {'safe-get safe-get
          'prob prob
          'pdf pdf
